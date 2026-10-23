@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A web host for Gentle Desktop: proposal</title>
+<style>
+:root{--bg:#060407;--panel:#100a0f;--raised:#180e15;--line:#2a1720;--line-strong:#563040;--text:#f6eff3;--text-2:#d2cbd0;--muted:#a78e9b;--accent:#f095c8;--accent-active:#ffb1dd;--blue:#a9c7ee;--green:#b4e7c7;--amber:#f2b86d;--red:#ff718f;--glow:0 10px 30px #f095c84d;--display:"Space Grotesk","Segoe UI",system-ui,sans-serif;--body:"Inter","Segoe UI",system-ui,sans-serif;--mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace;--foot:36px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--body);overflow:hidden}
+.stage{position:fixed;left:50%;top:50%;width:1280px;height:720px;transform:translate(-50%,-50%) scale(var(--s,1));background:radial-gradient(900px 480px at 88% -12%,#f095c826,transparent 62%),var(--bg);overflow:hidden}
+:focus-visible{outline:2px solid var(--accent-active);outline-offset:2px;border-radius:6px}
+.bar{position:absolute;left:0;top:0;height:3px;width:0;background:var(--accent);box-shadow:var(--glow);transition:width .3s ease;z-index:5}
+.slide{--base:20px;display:none;position:absolute;inset:0;flex-direction:column;padding:1.2em 2.4em 0;font-size:calc(var(--base)*var(--k,1));line-height:1.4}
+.slide.on{display:flex;animation:in .3s ease both}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:.7em;color:var(--muted)}
+.brand{font-family:var(--display);font-weight:700;color:var(--text);letter-spacing:.02em;font-size:1.15em}
+.flower{color:var(--accent)}
+main{flex:1;min-height:0;display:flex;flex-direction:column;gap:.65em;padding:.7em 0}
+.kicker{font-family:var(--mono);font-size:.62em;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-size:1.9em;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.title h1{font-size:3em}
+h2{font-family:var(--display);font-size:.9em;font-weight:600;color:var(--text);margin-bottom:.2em}
+p,li{color:var(--text-2);font-size:.82em}
+.lead{font-size:.95em;max-width:62em}
+.small{font-size:.74em;color:var(--muted)}
+strong{color:var(--text);font-weight:600}
+code{font-family:var(--mono);font-size:.9em;color:var(--blue)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.7em .95em}
+.card p{font-size:.76em}
+.warn{border-left:3px solid var(--amber)}
+.warn h2::before{content:"Not proven: ";color:var(--amber);font-family:var(--mono);font-size:.8em;font-weight:500}
+.grid{display:grid;gap:.6em}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}
+.fill{flex:1;min-height:0;align-content:start}
+.pill{display:inline-block;align-self:flex-start;font-family:var(--mono);font-size:.62em;padding:.35em .9em;border:1px solid var(--accent);border-radius:999px;color:var(--accent-active);box-shadow:var(--glow)}
+.badge{display:inline-block;font-family:var(--mono);font-size:.78em;padding:.05em .55em;border-radius:999px;border:1px solid var(--amber);color:var(--amber);white-space:nowrap}
+.code{font-family:var(--mono);background:var(--panel);border:1px solid var(--line-strong);border-radius:14px;padding:.8em 1em;font-size:.62em;color:var(--text);white-space:pre-wrap;box-shadow:var(--glow)}
+.code .pr{color:var(--accent)}.code .cm{color:var(--muted)}
+.stat{display:flex;flex-direction:column;gap:.1em}
+.stat b{font-family:var(--display);font-size:1.8em;color:var(--accent-active);line-height:1.1}
+.stat span{font-size:.72em;color:var(--text-2)}
+ul.plain{list-style:none;display:flex;flex-direction:column;gap:.45em}
+ul.plain li{padding-left:1.1em;position:relative}
+ul.plain li::before{content:"✿";position:absolute;left:0;color:var(--accent);font-size:.8em}
+ol.dec{display:flex;flex-direction:column;gap:.5em;list-style:none;counter-reset:d}
+ol.dec li{counter-increment:d;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.55em 1em .55em 2.6em;position:relative;font-size:.9em}
+ol.dec li::before{content:counter(d);position:absolute;left:.8em;font-family:var(--display);font-weight:700;color:var(--accent-active)}
+.panel{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:.7em;line-height:1.3}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:.82em;text-transform:uppercase;letter-spacing:.06em;padding:.45em .7em;border-bottom:1px solid var(--line-strong);background:var(--raised)}
+td{padding:.4em .7em;border-bottom:1px solid var(--line);vertical-align:top;color:var(--text-2)}
+tr:last-child td{border-bottom:0}
+td:first-child{color:var(--text)}
+tr.rep td{background:#f2b86d14;border-left:0}
+tr.rep td:first-child{border-left:3px solid var(--amber)}
+.fig{flex:1;min-height:0;display:flex;overflow:auto}
+.fig svg{width:100%;height:100%;display:block}
+.legend{display:flex;gap:1.4em;flex-wrap:wrap;list-style:none;font-size:.62em;color:var(--muted)}
+.legend li{display:flex;align-items:center;gap:.6em;font-size:1em;color:var(--muted)}
+.legend svg{width:34px;height:8px;flex:none}
+.legend line{stroke:var(--text-2);stroke-width:2}
+.legend .d{stroke:var(--accent);stroke-dasharray:6 4}
+.foot{height:var(--foot);display:flex;align-items:center;border-top:1px solid var(--line);font-size:.7em;color:var(--muted);padding-right:11em;flex:none}
+.nav{position:absolute;right:32px;bottom:0;height:var(--foot);display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text-2);z-index:4}
+.nav button{width:26px;height:26px;border-radius:8px;border:1px solid var(--line-strong);background:var(--panel);color:var(--text);font-size:15px;line-height:1;cursor:pointer}
+.nav button:hover{border-color:var(--accent)}
+.nav span{min-width:4.5em;text-align:center;font-family:var(--mono);font-size:13px}
+/* diagrams */
+svg text{font-family:var(--body);font-size:14.5px;fill:var(--text);paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
+svg .gl{fill:var(--muted);font-family:var(--mono);font-size:12.5px;font-weight:600}
+svg .sub{fill:var(--text-2);font-size:13px}
+svg .box{fill:none;stroke:var(--line-strong);stroke-width:1.5}
+svg .nd{fill:var(--raised);stroke:var(--line-strong);stroke-width:1.5}
+svg .nd.plan{stroke:var(--accent);stroke-dasharray:6 5}
+svg .ed{fill:none;stroke:var(--text-2);stroke-width:1.8}
+svg .ed.plan{stroke:var(--accent);stroke-dasharray:7 6}
+svg .ed.blk{stroke:var(--red);stroke-dasharray:3 5}
+svg .blk-t{fill:var(--red);font-weight:600}
+svg .life{stroke:var(--line-strong);stroke-width:1.2}
+svg .thin{stroke:var(--line-strong);stroke-width:1.2;fill:none}
+svg .ah{fill:var(--text-2)}
+svg .ao{fill:none;stroke:var(--text-2);stroke-width:1.4}
+svg .ab{stroke:var(--red);stroke-width:2}
+svg .tag{fill:var(--raised);stroke:var(--line-strong)}
+@media(max-width:700px){
+.stage{left:0;top:0;width:100vw;height:100vh;height:100dvh;transform:none}
+:root{--foot:28px}
+.slide{--base:15px;padding:.9em 1em 0}
+.title h1{font-size:2.2em}
+.c2,.c3{grid-template-columns:1fr}
+.fig{flex:0 1 auto}
+.fig svg{width:max(100%,var(--min,700px));height:auto;flex:none}
+table,tbody,tr,td{display:block}
+thead{display:none}
+td{border:0;padding:.1em .6em}
+td::before{content:attr(data-l) ": ";color:var(--muted)}
+td:first-child{padding-top:.4em;font-weight:600}
+tr{border-bottom:1px solid var(--line);padding-bottom:.3em}
+tr:last-child{border-bottom:0}
+.foot{padding-right:8em}
+.nav{right:12px;font-size:12px}
+.nav button{width:22px;height:22px}
+}
+@media(prefers-reduced-motion:reduce){.slide.on{animation:none}.bar{transition:none}}
+@media print{
+@page{size:1280px 720px;margin:0}
+:root{--bg:#fff;--panel:#fff;--raised:#f6f1f4;--line:#cdbfc7;--line-strong:#8a6a79;--text:#1a1015;--text-2:#3a2a33;--muted:#5d4a54;--accent:#a8286f;--accent-active:#8c1d5b;--blue:#1f4f86;--green:#1e6b3c;--amber:#8a5400;--red:#b3213f;--glow:none}
+html,body{height:auto;overflow:visible;background:#fff}
+.stage{position:static;transform:none;width:1280px;height:auto;overflow:visible;background:#fff}
+.slide,.slide.on{display:flex;position:relative;width:1280px;height:720px;--base:20px;break-after:page;animation:none;overflow:hidden}
+.slide:last-of-type{break-after:auto}
+.bar,.nav{display:none}
+.fig{overflow:visible}
+.fig svg{width:100%;height:100%}
+tr.rep td{background:#fbefd9}
+}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+<div class="bar" id="bar" role="progressbar" aria-label="Progress" aria-valuemin="1" aria-valuemax="15" aria-valuenow="1"></div>
+<section class="slide title" id="s1" aria-label="Slide 1">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Proposal, not decided</p><h1>A web host for Gentle Desktop</h1>
+<p class="lead">A second host for the same app: one command starts a small local server and opens the existing React UI in the browser, talking to the <code>gentle-shell</code> the user already has installed.</p>
+<p class="lead">Written by a community contributor to start a conversation with the maintainers. Nothing here is a maintainer decision, and nothing changes the existing app.</p>
+<span class="pill">Status: proposal, not decided</span>
+<p class="small">Move with the arrow keys, Space, Home and End, or click the right or left side of the slide.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s2" aria-label="Slide 2">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">The problem</p><h1>Why a web host</h1>
+<div class="grid c2 fill">
+<div class="card"><h2>It removes the packaging step from the path to a first chat</h2><p>Today you run the app from source with Electron. There are no signed builds, and only macOS on Apple silicon has been tested (<code>README.md</code>, "Try it"). A browser host needs Node and the launcher the user already has.</p></div>
+<div class="card"><h2>It helps contributors verify real behavior</h2><p>ADR 0010 already runs the renderer in a browser, but against a mock bridge. The web host runs it against real sessions.</p></div>
+<div class="card"><h2>It makes the Windows launcher problem visible from a second angle</h2><p>On Windows an npm-installed <code>gentle-shell</code> resolves to <code>gentle-shell.cmd</code>, which Node cannot spawn directly. That is issues <a href="https://github.com/Gentleman-Programming/gentle-shell-desktop/issues/23">#23</a> and <a href="https://github.com/Gentleman-Programming/gentle-shell-desktop/issues/24">#24</a>, and it blocks both hosts equally.</p></div>
+<div class="card"><h2>It gives vision question Q9 something concrete to answer</h2><p>Q9 asks whether remote or mobile access is in scope. This proposal does <strong>not</strong> answer it: it is loopback-only.</p></div>
+</div></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s3" aria-label="Slide 3">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">The idea</p><h1>One command, the same app in a browser</h1>
+<div class="grid c2">
+<div style="display:flex;flex-direction:column;gap:.65em">
+<p class="lead">This proposal adds a <strong>second host</strong> for the same app. The UI, the chat domain and the tests stay as they are. Only the layer that connects the UI to <code>gentle-shell</code> is new.</p>
+<div class="code"><span class="pr">$</span> gentle-shell-web            <span class="cm"># illustrative name; naming is an open question</span>
+  listening on http://127.0.0.1:&lt;port&gt;   →  opens the app in your browser</div>
+<p>A spike shows it works and what it costs (about 800 new lines, no existing file changed). It also shows what is missing before anyone else should use it.</p>
+</div>
+<div class="card"><h2>How it works</h2><ul class="plain">
+<li>The renderer calls <code>useBridge()</code>, which returns <code>window.gentle ?? mockBridge</code>. In Electron, the preload script sets <code>window.gentle</code>.</li>
+<li>In the web host, a small script sets it before the app starts, built from the <strong>same</strong> <code>createBridge(ipc)</code> the preload uses, with the IPC object backed by a WebSocket.</li>
+<li>On the server side, the host rebuilds the object graph that <code>src/main/index.ts</code> builds and reuses <code>registerHandlers()</code> unchanged, through thin stand-ins for Electron's <code>IpcMain</code> and <code>WebContents</code>.</li></ul></div>
+</div>
+<div class="grid c3">
+<div class="card stat"><b>2</b><span>non-test files in <code>src/main</code> import <code>electron</code></span></div>
+<div class="card stat"><b>2,267</b><span>lines in the rest of <code>src/main</code>, without tests, are host-agnostic</span></div>
+<div class="card stat"><b>2,189</b><span>lines in the renderer, without tests, are host-agnostic</span></div>
+</div>
+<p class="small">Measured on <code>main</code> at <code>5ab4a00</code>.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s4" aria-label="Slide 4">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Scope</p><h1>What it is not</h1>
+<div class="grid c3 fill">
+<div class="card"><h2>Not a terminal in the browser</h2><p>Issue <a href="https://github.com/Gentleman-Programming/gentle-shell-desktop/issues/2">#2</a> considers a terminal in a window and says it "defeats the entire point of a plain-chat, minimalist app", keeping it only as "a possible future 'power mode' toggle, not the default". The web host renders the same chat UI, not the TUI.</p></div>
+<div class="card"><h2>Not pi's <code>packages/server</code></h2><p>Issue #2 marks it "Rejected for now" ("no auth, explicitly marked experimental"). The web host talks to <code>gentle-shell --mode rpc</code>, as the desktop does.</p></div>
+<div class="card"><h2>Not a second UI</h2><p>The UI is not copied or redesigned. If it diverged, this proposal would have failed.</p></div>
+<div class="card"><h2>Not remote access</h2><p>It binds to <code>127.0.0.1</code> only. There is no flag to change that.</p></div>
+<div class="card"><h2>Not a replacement for the desktop app</h2><p>People who do not want a terminal at all still need the packaged app (issue #2, "Problem or opportunity").</p></div>
+</div></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s5" aria-label="Slide 5">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Architecture</p><h1>One UI, two hosts</h1>
+<p class="lead">The renderer and the chat domain are shared. Only the layer between them changes.</p>
+<div class="fig" tabindex="0" aria-label="Diagram 1. Scrolls sideways on narrow screens."><svg role="img" aria-labelledby="d1t d1d" viewBox="0 0 900 500" preserveAspectRatio="xMidYMid meet" style="--min:760px"><title id="d1t">One UI, two hosts</title><desc id="d1d">Renderer React UI flows to createBridge(ipc) GentleBridge. From there one path goes through the Electron host (preload ipcRenderer, then src/main/index.ts) and one through the web host (client.ts WebSocket IPC, then server.ts HTTP plus WebSocket). Both reach registerHandlers(), then ChatHost, PiSession, chat reducer and codec, then gentle-shell --mode rpc, which is already installed. All lines are solid.</desc><defs>
+<marker id="d1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+<marker id="d1o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ao" d="M0 0L10 5L0 10"/></marker>
+<marker id="d1b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ab" d="M5 0V10"/></marker>
+</defs><rect class="box" x="10" y="10" width="240" height="390" rx="14"/><text class="gl" x="26" y="32">Shared, unchanged</text><rect class="nd" x="30" y="40" width="200" height="58" rx="10"/><text class="" x="130" y="64.5" text-anchor="middle">Renderer</text><text class="" x="130" y="83.5" text-anchor="middle">React UI</text><rect class="nd" x="30" y="125" width="200" height="58" rx="10"/><text class="" x="130" y="149.5" text-anchor="middle">createBridge(ipc)</text><text class="" x="130" y="168.5" text-anchor="middle">GentleBridge</text><rect class="nd" x="30" y="225" width="200" height="58" rx="10"/><text class="" x="130" y="259" text-anchor="middle">registerHandlers()</text><rect class="nd" x="30" y="320" width="200" height="62" rx="10"/><text class="" x="130" y="346.5" text-anchor="middle">ChatHost, PiSession,</text><text class="" x="130" y="365.5" text-anchor="middle">chat reducer, codec</text><rect class="box" x="300" y="10" width="580" height="150" rx="14"/><text class="gl" x="316" y="32">Host 1: Electron (today)</text><rect class="nd" x="330" y="60" width="190" height="58" rx="10"/><text class="" x="425" y="84.5" text-anchor="middle">preload</text><text class="" x="425" y="103.5" text-anchor="middle">ipcRenderer</text><rect class="nd" x="590" y="60" width="260" height="58" rx="10"/><text class="" x="720" y="84.5" text-anchor="middle">src/main/index.ts</text><text class="" x="720" y="103.5" text-anchor="middle">BrowserWindow, ipcMain</text><rect class="box" x="300" y="240" width="580" height="150" rx="14"/><text class="gl" x="316" y="262">Host 2: web (this proposal)</text><rect class="nd" x="330" y="300" width="190" height="58" rx="10"/><text class="" x="425" y="324.5" text-anchor="middle">client.ts</text><text class="" x="425" y="343.5" text-anchor="middle">WebSocket IPC</text><rect class="nd" x="590" y="300" width="260" height="58" rx="10"/><text class="" x="720" y="324.5" text-anchor="middle">server.ts</text><text class="" x="720" y="343.5" text-anchor="middle">HTTP + WebSocket</text><rect class="nd" x="30" y="440" width="200" height="58" rx="10"/><text class="" x="130" y="464.5" text-anchor="middle">gentle-shell --mode rpc</text><text class="" x="130" y="483.5" text-anchor="middle">(already installed)</text><path class="ed " d="M130,98 V125" marker-end="url(#d1a)"/><path class="ed " d="M230,154 H262 M262,89 V329"/><path class="ed " d="M262,89 H328" marker-end="url(#d1a)"/><path class="ed " d="M262,329 H328" marker-end="url(#d1a)"/><path class="ed " d="M520,89 H588" marker-end="url(#d1a)"/><path class="ed " d="M520,329 H588" marker-end="url(#d1a)"/><path class="ed " d="M720,118 V195 H275 V240 H232" marker-end="url(#d1a)"/><path class="ed " d="M720,300 V270 H232" marker-end="url(#d1a)"/><path class="ed " d="M130,283 V320" marker-end="url(#d1a)"/><path class="ed " d="M130,382 V440" marker-end="url(#d1a)"/></svg></div>
+<ul class="legend" aria-label="Legend"><li><svg viewBox="0 0 34 8" role="img"><title>Solid line</title><line x1="0" y1="4" x2="34" y2="4"/></svg>Solid: exists today or was observed in the spike</li><li><svg viewBox="0 0 34 8" role="img"><title>Dashed line</title><line class="d" x1="0" y1="4" x2="34" y2="4"/></svg>Dashed: planned, not built or not verified</li></ul>
+<p class="small">Only <code>src/main/index.ts</code> and <code>src/main/ipc/registerHandlers.ts</code> import <code>electron</code>. The web host rebuilds the object graph of the first and reuses the second through small stand-ins.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s6" aria-label="Slide 6">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Evidence</p><h1>What the spike proved</h1>
+<p class="small">A spike was built on a local branch (not part of this proposal's diff). All results below were observed on one machine: Windows 11, Node v26.8.1, pnpm 11.22.0, <code>gentle-shell 4.3.0-main.557c674895b1</code>, pi 1.4.0, an isolated home with 19 existing chats.</p>
+<div class="panel"><table><thead><tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col">Observed by</th></tr></thead><tbody><tr><td data-l="Check">Existing renderer and domain untouched</td><td data-l="Result">13 new files, 0 tracked files modified, nothing staged</td><td data-l="Observed by">spike run, <code>git diff --stat</code> empty</td></tr><tr><td data-l="Check">UI mounts in a real browser (Edge)</td><td data-l="Result"><code>window.gentle</code> present, 19 chats listed over the socket, no console or CSP errors</td><td data-l="Observed by">spike run</td></tr><tr><td data-l="Check">Request without token</td><td data-l="Result">HTTP <code>401</code></td><td data-l="Observed by">spike run</td></tr><tr><td data-l="Check">Foreign <code>Origin</code> or foreign <code>Host</code></td><td data-l="Result">HTTP <code>403</code></td><td data-l="Observed by">spike run</td></tr><tr><td data-l="Check">WebSocket upgrade with a valid token and a foreign <code>Origin</code></td><td data-l="Result">rejected (<code>403</code>); the honest case gets <code>101</code></td><td data-l="Observed by">spike run</td></tr><tr><td data-l="Check">Opening a chat spawns the real child</td><td data-l="Result"><code>gentle-shell.mjs --isolated --mode rpc --session &lt;file&gt;</code>, parent = the host process</td><td data-l="Observed by">spike run</td></tr><tr><td data-l="Check"><code>pnpm typecheck</code></td><td data-l="Result">clean</td><td data-l="Observed by">spike run</td></tr><tr><td data-l="Check"><code>pnpm test</code></td><td data-l="Result">350 of 351 passed; the one failure is a pre-existing Windows test in <code>launcherLocator.test.ts</code></td><td data-l="Observed by">spike run</td></tr><tr class="rep"><td data-l="Check"><strong>A real conversation: open a new chat, write, get an answer</strong></td><td data-l="Result"><strong>works; the agent also answered a question about using Engram</strong></td><td data-l="Observed by"><span class="badge">Not reproduced</span> <strong>reported by the proposal's author, not reproduced by the spike</strong></td></tr></tbody></table></div>
+<p class="small">Size of the spike: 811 lines across 8 source files (<code>src/host/web/*</code>, <code>bin/</code>, build config) and 380 lines of checks. That count includes a hand-written WebSocket implementation that should be replaced.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s7" aria-label="Slide 7">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Flow</p><h1>One message, end to end</h1>
+<p class="lead">What happens when the user sends a prompt. Every arrow past the browser is the same call path the Electron app already uses.</p>
+<div class="fig" tabindex="0" aria-label="Diagram 2. Scrolls sideways on narrow screens."><svg role="img" aria-labelledby="d2t d2d" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet" style="--min:780px"><title id="d2t">One message, end to end</title><desc id="d2d">Sequence between Browser (UI), Web host, ChatHost / PiSession and gentle-shell --mode rpc. The browser sends a WebSocket upgrade with token, Origin and Host. The host checks token, exact Host and exact Origin. If any check fails the host answers 401 or 403 and closes the connection; if all pass it answers 101 Switching Protocols. The browser then invokes chat.send, the host calls sendMessage, ChatHost sends a prompt as a JSON line on stdin, gentle-shell returns events as JSON lines on stdout, ChatState updates flow back and are pushed as chat.state, and React re-renders the thread. Replies are drawn with an open arrowhead.</desc><defs>
+<marker id="d2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+<marker id="d2o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ao" d="M0 0L10 5L0 10"/></marker>
+<marker id="d2b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ab" d="M5 0V10"/></marker>
+</defs><rect class="nd" x="30" y="4" width="140" height="40" rx="10"/><text x="100" y="29" text-anchor="middle">Browser (UI)</text><rect class="nd" x="335" y="4" width="130" height="40" rx="10"/><text x="400" y="29" text-anchor="middle">Web host</text><rect class="nd" x="565" y="4" width="190" height="40" rx="10"/><text x="660" y="29" text-anchor="middle">ChatHost / PiSession</text><rect class="nd" x="790" y="4" width="200" height="40" rx="10"/><text x="890" y="29" text-anchor="middle">gentle-shell --mode rpc</text><path class="life" d="M100,44 V512"/><path class="life" d="M400,44 V512"/><path class="life" d="M660,44 V512"/><path class="life" d="M890,44 V512"/><path class="ed " d="M100,80 H400" marker-end="url(#d2a)"/><text x="250" y="72" text-anchor="middle">WebSocket upgrade (token, Origin, Host)</text><path class="ed " d="M400,104 H436 V126 H402" marker-end="url(#d2a)"/><text x="446" y="120">check token, exact Host, exact Origin</text><rect class="box" x="40" y="140" width="420" height="132" rx="6"/><rect class="tag" x="40" y="140" width="46" height="22" rx="4"/><text class="gl" x="50" y="156">alt</text><text class="sub" x="96" y="156">any check fails</text><path class="ed " d="M400,190 H100" marker-end="url(#d2o)"/><text x="250" y="182" text-anchor="middle">401 or 403, connection closed</text><path class="thin" d="M40,206 H460"/><text class="sub" x="52" y="224">else: all pass</text><path class="ed " d="M400,256 H100" marker-end="url(#d2o)"/><text x="250" y="248" text-anchor="middle">101 Switching Protocols</text><path class="ed " d="M100,300 H400" marker-end="url(#d2a)"/><text x="250" y="292" text-anchor="middle">invoke chat.send { text }</text><path class="ed " d="M400,328 H660" marker-end="url(#d2a)"/><text x="530" y="320" text-anchor="middle">sendMessage(text)</text><path class="ed " d="M660,356 H890" marker-end="url(#d2a)"/><text x="775" y="348" text-anchor="middle">prompt (JSON line on stdin)</text><path class="ed " d="M890,384 H660" marker-end="url(#d2o)"/><text x="775" y="376" text-anchor="middle">events (JSON lines on stdout)</text><path class="ed " d="M660,412 H400" marker-end="url(#d2o)"/><text x="530" y="404" text-anchor="middle">ChatState updates</text><path class="ed " d="M400,440 H100" marker-end="url(#d2o)"/><text x="250" y="432" text-anchor="middle">push chat.state (streamed)</text><path class="ed " d="M100,464 H136 V486 H102" marker-end="url(#d2a)"/><text x="146" y="480">React re-renders the thread</text><rect class="nd" x="30" y="516" width="140" height="40" rx="10"/><text x="100" y="541" text-anchor="middle">Browser (UI)</text><rect class="nd" x="335" y="516" width="130" height="40" rx="10"/><text x="400" y="541" text-anchor="middle">Web host</text><rect class="nd" x="565" y="516" width="190" height="40" rx="10"/><text x="660" y="541" text-anchor="middle">ChatHost / PiSession</text><rect class="nd" x="790" y="516" width="200" height="40" rx="10"/><text x="890" y="541" text-anchor="middle">gentle-shell --mode rpc</text></svg></div>
+<p class="small">Solid lines exist or were observed. Replies are drawn with an open arrowhead; in this diagram dashed lines are not used.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s8" aria-label="Slide 8">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Limits</p><h1>What the spike does not prove</h1>
+<p class="lead">Stated here so nobody has to find it out later.</p>
+<div class="grid c3 fill">
+<div class="card warn"><h2>No multi-client behavior</h2><p>There is one shared <code>ChatHost</code>, so one open chat at a time. This is the existing audit A3, not something the web host adds.</p></div>
+<div class="card warn"><h2>No reconnect or resume</h2><p>A dropped socket loses the live view.</p></div>
+<div class="card warn"><h2>The child outlives the browser</h2><p>Closing the tab leaves the <code>gentle-shell</code> child running until the host exits.</p></div>
+<div class="card warn"><h2>Token scrubbed on the client only</h2><p>The token is scrubbed from the URL only on the client. It stays in browser history and network logs until it is exchanged for a session cookie.</p></div>
+<div class="card warn"><h2>Static assets served without the token</h2><p>A <code>&lt;script src&gt;</code> cannot carry one. They are inert code; all data goes over the authenticated socket.</p></div>
+<div class="card warn"><h2>Hand-written WebSocket</h2><p>The <code>ws</code> package was not hoisted in the workspace, so both ends implement RFC 6455 by hand. A parser we maintain ourselves is attack surface we do not need. Replace with <code>ws</code>.</p></div>
+<div class="card warn"><h2>No automated tests for the server's authentication</h2><p>The checks above ran as scripts. Only the client IPC has unit tests.</p></div>
+<div class="card warn"><h2>No TLS and no rate limiting</h2><p>Acceptable on loopback, to be revisited before anything else is allowed.</p></div>
+<div class="card warn"><h2>Launcher lookup on Windows needs the spawn fix</h2><p>The spike only ran with <code>GENTLE_SHELL_BIN</code> pointing at the <code>.mjs</code> entry. Slice 1 fixes it.</p></div>
+</div></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s9" aria-label="Slide 9">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Security model</p><h1>Trust boundaries</h1>
+<p class="lead">Where untrusted input is, and what each boundary does.</p>
+<div class="fig" tabindex="0" aria-label="Diagram 3. Scrolls sideways on narrow screens."><svg role="img" aria-labelledby="d3t d3d" viewBox="0 0 980 470" preserveAspectRatio="xMidYMid meet" style="--min:780px"><title id="d3t">Trust boundaries</title><desc id="d3d">Untrusted: any other web page open in the browser, and other machines on the network. Both are blocked at the gate: the page for having no token or a foreign Origin, the network because the host is not bound beyond loopback. The Gentle UI page in the user's browser holds the session and passes through the gate (127.0.0.1 only, token, exact Host, exact Origin), then typed operations only (no argv, path or env from the page), then the gentle-shell child, which has the user's credentials and files.</desc><defs>
+<marker id="d3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+<marker id="d3o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ao" d="M0 0L10 5L0 10"/></marker>
+<marker id="d3b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ab" d="M5 0V10"/></marker>
+</defs><rect class="box" x="10" y="10" width="570" height="110" rx="14"/><text class="gl" x="26" y="32">Untrusted</text><rect class="nd" x="30" y="44" width="250" height="60" rx="10"/><text class="" x="155" y="69.5" text-anchor="middle">Any other web page</text><text class="" x="155" y="88.5" text-anchor="middle">open in the browser</text><rect class="nd" x="310" y="44" width="250" height="60" rx="10"/><text class="" x="435" y="69.5" text-anchor="middle">Other machines</text><text class="" x="435" y="88.5" text-anchor="middle">on the network</text><rect class="box" x="610" y="10" width="360" height="110" rx="14"/><text class="gl" x="626" y="32">The user's browser</text><rect class="nd" x="630" y="44" width="320" height="60" rx="10"/><text class="" x="790" y="69.5" text-anchor="middle">Gentle UI page</text><text class="" x="790" y="88.5" text-anchor="middle">holds the session</text><rect class="box" x="10" y="200" width="960" height="120" rx="14"/><text class="gl" x="26" y="222">Local web host</text><rect class="nd" x="40" y="230" width="460" height="70" rx="10"/><text class="" x="270" y="251" text-anchor="middle">Gate</text><text class="" x="270" y="270" text-anchor="middle">127.0.0.1 only</text><text class="" x="270" y="289" text-anchor="middle">token + exact Host + exact Origin</text><rect class="nd" x="560" y="230" width="380" height="70" rx="10"/><text class="" x="750" y="260.5" text-anchor="middle">Typed operations only</text><text class="" x="750" y="279.5" text-anchor="middle">no argv, path or env from the page</text><rect class="box" x="560" y="350" width="410" height="110" rx="14"/><text class="gl" x="576" y="372">User's machine</text><rect class="nd" x="590" y="384" width="350" height="60" rx="10"/><text class="" x="765" y="409.5" text-anchor="middle">gentle-shell child</text><text class="" x="765" y="428.5" text-anchor="middle">user's credentials and files</text><path class="ed blk" d="M155,104 V230" marker-end="url(#d3b)"/><text class="blk-t" x="165" y="160">blocked: no token, foreign Origin</text><path class="ed blk" d="M435,104 V230" marker-end="url(#d3b)"/><text class="blk-t" x="445" y="135">blocked: not bound beyond loopback</text><path class="ed " d="M720,104 V165 H480 V230" marker-end="url(#d3a)"/><path class="ed " d="M500,265 H560" marker-end="url(#d3a)"/><path class="ed " d="M750,300 V384" marker-end="url(#d3a)"/></svg></div>
+<p class="small">Here a dashed red line ending in a bar, labelled "blocked", marks a path that is stopped; solid lines are allowed paths. The residual risk is real: a local server in front of an agent with shell access. The gate is the whole defense, which is why it needs its own tests and an independent reviewer (slice 3).</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s10" aria-label="Slide 10">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Security model</p><h1>The rules</h1>
+<p class="lead">The model is copied from what <code>gentle-shell</code> already ships for its own install wizard (<code>scripts/installer-server.mjs</code>: loopback bind, a random token compared with <code>timingSafeEqual</code>, same-origin headers, and "the browser never sends commands, paths, plans or environment").</p>
+<div class="panel"><table><thead><tr><th scope="col">Rule</th><th scope="col">Why</th></tr></thead><tbody><tr><td data-l="Rule">Bind <code>127.0.0.1</code> only; no option to change it</td><td data-l="Why">Removes LAN exposure by default</td></tr><tr><td data-l="Rule">Random 32-byte token per run, constant-time comparison</td><td data-l="Why">A page open in another tab cannot call the host without it</td></tr><tr><td data-l="Rule">Exact <code>Host</code> and <code>Origin</code> match, <strong>also on the WebSocket upgrade</strong></td><td data-l="Why">Stops DNS rebinding and cross-site WebSocket hijacking</td></tr><tr><td data-l="Rule">The browser sends typed operations (the same channels as the IPC handlers), never a command line, path or environment</td><td data-l="Why">The host decides what runs; the page cannot construct execution</td></tr><tr><td data-l="Rule">Token exchanged once for a session cookie, then removed from the URL <span class="badge">Planned, slice 3</span></td><td data-l="Why">Keeps it out of history and logs</td></tr><tr><td data-l="Rule">Child process tied to its connection <span class="badge">Planned, slice 3</span></td><td data-l="Why">No orphaned agents</td></tr></tbody></table></div>
+<p class="lead">A local server in front of an agent with shell access is the real risk of this proposal. If the model above cannot hold, the right answer is to cut scope, not to relax it.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s11" aria-label="Slide 11">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Plan</p><h1>Plan and slices</h1>
+<p class="lead">Each slice is meant to be reviewable on its own (about 400 authored lines or fewer) and to keep tests and docs with the behavior. Sizes are estimates from the spike.</p>
+<div class="fig" tabindex="0" aria-label="Diagram 6. Scrolls sideways on narrow screens."><svg role="img" aria-labelledby="d6t d6d" viewBox="0 0 1100 330" preserveAspectRatio="xMidYMid meet" style="--min:900px"><title id="d6t">Slices and what depends on what</title><desc id="d6d">Slice 1, Windows spawn fix (done, own value), leads to slice 2 (contract and WebSocket IPC client) and slice 4 (renderer build and browser entry). Slice 2 leads to slice 3 (server: ws, cookie, child lifetime, auth tests) and to slice 4. Slices 3 and 4 lead to slice 5 (CLI, docs, CI). A dashed line leads from slice 5 to slice 6, optional: gentle-shell web, which needs the gentle-shell maintainers.</desc><defs>
+<marker id="d6a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+<marker id="d6o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ao" d="M0 0L10 5L0 10"/></marker>
+<marker id="d6b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ab" d="M5 0V10"/></marker>
+</defs><rect class="nd" x="10" y="128" width="190" height="84" rx="10"/><text class="" x="105" y="165.5" text-anchor="middle">1. Windows spawn fix</text><text class="" x="105" y="184.5" text-anchor="middle">(done, own value)</text><rect class="nd" x="232" y="40" width="190" height="84" rx="10"/><text class="" x="327" y="77.5" text-anchor="middle">2. Contract +</text><text class="" x="327" y="96.5" text-anchor="middle">WebSocket IPC client</text><rect class="nd" x="454" y="40" width="190" height="84" rx="10"/><text class="" x="549" y="77.5" text-anchor="middle">3. Server: ws, cookie,</text><text class="" x="549" y="96.5" text-anchor="middle">child lifetime, auth tests</text><rect class="nd" x="454" y="216" width="190" height="84" rx="10"/><text class="" x="549" y="253.5" text-anchor="middle">4. Renderer build +</text><text class="" x="549" y="272.5" text-anchor="middle">browser entry</text><rect class="nd" x="676" y="128" width="190" height="84" rx="10"/><text class="" x="771" y="175" text-anchor="middle">5. CLI, docs, CI</text><rect class="nd plan" x="898" y="128" width="192" height="84" rx="10"/><text class="" x="994" y="146.5" text-anchor="middle">6. Optional:</text><text class="" x="994" y="165.5" text-anchor="middle">gentle-shell web</text><text class="" x="994" y="184.5" text-anchor="middle">(needs gentle-shell</text><text class="" x="994" y="203.5" text-anchor="middle">maintainers)</text><path class="ed " d="M200,170 H215"/><path class="ed " d="M215,82 V280"/><path class="ed " d="M215,82 H230" marker-end="url(#d6a)"/><path class="ed " d="M215,280 H452" marker-end="url(#d6a)"/><path class="ed " d="M422,82 H452" marker-end="url(#d6a)"/><path class="ed " d="M327,124 V240 H452" marker-end="url(#d6a)"/><path class="ed " d="M644,82 H660 V170"/><path class="ed " d="M644,258 H660 V170 H674" marker-end="url(#d6a)"/><path class="ed plan" d="M866,170 H896" marker-end="url(#d6a)"/></svg></div>
+<ul class="legend" aria-label="Legend"><li><svg viewBox="0 0 34 8" role="img"><title>Solid line</title><line x1="0" y1="4" x2="34" y2="4"/></svg>Solid: exists today or was observed in the spike</li><li><svg viewBox="0 0 34 8" role="img"><title>Dashed line</title><line class="d" x1="0" y1="4" x2="34" y2="4"/></svg>Dashed: planned, not built or not verified</li></ul>
+<p class="small">Slices 2 and 4 can run in parallel after slice 1. Slice 3 is the one that needs the most care. Slice 6 is a separate request to the <code>gentle-shell</code> maintainers and nothing here depends on it: until then the command runs on its own.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s12" aria-label="Slide 12">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Plan</p><h1>Slices: surface and value</h1><div class="panel"><table><thead><tr><th scope="col">#</th><th scope="col">Slice</th><th scope="col">Depends on</th><th scope="col">Surface</th><th scope="col">Value without the rest</th></tr></thead><tbody><tr><td data-l="#">1</td><td data-l="Slice">Windows launcher spawn fix</td><td data-l="Depends on">none</td><td data-l="Surface"><code>src/main/adapters/nodeProcessSpawner*</code></td><td data-l="Value"><strong>Yes</strong>: unblocks #23 and #24 for the desktop too. Done on branch <code>fix/windows-batch-spawn</code> (<code>dc39e48</code>)</td></tr><tr><td data-l="#">2</td><td data-l="Slice">Bridge contract and WebSocket IPC client, with tests</td><td data-l="Depends on">none</td><td data-l="Surface"><code>src/shared/contract/**</code>, <code>src/host/web/wsIpc*</code></td><td data-l="Value">Makes the existing implicit contract explicit</td></tr><tr><td data-l="#">3</td><td data-l="Slice">Web server: <code>ws</code>, session cookie, child lifetime, auth tests</td><td data-l="Depends on">2</td><td data-l="Surface"><code>src/host/web/server*</code>, <code>tests/security/**</code></td><td data-l="Value">Needs a security-minded reviewer who did not write it</td></tr><tr><td data-l="#">4</td><td data-l="Slice">Renderer build and browser entry point</td><td data-l="Depends on">2</td><td data-l="Surface">build config, <code>index.html</code></td><td data-l="Value">Small</td></tr><tr><td data-l="#">5</td><td data-l="Slice">CLI, documentation, CI job per host</td><td data-l="Depends on">3, 4</td><td data-l="Surface"><code>bin/</code>, <code>docs/</code>, <code>.github/workflows/</code></td><td data-l="Value">First time the repo would have CI for either host</td></tr><tr><td data-l="#">6</td><td data-l="Slice">Optional: <code>gentle-shell web</code> entry point and a pinned UI in the release</td><td data-l="Depends on">5, and <code>gentle-shell</code> maintainers</td><td data-l="Surface">outside this repository</td><td data-l="Value">Only after 1 to 5 are stable</td></tr></tbody></table></div><p class="small">Slice 3 is the critical and riskiest one. Slices 2 and 4 can run in parallel after slice 1.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s13" aria-label="Slide 13">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Placement</p><h1>Where the code could live</h1>
+<div class="panel"><table><thead><tr><th scope="col">Option</th><th scope="col">Good</th><th scope="col">Costs</th></tr></thead><tbody><tr><td data-l="Option"><strong>Second entry point in this repository (recommended start)</strong></td><td data-l="Good">One set of tests, no version matrix between UI and host</td><td data-l="Costs">Needs a maintainer's agreement on the folder and a contract rule</td></tr><tr><td data-l="Option">A separate repository that consumes the UI as a package</td><td data-l="Good">Isolates the host's risk</td><td data-l="Costs">A published UI package, two pipelines, and a conformance job that fails when the UI and the contract drift. Without that job it becomes a fork</td></tr><tr><td data-l="Option">Inside <code>gentle-shell</code></td><td data-l="Good">One install and one version for the user</td><td data-l="Costs">Puts React, a bundler and browser tests into the CLI repository. Not proposed</td></tr></tbody></table></div>
+<p class="lead">This proposal asks for the first option, as a draft, and keeps the others open.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s14" aria-label="Slide 14">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Out of scope</p><h1>Future work, not part of this proposal</h1>
+<p class="lead">Recorded so it is not lost. None of it is required for the first useful version:</p>
+<ul class="plain">
+<li>Separate sessions per browser client, so two tabs do not share one chat (audit A3, F1 in PR #29).</li>
+<li>Hide sessions the user already closed in the terminal (for example with Ctrl+D).</li>
+<li>Running <code>/gentle:*</code> commands from the UI.</li>
+<li>Reconnect and resume; a project-folder picker (audit A10).</li>
+<li>Anything beyond loopback.</li></ul></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<section class="slide " id="s15" aria-label="Slide 15">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Web host proposal</span></header>
+<main><p class="kicker">Next step</p><h1>Decisions requested from the maintainers</h1>
+<ol class="dec">
+<li><strong>Direction:</strong> is a second host for the same UI acceptable in principle?</li>
+<li><strong>Placement:</strong> a second entry point in this repository, a separate repository, or neither?</li>
+<li><strong>Q9:</strong> is loopback-only the right limit for now?</li>
+<li><strong>Name:</strong> <code>gentle-shell-web</code> is a placeholder. Vision Q10 already leaves the product name open.</li>
+<li><strong>Review:</strong> who reviews slice 3?</li></ol>
+<p class="lead">If the answer to 1 is no, slice 1 still stands on its own.</p></main>
+<footer class="foot">Community proposal. Not decided.</footer>
+</section>
+<nav class="nav" aria-label="Slide navigation"><button id="prev" type="button" aria-label="Previous slide">‹</button><span id="count" aria-live="polite">1 / 15</span><button id="next" type="button" aria-label="Next slide">›</button></nav>
+</div>
+<script>
+(function () {
+  var slides = [].slice.call(document.querySelectorAll('.slide'));
+  var stage = document.getElementById('stage');
+  var bar = document.getElementById('bar');
+  var count = document.getElementById('count');
+  var mq = window.matchMedia('(max-width:700px)');
+  var cur = -1;
+
+  function scale() {
+    if (mq.matches) { stage.style.removeProperty('--s'); return; }
+    stage.style.setProperty('--s', Math.min(innerWidth / 1280, innerHeight / 720));
+  }
+
+  // Shrink the slide's type scale until nothing overflows it.
+  function fit(el) {
+    var k = 1;
+    el.style.setProperty('--k', k);
+    while ((el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) && k > 0.45) {
+      k = Math.round((k - 0.02) * 100) / 100;
+      el.style.setProperty('--k', k);
+    }
+  }
+
+  function fitAll() {
+    slides.forEach(function (s) { s.classList.add('on'); fit(s); if (slides.indexOf(s) !== cur) s.classList.remove('on'); });
+  }
+
+  function show(i, quiet) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    if (cur >= 0) slides[cur].classList.remove('on');
+    cur = i;
+    slides[i].classList.add('on');
+    fit(slides[i]);
+    var p = ((i + 1) / slides.length) * 100;
+    bar.style.width = p + '%';
+    bar.setAttribute('aria-valuenow', i + 1);
+    count.textContent = (i + 1) + ' / ' + slides.length;
+    if (!quiet && location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fromHash() {
+    var m = /^#(\d+)$/.exec(location.hash);
+    show(m ? parseInt(m[1], 10) - 1 : 0, !m);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target;
+    var onButton = t && t.tagName === 'BUTTON';
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case 'PageDown': break;
+      case ' ': if (onButton) return; break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); show(cur - 1); return;
+      case 'Home': e.preventDefault(); show(0); return;
+      case 'End': e.preventDefault(); show(slides.length - 1); return;
+      default: return;
+    }
+    e.preventDefault();
+    show(cur + 1);
+  });
+
+  stage.addEventListener('click', function (e) {
+    if (e.target.closest('a,button,.fig')) return;
+    var r = stage.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width;
+    if (x > 2 / 3) show(cur + 1); else if (x < 1 / 3) show(cur - 1);
+  });
+  document.getElementById('prev').addEventListener('click', function () { show(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { show(cur + 1); });
+  window.addEventListener('hashchange', fromHash);
+  window.addEventListener('resize', function () { scale(); fitAll(); });
+  if (mq.addEventListener) mq.addEventListener('change', function () { scale(); fitAll(); });
+
+  scale();
+  fromHash();
+  fitAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
+})();
+</script>
+</body>
+</html>
