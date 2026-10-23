@@ -3,11 +3,48 @@ import type { Readable } from "node:stream";
 import { LineSplitter } from "../domain/rpc/codec";
 import type { ProcessSpawner, SpawnedProcess } from "../ports";
 
-/** child_process.spawn-backed ProcessSpawner, line-splitting stdout/stderr through the domain LineSplitter. */
-export function createNodeProcessSpawner(): ProcessSpawner {
+export interface NodeProcessSpawnerOptions {
+  /** child_process.spawn replacement, for tests. */
+  readonly spawn?: typeof spawn;
+  /** Platform override, for testing the win32 behavior anywhere. */
+  readonly platform?: NodeJS.Platform;
+}
+
+// Same rule as gentle-shell's own launcher (lib/gentle-shell-launcher.ts):
+// quote a token when it is empty or holds whitespace or any of `"&|<>^%()`,
+// and escape an inner `"` as `\"`. `%VAR%` still expands inside quotes in
+// cmd.exe; accepted, as upstream does, since paths with `%` are rare.
+const CMD_EXE_SPECIAL_CHARS = /[\s"&|<>^%()]/;
+
+function quoteForCmdExe(token: string): string {
+  if (token.length > 0 && !CMD_EXE_SPECIAL_CHARS.test(token)) return token;
+  return `"${token.replace(/"/g, '\\"')}"`;
+}
+
+/**
+ * child_process.spawn-backed ProcessSpawner, line-splitting stdout/stderr through the domain LineSplitter.
+ *
+ * On win32 a `.cmd`/`.bat` shim (how an npm-installed `gentle-shell` lands on
+ * PATH) cannot be spawned directly: current Node fails with EINVAL/EFTYPE.
+ * It is routed through the shell as one quoted command line instead, and the
+ * console window is hidden so no cmd window opens per chat.
+ */
+export function createNodeProcessSpawner(options: NodeProcessSpawnerOptions = {}): ProcessSpawner {
+  const spawnFn = options.spawn ?? spawn;
+  const platform = options.platform ?? process.platform;
+
   return {
     spawn(command, args, env, cwd): SpawnedProcess {
-      const child = spawn(command, [...args], { env, cwd, stdio: ["pipe", "pipe", "pipe"] });
+      const isBatch = platform === "win32" && /\.(cmd|bat)$/i.test(command);
+      const child = isBatch
+        ? spawnFn([command, ...args].map(quoteForCmdExe).join(" "), [], {
+            env,
+            cwd,
+            stdio: ["pipe", "pipe", "pipe"],
+            windowsHide: true,
+            shell: true,
+          })
+        : spawnFn(command, [...args], { env, cwd, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
 
       const stdoutLineHandlers: Array<(line: string) => void> = [];
       const stderrLineHandlers: Array<(line: string) => void> = [];
