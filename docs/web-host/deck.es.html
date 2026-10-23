@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Un host web para Gentle Desktop: propuesta</title>
+<style>
+:root{--bg:#060407;--panel:#100a0f;--raised:#180e15;--line:#2a1720;--line-strong:#563040;--text:#f6eff3;--text-2:#d2cbd0;--muted:#a78e9b;--accent:#f095c8;--accent-active:#ffb1dd;--blue:#a9c7ee;--green:#b4e7c7;--amber:#f2b86d;--red:#ff718f;--glow:0 10px 30px #f095c84d;--display:"Space Grotesk","Segoe UI",system-ui,sans-serif;--body:"Inter","Segoe UI",system-ui,sans-serif;--mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace;--foot:36px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--body);overflow:hidden}
+.stage{position:fixed;left:50%;top:50%;width:1280px;height:720px;transform:translate(-50%,-50%) scale(var(--s,1));background:radial-gradient(900px 480px at 88% -12%,#f095c826,transparent 62%),var(--bg);overflow:hidden}
+:focus-visible{outline:2px solid var(--accent-active);outline-offset:2px;border-radius:6px}
+.bar{position:absolute;left:0;top:0;height:3px;width:0;background:var(--accent);box-shadow:var(--glow);transition:width .3s ease;z-index:5}
+.slide{--base:20px;display:none;position:absolute;inset:0;flex-direction:column;padding:1.2em 2.4em 0;font-size:calc(var(--base)*var(--k,1));line-height:1.4}
+.slide.on{display:flex;animation:in .3s ease both}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:.7em;color:var(--muted)}
+.brand{font-family:var(--display);font-weight:700;color:var(--text);letter-spacing:.02em;font-size:1.15em}
+.flower{color:var(--accent)}
+main{flex:1;min-height:0;display:flex;flex-direction:column;gap:.65em;padding:.7em 0}
+.kicker{font-family:var(--mono);font-size:.62em;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-size:1.9em;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.title h1{font-size:3em}
+h2{font-family:var(--display);font-size:.9em;font-weight:600;color:var(--text);margin-bottom:.2em}
+p,li{color:var(--text-2);font-size:.82em}
+.lead{font-size:.95em;max-width:62em}
+.small{font-size:.74em;color:var(--muted)}
+strong{color:var(--text);font-weight:600}
+code{font-family:var(--mono);font-size:.9em;color:var(--blue)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.7em .95em}
+.card p{font-size:.76em}
+.warn{border-left:3px solid var(--amber)}
+.warn h2::before{content:"No probado: ";color:var(--amber);font-family:var(--mono);font-size:.8em;font-weight:500}
+.grid{display:grid;gap:.6em}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}
+.fill{flex:1;min-height:0;align-content:start}
+.pill{display:inline-block;align-self:flex-start;font-family:var(--mono);font-size:.62em;padding:.35em .9em;border:1px solid var(--accent);border-radius:999px;color:var(--accent-active);box-shadow:var(--glow)}
+.badge{display:inline-block;font-family:var(--mono);font-size:.78em;padding:.05em .55em;border-radius:999px;border:1px solid var(--amber);color:var(--amber);white-space:nowrap}
+.code{font-family:var(--mono);background:var(--panel);border:1px solid var(--line-strong);border-radius:14px;padding:.8em 1em;font-size:.62em;color:var(--text);white-space:pre-wrap;box-shadow:var(--glow)}
+.code .pr{color:var(--accent)}.code .cm{color:var(--muted)}
+.stat{display:flex;flex-direction:column;gap:.1em}
+.stat b{font-family:var(--display);font-size:1.8em;color:var(--accent-active);line-height:1.1}
+.stat span{font-size:.72em;color:var(--text-2)}
+ul.plain{list-style:none;display:flex;flex-direction:column;gap:.45em}
+ul.plain li{padding-left:1.1em;position:relative}
+ul.plain li::before{content:"✿";position:absolute;left:0;color:var(--accent);font-size:.8em}
+ol.dec{display:flex;flex-direction:column;gap:.5em;list-style:none;counter-reset:d}
+ol.dec li{counter-increment:d;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.55em 1em .55em 2.6em;position:relative;font-size:.9em}
+ol.dec li::before{content:counter(d);position:absolute;left:.8em;font-family:var(--display);font-weight:700;color:var(--accent-active)}
+.panel{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:.7em;line-height:1.3}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:.82em;text-transform:uppercase;letter-spacing:.06em;padding:.45em .7em;border-bottom:1px solid var(--line-strong);background:var(--raised)}
+td{padding:.4em .7em;border-bottom:1px solid var(--line);vertical-align:top;color:var(--text-2)}
+tr:last-child td{border-bottom:0}
+td:first-child{color:var(--text)}
+tr.rep td{background:#f2b86d14;border-left:0}
+tr.rep td:first-child{border-left:3px solid var(--amber)}
+.fig{flex:1;min-height:0;display:flex;overflow:auto}
+.fig svg{width:100%;height:100%;display:block}
+.legend{display:flex;gap:1.4em;flex-wrap:wrap;list-style:none;font-size:.62em;color:var(--muted)}
+.legend li{display:flex;align-items:center;gap:.6em;font-size:1em;color:var(--muted)}
+.legend svg{width:34px;height:8px;flex:none}
+.legend line{stroke:var(--text-2);stroke-width:2}
+.legend .d{stroke:var(--accent);stroke-dasharray:6 4}
+.foot{height:var(--foot);display:flex;align-items:center;border-top:1px solid var(--line);font-size:.7em;color:var(--muted);padding-right:11em;flex:none}
+.nav{position:absolute;right:32px;bottom:0;height:var(--foot);display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text-2);z-index:4}
+.nav button{width:26px;height:26px;border-radius:8px;border:1px solid var(--line-strong);background:var(--panel);color:var(--text);font-size:15px;line-height:1;cursor:pointer}
+.nav button:hover{border-color:var(--accent)}
+.nav span{min-width:4.5em;text-align:center;font-family:var(--mono);font-size:13px}
+/* diagrams */
+svg text{font-family:var(--body);font-size:14.5px;fill:var(--text);paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
+svg .gl{fill:var(--muted);font-family:var(--mono);font-size:12.5px;font-weight:600}
+svg .sub{fill:var(--text-2);font-size:13px}
+svg .box{fill:none;stroke:var(--line-strong);stroke-width:1.5}
+svg .nd{fill:var(--raised);stroke:var(--line-strong);stroke-width:1.5}
+svg .nd.plan{stroke:var(--accent);stroke-dasharray:6 5}
+svg .ed{fill:none;stroke:var(--text-2);stroke-width:1.8}
+svg .ed.plan{stroke:var(--accent);stroke-dasharray:7 6}
+svg .ed.blk{stroke:var(--red);stroke-dasharray:3 5}
+svg .blk-t{fill:var(--red);font-weight:600}
+svg .life{stroke:var(--line-strong);stroke-width:1.2}
+svg .thin{stroke:var(--line-strong);stroke-width:1.2;fill:none}
+svg .ah{fill:var(--text-2)}
+svg .ao{fill:none;stroke:var(--text-2);stroke-width:1.4}
+svg .ab{stroke:var(--red);stroke-width:2}
+svg .tag{fill:var(--raised);stroke:var(--line-strong)}
+@media(max-width:700px){
+.stage{left:0;top:0;width:100vw;height:100vh;height:100dvh;transform:none}
+:root{--foot:28px}
+.slide{--base:15px;padding:.9em 1em 0}
+.title h1{font-size:2.2em}
+.c2,.c3{grid-template-columns:1fr}
+.fig{flex:0 1 auto}
+.fig svg{width:max(100%,var(--min,700px));height:auto;flex:none}
+table,tbody,tr,td{display:block}
+thead{display:none}
+td{border:0;padding:.1em .6em}
+td::before{content:attr(data-l) ": ";color:var(--muted)}
+td:first-child{padding-top:.4em;font-weight:600}
+tr{border-bottom:1px solid var(--line);padding-bottom:.3em}
+tr:last-child{border-bottom:0}
+.foot{padding-right:8em}
+.nav{right:12px;font-size:12px}
+.nav button{width:22px;height:22px}
+}
+@media(prefers-reduced-motion:reduce){.slide.on{animation:none}.bar{transition:none}}
+@media print{
+@page{size:1280px 720px;margin:0}
+:root{--bg:#fff;--panel:#fff;--raised:#f6f1f4;--line:#cdbfc7;--line-strong:#8a6a79;--text:#1a1015;--text-2:#3a2a33;--muted:#5d4a54;--accent:#a8286f;--accent-active:#8c1d5b;--blue:#1f4f86;--green:#1e6b3c;--amber:#8a5400;--red:#b3213f;--glow:none}
+html,body{height:auto;overflow:visible;background:#fff}
+.stage{position:static;transform:none;width:1280px;height:auto;overflow:visible;background:#fff}
+.slide,.slide.on{display:flex;position:relative;width:1280px;height:720px;--base:20px;break-after:page;animation:none;overflow:hidden}
+.slide:last-of-type{break-after:auto}
+.bar,.nav{display:none}
+.fig{overflow:visible}
+.fig svg{width:100%;height:100%}
+tr.rep td{background:#fbefd9}
+}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+<div class="bar" id="bar" role="progressbar" aria-label="Progreso" aria-valuemin="1" aria-valuemax="15" aria-valuenow="1"></div>
+<section class="slide title" id="s1" aria-label="Diapositiva 1">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Propuesta, sin decidir</p><h1>Un host web para Gentle Desktop</h1>
+<p class="lead">Un segundo host para la misma aplicación: un comando inicia un pequeño servidor local y abre la interfaz React existente en el navegador, que se comunica con el <code>gentle-shell</code> que el usuario ya tiene instalado.</p>
+<p class="lead">Redactada desde la comunidad para iniciar una conversación con los mantenedores. Nada de lo aquí expuesto es una decisión de los mantenedores, y nada modifica la aplicación existente.</p>
+<span class="pill">Estado: propuesta, sin decidir</span>
+<p class="small">Navegación con las flechas del teclado, Espacio, Inicio y Fin, o con clic en el lado derecho o izquierdo de la diapositiva.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s2" aria-label="Diapositiva 2">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">El problema</p><h1>Por qué un host web</h1>
+<div class="grid c2 fill">
+<div class="card"><h2>Elimina el paso de empaquetado en el camino hacia un primer chat</h2><p>Hoy la aplicación se ejecuta desde el código fuente con Electron. No hay compilaciones firmadas, y solo se ha probado macOS en Apple silicon (<code>README.md</code>, sección "Try it"). Un host en el navegador necesita Node y el lanzador que el usuario ya tiene.</p></div>
+<div class="card"><h2>Ayuda a quienes contribuyen a verificar el comportamiento real</h2><p>El ADR 0010 ya ejecuta el renderer en un navegador, pero contra un puente simulado (mock). El host web lo ejecuta contra sesiones reales.</p></div>
+<div class="card"><h2>Hace visible el problema del lanzador en Windows desde un segundo ángulo</h2><p>En Windows, un <code>gentle-shell</code> instalado con npm se resuelve como <code>gentle-shell.cmd</code>, que Node no puede lanzar directamente. Son las incidencias <a href="https://github.com/Gentleman-Programming/gentle-shell-desktop/issues/23">#23</a> y <a href="https://github.com/Gentleman-Programming/gentle-shell-desktop/issues/24">#24</a>, y bloquea a ambos hosts por igual.</p></div>
+<div class="card"><h2>Da a la pregunta Q9 de la visión algo concreto que responder</h2><p>Q9 pregunta si el acceso remoto o móvil está dentro del alcance. Esta propuesta <strong>no</strong> lo responde: es solo de loopback.</p></div>
+</div></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s3" aria-label="Diapositiva 3">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">La idea</p><h1>Un comando, la misma aplicación en un navegador</h1>
+<div class="grid c2">
+<div style="display:flex;flex-direction:column;gap:.65em">
+<p class="lead">Esta propuesta añade un <strong>segundo host</strong> para la misma aplicación. La interfaz, el dominio del chat y las pruebas permanecen como están. Solo es nueva la capa que conecta la interfaz con <code>gentle-shell</code>.</p>
+<div class="code"><span class="pr">$</span> gentle-shell-web            <span class="cm"># nombre ilustrativo; el nombre es una pregunta abierta</span>
+  escuchando en http://127.0.0.1:&lt;puerto&gt;   →  abre la aplicación en el navegador</div>
+<p>Una prueba de concepto muestra que funciona y cuánto cuesta (unas 800 líneas nuevas, ningún archivo existente modificado). También muestra qué falta antes de que otra persona deba usarlo.</p>
+</div>
+<div class="card"><h2>Cómo funciona</h2><ul class="plain">
+<li>El renderer llama a <code>useBridge()</code>, que devuelve <code>window.gentle ?? mockBridge</code>. En Electron, el script preload define <code>window.gentle</code>.</li>
+<li>En el host web, un pequeño script lo define antes de que arranque la aplicación, construido con el <strong>mismo</strong> <code>createBridge(ipc)</code> que usa el preload, con el objeto IPC respaldado por un WebSocket.</li>
+<li>Del lado del servidor, el host reconstruye el grafo de objetos que construye <code>src/main/index.ts</code> y reutiliza <code>registerHandlers()</code> sin cambios, mediante sustitutos delgados de <code>IpcMain</code> y <code>WebContents</code> de Electron.</li></ul></div>
+</div>
+<div class="grid c3">
+<div class="card stat"><b>2</b><span>archivos que no son de prueba en <code>src/main</code> importan <code>electron</code></span></div>
+<div class="card stat"><b>2,267</b><span>líneas en el resto de <code>src/main</code>, sin pruebas, son independientes del host</span></div>
+<div class="card stat"><b>2,189</b><span>líneas en el renderer, sin pruebas, son independientes del host</span></div>
+</div>
+<p class="small">Medido en <code>main</code> en <code>5ab4a00</code>.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s4" aria-label="Diapositiva 4">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Alcance</p><h1>Qué no es</h1>
+<div class="grid c3 fill">
+<div class="card"><h2>No es una terminal en el navegador</h2><p>La incidencia <a href="https://github.com/Gentleman-Programming/gentle-shell-desktop/issues/2">#2</a> considera una terminal en una ventana. Cita textual en inglés de la incidencia: "defeats the entire point of a plain-chat, minimalist app"; solo la conserva como "a possible future 'power mode' toggle, not the default" (también cita textual). El host web muestra la misma interfaz de chat, no la TUI.</p></div>
+<div class="card"><h2>No es el <code>packages/server</code> de pi</h2><p>La incidencia #2 lo marca como "Rejected for now" (cita textual en inglés), con la nota "no auth, explicitly marked experimental" (también cita textual). El host web se comunica con <code>gentle-shell --mode rpc</code>, igual que el escritorio.</p></div>
+<div class="card"><h2>No es una segunda interfaz</h2><p>La interfaz no se copia ni se rediseña. Si divergiera, esta propuesta habría fracasado.</p></div>
+<div class="card"><h2>No es acceso remoto</h2><p>Solo se enlaza a <code>127.0.0.1</code>. No hay ninguna opción para cambiarlo.</p></div>
+<div class="card"><h2>No reemplaza la aplicación de escritorio</h2><p>Quienes no quieren una terminal en absoluto siguen necesitando la aplicación empaquetada (incidencia #2, sección "Problem or opportunity").</p></div>
+</div></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s5" aria-label="Diapositiva 5">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Arquitectura</p><h1>Una interfaz, dos hosts</h1>
+<p class="lead">El renderer y el dominio del chat son compartidos. Solo cambia la capa entre ambos.</p>
+<div class="fig" tabindex="0" aria-label="Diagrama 1. Se desplaza lateralmente en pantallas estrechas."><svg role="img" aria-labelledby="d1t d1d" viewBox="0 0 900 500" preserveAspectRatio="xMidYMid meet" style="--min:760px"><title id="d1t">Una interfaz, dos hosts</title><desc id="d1d">La interfaz React del renderer fluye hacia createBridge(ipc) GentleBridge. Desde allí, un camino pasa por el host Electron (preload ipcRenderer, luego src/main/index.ts) y otro por el host web (client.ts WebSocket IPC, luego server.ts HTTP más WebSocket). Ambos llegan a registerHandlers(), luego a ChatHost, PiSession, chat reducer y codec, y después a gentle-shell --mode rpc, que ya está instalado. Todas las líneas son continuas.</desc><defs>
+<marker id="d1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+<marker id="d1o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ao" d="M0 0L10 5L0 10"/></marker>
+<marker id="d1b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ab" d="M5 0V10"/></marker>
+</defs><rect class="box" x="10" y="10" width="240" height="390" rx="14"/><text class="gl" x="26" y="32">Compartido, sin cambios</text><rect class="nd" x="30" y="40" width="200" height="58" rx="10"/><text class="" x="130" y="64.5" text-anchor="middle">Renderer</text><text class="" x="130" y="83.5" text-anchor="middle">Interfaz React</text><rect class="nd" x="30" y="125" width="200" height="58" rx="10"/><text class="" x="130" y="149.5" text-anchor="middle">createBridge(ipc)</text><text class="" x="130" y="168.5" text-anchor="middle">GentleBridge</text><rect class="nd" x="30" y="225" width="200" height="58" rx="10"/><text class="" x="130" y="259" text-anchor="middle">registerHandlers()</text><rect class="nd" x="30" y="320" width="200" height="62" rx="10"/><text class="" x="130" y="346.5" text-anchor="middle">ChatHost, PiSession,</text><text class="" x="130" y="365.5" text-anchor="middle">chat reducer, codec</text><rect class="box" x="300" y="10" width="580" height="150" rx="14"/><text class="gl" x="316" y="32">Host 1: Electron (hoy)</text><rect class="nd" x="330" y="60" width="190" height="58" rx="10"/><text class="" x="425" y="84.5" text-anchor="middle">preload</text><text class="" x="425" y="103.5" text-anchor="middle">ipcRenderer</text><rect class="nd" x="590" y="60" width="260" height="58" rx="10"/><text class="" x="720" y="84.5" text-anchor="middle">src/main/index.ts</text><text class="" x="720" y="103.5" text-anchor="middle">BrowserWindow, ipcMain</text><rect class="box" x="300" y="240" width="580" height="150" rx="14"/><text class="gl" x="316" y="262">Host 2: web (esta propuesta)</text><rect class="nd" x="330" y="300" width="190" height="58" rx="10"/><text class="" x="425" y="324.5" text-anchor="middle">client.ts</text><text class="" x="425" y="343.5" text-anchor="middle">WebSocket IPC</text><rect class="nd" x="590" y="300" width="260" height="58" rx="10"/><text class="" x="720" y="324.5" text-anchor="middle">server.ts</text><text class="" x="720" y="343.5" text-anchor="middle">HTTP + WebSocket</text><rect class="nd" x="30" y="440" width="200" height="58" rx="10"/><text class="" x="130" y="464.5" text-anchor="middle">gentle-shell --mode rpc</text><text class="" x="130" y="483.5" text-anchor="middle">(ya instalado)</text><path class="ed " d="M130,98 V125" marker-end="url(#d1a)"/><path class="ed " d="M230,154 H262 M262,89 V329"/><path class="ed " d="M262,89 H328" marker-end="url(#d1a)"/><path class="ed " d="M262,329 H328" marker-end="url(#d1a)"/><path class="ed " d="M520,89 H588" marker-end="url(#d1a)"/><path class="ed " d="M520,329 H588" marker-end="url(#d1a)"/><path class="ed " d="M720,118 V195 H275 V240 H232" marker-end="url(#d1a)"/><path class="ed " d="M720,300 V270 H232" marker-end="url(#d1a)"/><path class="ed " d="M130,283 V320" marker-end="url(#d1a)"/><path class="ed " d="M130,382 V440" marker-end="url(#d1a)"/></svg></div>
+<ul class="legend" aria-label="Leyenda"><li><svg viewBox="0 0 34 8" role="img"><title>Línea continua</title><line x1="0" y1="4" x2="34" y2="4"/></svg>Continua: existe hoy o se observó en la prueba de concepto</li><li><svg viewBox="0 0 34 8" role="img"><title>Línea discontinua</title><line class="d" x1="0" y1="4" x2="34" y2="4"/></svg>Discontinua: planeada, no construida o no verificada</li></ul>
+<p class="small">Solo <code>src/main/index.ts</code> y <code>src/main/ipc/registerHandlers.ts</code> importan <code>electron</code>. El host web reconstruye el grafo de objetos del primero y reutiliza el segundo mediante pequeños sustitutos.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s6" aria-label="Diapositiva 6">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Evidencia</p><h1>Lo que demostró la prueba de concepto</h1>
+<p class="small">Se construyó una prueba de concepto en una rama local (no forma parte del diff de esta propuesta). Todos los resultados siguientes se observaron en una sola máquina: Windows 11, Node v26.8.1, pnpm 11.22.0, <code>gentle-shell 4.3.0-main.557c674895b1</code>, pi 1.4.0, un home aislado con 19 chats existentes.</p>
+<div class="panel"><table><thead><tr><th scope="col">Verificación</th><th scope="col">Resultado</th><th scope="col">Observado por</th></tr></thead><tbody><tr><td data-l="Verificación">Renderer y dominio existentes sin tocar</td><td data-l="Resultado">13 archivos nuevos, 0 archivos rastreados modificados, nada en staging</td><td data-l="Observado por">ejecución de la prueba de concepto, <code>git diff --stat</code> vacío</td></tr><tr><td data-l="Verificación">La interfaz se monta en un navegador real (Edge)</td><td data-l="Resultado"><code>window.gentle</code> presente, 19 chats listados por el socket, sin errores de consola ni de CSP</td><td data-l="Observado por">ejecución de la prueba de concepto</td></tr><tr><td data-l="Verificación">Solicitud sin token</td><td data-l="Resultado">HTTP <code>401</code></td><td data-l="Observado por">ejecución de la prueba de concepto</td></tr><tr><td data-l="Verificación"><code>Origin</code> ajeno o <code>Host</code> ajeno</td><td data-l="Resultado">HTTP <code>403</code></td><td data-l="Observado por">ejecución de la prueba de concepto</td></tr><tr><td data-l="Verificación">Upgrade de WebSocket con un token válido y un <code>Origin</code> ajeno</td><td data-l="Resultado">rechazado (<code>403</code>); el caso legítimo recibe <code>101</code></td><td data-l="Observado por">ejecución de la prueba de concepto</td></tr><tr><td data-l="Verificación">Abrir un chat lanza el proceso hijo real</td><td data-l="Resultado"><code>gentle-shell.mjs --isolated --mode rpc --session &lt;file&gt;</code>, padre = el proceso del host</td><td data-l="Observado por">ejecución de la prueba de concepto</td></tr><tr><td data-l="Verificación"><code>pnpm typecheck</code></td><td data-l="Resultado">limpio</td><td data-l="Observado por">ejecución de la prueba de concepto</td></tr><tr><td data-l="Verificación"><code>pnpm test</code></td><td data-l="Resultado">350 de 351 pasaron; el único fallo es una prueba de Windows preexistente en <code>launcherLocator.test.ts</code></td><td data-l="Observado por">ejecución de la prueba de concepto</td></tr><tr class="rep"><td data-l="Verificación"><strong>Una conversación real: abrir un chat nuevo, escribir, obtener una respuesta</strong></td><td data-l="Resultado"><strong>funciona; el agente también respondió una pregunta sobre el uso de Engram</strong></td><td data-l="Observado por"><span class="badge">No reproducido</span> <strong>informado por quien redactó la propuesta, no reproducido por la prueba de concepto</strong></td></tr></tbody></table></div>
+<p class="small">Tamaño de la prueba de concepto: 811 líneas en 8 archivos fuente (<code>src/host/web/*</code>, <code>bin/</code>, configuración de build) y 380 líneas de verificaciones. Ese conteo incluye una implementación de WebSocket escrita a mano que debería reemplazarse.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s7" aria-label="Diapositiva 7">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Flujo</p><h1>Un mensaje, de extremo a extremo</h1>
+<p class="lead">Qué ocurre cuando el usuario envía una instrucción. Cada flecha más allá del navegador es la misma ruta de llamadas que ya usa la aplicación Electron.</p>
+<div class="fig" tabindex="0" aria-label="Diagrama 2. Se desplaza lateralmente en pantallas estrechas."><svg role="img" aria-labelledby="d2t d2d" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet" style="--min:780px"><title id="d2t">Un mensaje, de extremo a extremo</title><desc id="d2d">Secuencia entre Navegador (UI), Host web, ChatHost / PiSession y gentle-shell --mode rpc. El navegador envía un upgrade de WebSocket con token, Origin y Host. El host verifica el token, el Host exacto y el Origin exacto. Si alguna verificación falla, el host responde 401 o 403 y cierra la conexión; si todas pasan, responde 101 Switching Protocols. Después el navegador invoca chat.send, el host llama a sendMessage, ChatHost envía una instrucción como línea JSON por stdin, gentle-shell devuelve eventos como líneas JSON por stdout, las actualizaciones de ChatState regresan y se envían como chat.state, y React vuelve a renderizar el hilo. Las respuestas se dibujan con punta de flecha abierta.</desc><defs>
+<marker id="d2a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+<marker id="d2o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ao" d="M0 0L10 5L0 10"/></marker>
+<marker id="d2b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ab" d="M5 0V10"/></marker>
+</defs><rect class="nd" x="30" y="4" width="140" height="40" rx="10"/><text x="100" y="29" text-anchor="middle">Navegador (UI)</text><rect class="nd" x="335" y="4" width="130" height="40" rx="10"/><text x="400" y="29" text-anchor="middle">Host web</text><rect class="nd" x="565" y="4" width="190" height="40" rx="10"/><text x="660" y="29" text-anchor="middle">ChatHost / PiSession</text><rect class="nd" x="790" y="4" width="200" height="40" rx="10"/><text x="890" y="29" text-anchor="middle">gentle-shell --mode rpc</text><path class="life" d="M100,44 V512"/><path class="life" d="M400,44 V512"/><path class="life" d="M660,44 V512"/><path class="life" d="M890,44 V512"/><path class="ed " d="M100,80 H400" marker-end="url(#d2a)"/><text x="250" y="72" text-anchor="middle">Upgrade WebSocket (token, Origin, Host)</text><path class="ed " d="M400,104 H436 V126 H402" marker-end="url(#d2a)"/><text x="446" y="120">verifica token, Host y Origin exactos</text><rect class="box" x="40" y="140" width="420" height="132" rx="6"/><rect class="tag" x="40" y="140" width="46" height="22" rx="4"/><text class="gl" x="50" y="156">alt</text><text class="sub" x="96" y="156">falla alguna verificación</text><path class="ed " d="M400,190 H100" marker-end="url(#d2o)"/><text x="250" y="182" text-anchor="middle">401 o 403, conexión cerrada</text><path class="thin" d="M40,206 H460"/><text class="sub" x="52" y="224">si no: todas pasan</text><path class="ed " d="M400,256 H100" marker-end="url(#d2o)"/><text x="250" y="248" text-anchor="middle">101 Switching Protocols</text><path class="ed " d="M100,300 H400" marker-end="url(#d2a)"/><text x="250" y="292" text-anchor="middle">invoca chat.send { text }</text><path class="ed " d="M400,328 H660" marker-end="url(#d2a)"/><text x="530" y="320" text-anchor="middle">sendMessage(text)</text><path class="ed " d="M660,356 H890" marker-end="url(#d2a)"/><text x="775" y="348" text-anchor="middle">instrucción (línea JSON, stdin)</text><path class="ed " d="M890,384 H660" marker-end="url(#d2o)"/><text x="775" y="376" text-anchor="middle">eventos (líneas JSON, stdout)</text><path class="ed " d="M660,412 H400" marker-end="url(#d2o)"/><text x="530" y="404" text-anchor="middle">actualizaciones de ChatState</text><path class="ed " d="M400,440 H100" marker-end="url(#d2o)"/><text x="250" y="432" text-anchor="middle">envía chat.state (en flujo)</text><path class="ed " d="M100,464 H136 V486 H102" marker-end="url(#d2a)"/><text x="146" y="480">React vuelve a renderizar el hilo</text><rect class="nd" x="30" y="516" width="140" height="40" rx="10"/><text x="100" y="541" text-anchor="middle">Navegador (UI)</text><rect class="nd" x="335" y="516" width="130" height="40" rx="10"/><text x="400" y="541" text-anchor="middle">Host web</text><rect class="nd" x="565" y="516" width="190" height="40" rx="10"/><text x="660" y="541" text-anchor="middle">ChatHost / PiSession</text><rect class="nd" x="790" y="516" width="200" height="40" rx="10"/><text x="890" y="541" text-anchor="middle">gentle-shell --mode rpc</text></svg></div>
+<p class="small">Las líneas continuas existen o se observaron. Las respuestas se dibujan con punta de flecha abierta; en este diagrama no se usan líneas discontinuas.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s8" aria-label="Diapositiva 8">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Límites</p><h1>Lo que la prueba de concepto no demuestra</h1>
+<p class="lead">Se indica aquí para que nadie tenga que descubrirlo después.</p>
+<div class="grid c3 fill">
+<div class="card warn"><h2>Sin comportamiento multicliente</h2><p>Hay un solo <code>ChatHost</code> compartido, por lo que solo hay un chat abierto a la vez. Es la auditoría A3 ya existente, no algo que añada el host web.</p></div>
+<div class="card warn"><h2>Sin reconexión ni reanudación</h2><p>Un socket caído pierde la vista en vivo.</p></div>
+<div class="card warn"><h2>El proceso hijo sobrevive al navegador</h2><p>Cerrar la pestaña deja el hijo <code>gentle-shell</code> en ejecución hasta que el host termine.</p></div>
+<div class="card warn"><h2>Token eliminado solo en el cliente</h2><p>El token se elimina de la URL solo en el cliente. Permanece en el historial del navegador y en los registros de red hasta que se intercambia por una cookie de sesión.</p></div>
+<div class="card warn"><h2>Recursos estáticos servidos sin el token</h2><p>Un <code>&lt;script src&gt;</code> no puede llevar uno. Son código inerte; todos los datos viajan por el socket autenticado.</p></div>
+<div class="card warn"><h2>WebSocket escrito a mano</h2><p>El paquete <code>ws</code> no estaba elevado a la raíz del espacio de trabajo, por lo que ambos extremos implementan RFC 6455 a mano. Un analizador mantenido en el propio proyecto es superficie de ataque innecesaria. Reemplazar por <code>ws</code>.</p></div>
+<div class="card warn"><h2>Sin pruebas automatizadas de la autenticación del servidor</h2><p>Las verificaciones anteriores se ejecutaron como scripts. Solo el IPC del cliente tiene pruebas unitarias.</p></div>
+<div class="card warn"><h2>Sin TLS ni límite de tasa</h2><p>Aceptable en loopback; debe revisarse antes de permitir cualquier otra cosa.</p></div>
+<div class="card warn"><h2>La búsqueda del lanzador en Windows necesita la corrección de spawn</h2><p>La prueba de concepto solo se ejecutó con <code>GENTLE_SHELL_BIN</code> apuntando a la entrada <code>.mjs</code>. El tramo 1 lo corrige.</p></div>
+</div></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s9" aria-label="Diapositiva 9">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Modelo de seguridad</p><h1>Límites de confianza</h1>
+<p class="lead">Dónde está la entrada no confiable y qué hace cada límite.</p>
+<div class="fig" tabindex="0" aria-label="Diagrama 3. Se desplaza lateralmente en pantallas estrechas."><svg role="img" aria-labelledby="d3t d3d" viewBox="0 0 980 470" preserveAspectRatio="xMidYMid meet" style="--min:780px"><title id="d3t">Límites de confianza</title><desc id="d3d">No confiable: cualquier otra página web abierta en el navegador y otras máquinas de la red. Ambas se bloquean en la compuerta: la página por no tener token o tener un Origin ajeno, la red porque el host no se enlaza más allá de loopback. La página de Gentle UI en el navegador del usuario mantiene la sesión y atraviesa la compuerta (solo 127.0.0.1, token, Host exacto, Origin exacto), luego solo operaciones tipadas (sin argv, ruta ni env desde la página), luego el proceso hijo gentle-shell, que tiene las credenciales y los archivos del usuario.</desc><defs>
+<marker id="d3a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+<marker id="d3o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ao" d="M0 0L10 5L0 10"/></marker>
+<marker id="d3b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ab" d="M5 0V10"/></marker>
+</defs><rect class="box" x="10" y="10" width="570" height="110" rx="14"/><text class="gl" x="26" y="32">No confiable</text><rect class="nd" x="30" y="44" width="250" height="60" rx="10"/><text class="" x="155" y="69.5" text-anchor="middle">Cualquier otra página web</text><text class="" x="155" y="88.5" text-anchor="middle">abierta en el navegador</text><rect class="nd" x="310" y="44" width="250" height="60" rx="10"/><text class="" x="435" y="69.5" text-anchor="middle">Otras máquinas</text><text class="" x="435" y="88.5" text-anchor="middle">en la red</text><rect class="box" x="610" y="10" width="360" height="110" rx="14"/><text class="gl" x="626" y="32">El navegador del usuario</text><rect class="nd" x="630" y="44" width="320" height="60" rx="10"/><text class="" x="790" y="69.5" text-anchor="middle">Página de Gentle UI</text><text class="" x="790" y="88.5" text-anchor="middle">mantiene la sesión</text><rect class="box" x="10" y="200" width="960" height="120" rx="14"/><text class="gl" x="26" y="222">Host web local</text><rect class="nd" x="40" y="230" width="460" height="70" rx="10"/><text class="" x="270" y="251" text-anchor="middle">Compuerta</text><text class="" x="270" y="270" text-anchor="middle">solo 127.0.0.1</text><text class="" x="270" y="289" text-anchor="middle">token + Host exacto + Origin exacto</text><rect class="nd" x="560" y="230" width="380" height="70" rx="10"/><text class="" x="750" y="260.5" text-anchor="middle">Solo operaciones tipadas</text><text class="" x="750" y="279.5" text-anchor="middle">sin argv, ruta ni env desde la página</text><rect class="box" x="560" y="350" width="410" height="110" rx="14"/><text class="gl" x="576" y="372">Máquina del usuario</text><rect class="nd" x="590" y="384" width="350" height="60" rx="10"/><text class="" x="765" y="409.5" text-anchor="middle">proceso hijo gentle-shell</text><text class="" x="765" y="428.5" text-anchor="middle">credenciales y archivos del usuario</text><path class="ed blk" d="M155,104 V230" marker-end="url(#d3b)"/><text class="blk-t" x="165" y="160">bloqueado: sin token, Origin ajeno</text><path class="ed blk" d="M435,104 V230" marker-end="url(#d3b)"/><text class="blk-t" x="445" y="135">bloqueado: no enlaza fuera de loopback</text><path class="ed " d="M720,104 V165 H480 V230" marker-end="url(#d3a)"/><path class="ed " d="M500,265 H560" marker-end="url(#d3a)"/><path class="ed " d="M750,300 V384" marker-end="url(#d3a)"/></svg></div>
+<p class="small">Aquí una línea roja discontinua que termina en una barra, rotulada "bloqueado", marca un camino detenido; las líneas continuas son caminos permitidos. El riesgo residual es real: un servidor local frente a un agente con acceso a shell. La compuerta es toda la defensa, por eso necesita sus propias pruebas y una revisión independiente (tramo 3).</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s10" aria-label="Diapositiva 10">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Modelo de seguridad</p><h1>Las reglas</h1>
+<p class="lead">El modelo se copia de lo que <code>gentle-shell</code> ya incluye para su propio asistente de instalación (<code>scripts/installer-server.mjs</code>: enlace a loopback, un token aleatorio comparado con <code>timingSafeEqual</code>, cabeceras de mismo origen y, en cita textual en inglés, "the browser never sends commands, paths, plans or environment").</p>
+<div class="panel"><table><thead><tr><th scope="col">Regla</th><th scope="col">Por qué</th></tr></thead><tbody><tr><td data-l="Regla">Enlazar solo a <code>127.0.0.1</code>; sin opción para cambiarlo</td><td data-l="Por qué">Elimina por defecto la exposición a la LAN</td></tr><tr><td data-l="Regla">Token aleatorio de 32 bytes por ejecución, comparación en tiempo constante</td><td data-l="Por qué">Una página abierta en otra pestaña no puede llamar al host sin él</td></tr><tr><td data-l="Regla">Coincidencia exacta de <code>Host</code> y <code>Origin</code>, <strong>también en el upgrade de WebSocket</strong></td><td data-l="Por qué">Evita el DNS rebinding y el secuestro de WebSocket entre sitios</td></tr><tr><td data-l="Regla">El navegador envía operaciones tipadas (los mismos canales que los handlers de IPC), nunca una línea de comandos, una ruta ni un entorno</td><td data-l="Por qué">El host decide qué se ejecuta; la página no puede construir la ejecución</td></tr><tr><td data-l="Regla">Token intercambiado una vez por una cookie de sesión y luego retirado de la URL <span class="badge">Planeado, tramo 3</span></td><td data-l="Por qué">Lo mantiene fuera del historial y de los registros</td></tr><tr><td data-l="Regla">Proceso hijo ligado a su conexión <span class="badge">Planeado, tramo 3</span></td><td data-l="Por qué">Sin agentes huérfanos</td></tr></tbody></table></div>
+<p class="lead">Un servidor local frente a un agente con acceso a shell es el riesgo real de esta propuesta. Si el modelo anterior no se sostiene, la respuesta correcta es recortar el alcance, no relajarlo.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s11" aria-label="Diapositiva 11">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Plan</p><h1>Plan y tramos</h1>
+<p class="lead">Cada tramo está pensado para poder revisarse por separado (unas 400 líneas escritas o menos) y para mantener las pruebas y la documentación junto al comportamiento. Los tamaños son estimaciones a partir de la prueba de concepto.</p>
+<div class="fig" tabindex="0" aria-label="Diagrama 6. Se desplaza lateralmente en pantallas estrechas."><svg role="img" aria-labelledby="d6t d6d" viewBox="0 0 1100 330" preserveAspectRatio="xMidYMid meet" style="--min:900px"><title id="d6t">Tramos y qué depende de qué</title><desc id="d6d">El tramo 1, corrección de spawn en Windows (hecho, con valor propio), lleva al tramo 2 (contrato y cliente IPC WebSocket) y al tramo 4 (build del renderer y entrada del navegador). El tramo 2 lleva al tramo 3 (servidor: ws, cookie, vida del hijo, pruebas de autenticación) y al tramo 4. Los tramos 3 y 4 llevan al tramo 5 (CLI, documentación, CI). Una línea discontinua lleva del tramo 5 al tramo 6, opcional: gentle-shell web, que requiere a los mantenedores de gentle-shell.</desc><defs>
+<marker id="d6a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0 0L10 5L0 10z"/></marker>
+<marker id="d6o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ao" d="M0 0L10 5L0 10"/></marker>
+<marker id="d6b" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ab" d="M5 0V10"/></marker>
+</defs><rect class="nd" x="10" y="128" width="190" height="84" rx="10"/><text class="" x="105" y="165.5" text-anchor="middle">1. Corrección de spawn</text><text class="" x="105" y="184.5" text-anchor="middle">(hecho, valor propio)</text><rect class="nd" x="232" y="40" width="190" height="84" rx="10"/><text class="" x="327" y="77.5" text-anchor="middle">2. Contrato +</text><text class="" x="327" y="96.5" text-anchor="middle">cliente IPC WebSocket</text><rect class="nd" x="454" y="40" width="190" height="84" rx="10"/><text class="" x="549" y="77.5" text-anchor="middle">3. Servidor: ws, cookie,</text><text class="" x="549" y="96.5" text-anchor="middle">vida del hijo, pruebas auth</text><rect class="nd" x="454" y="216" width="190" height="84" rx="10"/><text class="" x="549" y="253.5" text-anchor="middle">4. Build del renderer +</text><text class="" x="549" y="272.5" text-anchor="middle">entrada del navegador</text><rect class="nd" x="676" y="128" width="190" height="84" rx="10"/><text class="" x="771" y="175" text-anchor="middle">5. CLI, documentación, CI</text><rect class="nd plan" x="898" y="128" width="192" height="84" rx="10"/><text class="" x="994" y="146.5" text-anchor="middle">6. Opcional:</text><text class="" x="994" y="165.5" text-anchor="middle">gentle-shell web</text><text class="" x="994" y="184.5" text-anchor="middle">(requiere a quienes</text><text class="" x="994" y="203.5" text-anchor="middle">mantienen gentle-shell)</text><path class="ed " d="M200,170 H215"/><path class="ed " d="M215,82 V280"/><path class="ed " d="M215,82 H230" marker-end="url(#d6a)"/><path class="ed " d="M215,280 H452" marker-end="url(#d6a)"/><path class="ed " d="M422,82 H452" marker-end="url(#d6a)"/><path class="ed " d="M327,124 V240 H452" marker-end="url(#d6a)"/><path class="ed " d="M644,82 H660 V170"/><path class="ed " d="M644,258 H660 V170 H674" marker-end="url(#d6a)"/><path class="ed plan" d="M866,170 H896" marker-end="url(#d6a)"/></svg></div>
+<ul class="legend" aria-label="Leyenda"><li><svg viewBox="0 0 34 8" role="img"><title>Línea continua</title><line x1="0" y1="4" x2="34" y2="4"/></svg>Continua: existe hoy o se observó en la prueba de concepto</li><li><svg viewBox="0 0 34 8" role="img"><title>Línea discontinua</title><line class="d" x1="0" y1="4" x2="34" y2="4"/></svg>Discontinua: planeada, no construida o no verificada</li></ul>
+<p class="small">Los tramos 2 y 4 pueden ejecutarse en paralelo tras el tramo 1. El tramo 3 es el que requiere más cuidado. El tramo 6 es una solicitud aparte a los mantenedores de <code>gentle-shell</code> y nada aquí depende de ella: hasta entonces el comando se ejecuta por sí solo.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s12" aria-label="Diapositiva 12">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Plan</p><h1>Tramos: superficie y valor</h1><div class="panel"><table><thead><tr><th scope="col">#</th><th scope="col">Tramo</th><th scope="col">Depende de</th><th scope="col">Superficie</th><th scope="col">Valor sin el resto</th></tr></thead><tbody><tr><td data-l="#">1</td><td data-l="Tramo">Corrección del spawn del lanzador de Windows</td><td data-l="Depende de">ninguno</td><td data-l="Superficie"><code>src/main/adapters/nodeProcessSpawner*</code></td><td data-l="Valor"><strong>Sí</strong>: desbloquea #23 y #24 también para el escritorio. Hecho en la rama <code>fix/windows-batch-spawn</code> (<code>dc39e48</code>)</td></tr><tr><td data-l="#">2</td><td data-l="Tramo">Contrato del puente y cliente IPC WebSocket, con pruebas</td><td data-l="Depende de">ninguno</td><td data-l="Superficie"><code>src/shared/contract/**</code>, <code>src/host/web/wsIpc*</code></td><td data-l="Valor">Hace explícito el contrato implícito existente</td></tr><tr><td data-l="#">3</td><td data-l="Tramo">Servidor web: <code>ws</code>, cookie de sesión, vida del hijo, pruebas de autenticación</td><td data-l="Depende de">2</td><td data-l="Superficie"><code>src/host/web/server*</code>, <code>tests/security/**</code></td><td data-l="Valor">Necesita una persona revisora con criterio de seguridad que no lo haya escrito</td></tr><tr><td data-l="#">4</td><td data-l="Tramo">Build del renderer y punto de entrada del navegador</td><td data-l="Depende de">2</td><td data-l="Superficie">configuración de build, <code>index.html</code></td><td data-l="Valor">Pequeño</td></tr><tr><td data-l="#">5</td><td data-l="Tramo">CLI, documentación, tarea de CI por host</td><td data-l="Depende de">3, 4</td><td data-l="Superficie"><code>bin/</code>, <code>docs/</code>, <code>.github/workflows/</code></td><td data-l="Valor">Primera vez que el repositorio tendría CI para cualquiera de los hosts</td></tr><tr><td data-l="#">6</td><td data-l="Tramo">Opcional: punto de entrada <code>gentle-shell web</code> y una interfaz con versión fija en la versión publicada</td><td data-l="Depende de">5, y los mantenedores de <code>gentle-shell</code></td><td data-l="Superficie">fuera de este repositorio</td><td data-l="Valor">Solo cuando 1 a 5 estén estables</td></tr></tbody></table></div><p class="small">El tramo 3 es el crítico y el de mayor riesgo. Los tramos 2 y 4 pueden ejecutarse en paralelo tras el tramo 1.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s13" aria-label="Diapositiva 13">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Ubicación</p><h1>Dónde podría vivir el código</h1>
+<div class="panel"><table><thead><tr><th scope="col">Opción</th><th scope="col">Ventaja</th><th scope="col">Costes</th></tr></thead><tbody><tr><td data-l="Opción"><strong>Segundo punto de entrada en este repositorio (inicio recomendado)</strong></td><td data-l="Ventaja">Un solo conjunto de pruebas, sin matriz de versiones entre interfaz y host</td><td data-l="Costes">Necesita el acuerdo de un mantenedor sobre la carpeta y una regla de contrato</td></tr><tr><td data-l="Opción">Un repositorio separado que consume la interfaz como paquete</td><td data-l="Ventaja">Aísla el riesgo del host</td><td data-l="Costes">Un paquete de interfaz publicado, dos pipelines y una tarea de conformidad que falla cuando la interfaz y el contrato divergen. Sin esa tarea se convierte en un fork</td></tr><tr><td data-l="Opción">Dentro de <code>gentle-shell</code></td><td data-l="Ventaja">Una instalación y una versión para el usuario</td><td data-l="Costes">Lleva React, un bundler y pruebas de navegador al repositorio del CLI. No se propone</td></tr></tbody></table></div>
+<p class="lead">Esta propuesta solicita la primera opción, como borrador, y mantiene abiertas las otras.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s14" aria-label="Diapositiva 14">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Fuera de alcance</p><h1>Trabajo futuro, fuera de esta propuesta</h1>
+<p class="lead">Se registra para que no se pierda. Nada de esto es necesario para la primera versión útil:</p>
+<ul class="plain">
+<li>Sesiones separadas por cliente de navegador, de modo que dos pestañas no compartan un chat (auditoría A3, F1 en el PR #29).</li>
+<li>Ocultar las sesiones que el usuario ya cerró en la terminal (por ejemplo con Ctrl+D).</li>
+<li>Ejecutar comandos <code>/gentle:*</code> desde la interfaz.</li>
+<li>Reconexión y reanudación; un selector de carpeta de proyecto (auditoría A10).</li>
+<li>Cualquier cosa más allá de loopback.</li></ul></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<section class="slide " id="s15" aria-label="Diapositiva 15">
+<header class="top"><span class="brand"><span class="flower" aria-hidden="true">✿</span> gentle shell</span><span>Propuesta de host web</span></header>
+<main><p class="kicker">Siguiente paso</p><h1>Decisiones solicitadas a los mantenedores</h1>
+<ol class="dec">
+<li><strong>Dirección:</strong> ¿es aceptable, en principio, un segundo host para la misma interfaz?</li>
+<li><strong>Ubicación:</strong> ¿un segundo punto de entrada en este repositorio, un repositorio separado, o ninguno?</li>
+<li><strong>Q9:</strong> ¿es adecuado el límite de solo loopback por ahora?</li>
+<li><strong>Nombre:</strong> <code>gentle-shell-web</code> es un marcador provisional. La Q10 de la visión ya deja abierto el nombre del producto.</li>
+<li><strong>Revisión:</strong> ¿quién revisa el tramo 3?</li></ol>
+<p class="lead">Si la respuesta a 1 es no, el tramo 1 sigue valiendo por sí solo.</p></main>
+<footer class="foot">Propuesta de la comunidad. Sin decidir.</footer>
+</section>
+<nav class="nav" aria-label="Navegación de diapositivas"><button id="prev" type="button" aria-label="Anterior">‹</button><span id="count" aria-live="polite">1 / 15</span><button id="next" type="button" aria-label="Siguiente">›</button></nav>
+</div>
+<script>
+(function () {
+  var slides = [].slice.call(document.querySelectorAll('.slide'));
+  var stage = document.getElementById('stage');
+  var bar = document.getElementById('bar');
+  var count = document.getElementById('count');
+  var mq = window.matchMedia('(max-width:700px)');
+  var cur = -1;
+
+  function scale() {
+    if (mq.matches) { stage.style.removeProperty('--s'); return; }
+    stage.style.setProperty('--s', Math.min(innerWidth / 1280, innerHeight / 720));
+  }
+
+  // True when the slide overflows, when a clipping container hides content
+  // (a table panel shrinks and cuts its last rows), or when content reaches the
+  // footer. The footer is a fixed-height flex item, so content can run under it
+  // without making the slide itself overflow. Figures (.fig) scroll on purpose.
+  function overflows(el) {
+    if (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) return true;
+    var clipped = Array.prototype.some.call(el.querySelectorAll('main, .panel'), function (e) {
+      return e.scrollHeight > e.clientHeight + 1;
+    });
+    if (clipped) return true;
+    var foot = el.querySelector('.foot');
+    if (!foot) return false;
+    var limit = foot.getBoundingClientRect().top + 1;
+    return Array.prototype.some.call(el.children, function (c) {
+      return c !== foot && (c.getBoundingClientRect().bottom > limit || c.scrollHeight > c.clientHeight + 1);
+    });
+  }
+
+  // Shrink the slide's type scale until nothing overflows it.
+  function fit(el) {
+    var k = 1;
+    el.style.setProperty('--k', k);
+    while (overflows(el) && k > 0.45) {
+      k = Math.round((k - 0.02) * 100) / 100;
+      el.style.setProperty('--k', k);
+    }
+  }
+
+  function fitAll() {
+    slides.forEach(function (s) { s.classList.add('on'); fit(s); if (slides.indexOf(s) !== cur) s.classList.remove('on'); });
+  }
+
+  function show(i, quiet) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    if (cur >= 0) slides[cur].classList.remove('on');
+    cur = i;
+    slides[i].classList.add('on');
+    fit(slides[i]);
+    var p = ((i + 1) / slides.length) * 100;
+    bar.style.width = p + '%';
+    bar.setAttribute('aria-valuenow', i + 1);
+    count.textContent = (i + 1) + ' / ' + slides.length;
+    if (!quiet && location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function fromHash() {
+    var m = /^#(\d+)$/.exec(location.hash);
+    show(m ? parseInt(m[1], 10) - 1 : 0, !m);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target;
+    var onButton = t && t.tagName === 'BUTTON';
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowDown': case 'PageDown': break;
+      case ' ': if (onButton) return; break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': e.preventDefault(); show(cur - 1); return;
+      case 'Home': e.preventDefault(); show(0); return;
+      case 'End': e.preventDefault(); show(slides.length - 1); return;
+      default: return;
+    }
+    e.preventDefault();
+    show(cur + 1);
+  });
+
+  stage.addEventListener('click', function (e) {
+    if (e.target.closest('a,button,.fig')) return;
+    var r = stage.getBoundingClientRect();
+    var x = (e.clientX - r.left) / r.width;
+    if (x > 2 / 3) show(cur + 1); else if (x < 1 / 3) show(cur - 1);
+  });
+  document.getElementById('prev').addEventListener('click', function () { show(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { show(cur + 1); });
+  window.addEventListener('hashchange', fromHash);
+  window.addEventListener('resize', function () { scale(); fitAll(); });
+  if (mq.addEventListener) mq.addEventListener('change', function () { scale(); fitAll(); });
+
+  scale();
+  fromHash();
+  fitAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
+})();
+</script>
+</body>
+</html>

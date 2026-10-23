@@ -34,7 +34,7 @@ On the server side, the host rebuilds the object graph that `src/main/index.ts` 
 
 Only two non-test files in `src/main` import `electron`: `src/main/index.ts` and `src/main/ipc/registerHandlers.ts`. The rest of `src/main` (2,267 lines without tests) and the renderer (2,189 lines without tests) are host-agnostic. Measured on `main` at `5ab4a00`.
 
-Diagrams: [diagrams.md](diagrams.md). Slides: [deck.html](deck.html).
+Diagrams: [diagrams.md](diagrams.md). Slides: [deck.html](deck.html), also in Spanish: [deck.es.html](deck.es.html).
 
 ## Evidence
 
