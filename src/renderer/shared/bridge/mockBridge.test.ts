@@ -11,6 +11,11 @@ function collectStates(): { states: ChatState[]; errors: string[] } {
 }
 
 describe("mockBridge", () => {
+  it("starts preview chats from a stored id or browse intent, never from a path", async () => {
+    expect(await mockBridge.startChat({ source: "fromChat", id: "chat-readme" })).toMatchObject({ status: "chosen", chat: { cwd: "/Users/dev/gentle-shell-desktop" } });
+    expect(await mockBridge.startChat({ source: "fromChat", id: "missing" })).toEqual({ status: "error", message: "That folder no longer exists." });
+    expect(await mockBridge.startChat({ source: "browse" })).toMatchObject({ status: "chosen", chat: { cwd: "/Users/dev/preview" } });
+  });
   // resetMockBridge (not just newChat()) so homeChoice, listener sets and
   // id counters never leak between tests — see its doc comment.
   beforeEach(() => {

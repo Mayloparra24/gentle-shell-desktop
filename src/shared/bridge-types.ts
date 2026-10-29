@@ -132,6 +132,8 @@ export interface PromptResult {
  * a second process needs the shape.
  */
 export interface ChatState {
+  /** Host-confirmed working directory, never a renderer input. */
+  readonly cwd?: string;
   readonly messages: readonly ChatMessage[];
   readonly working: boolean;
   readonly pendingDialogs: readonly Dialog[];
@@ -404,7 +406,15 @@ export type GitSummary =
   | { readonly status: "not-a-repository" | "git-unavailable" | "no-chat-folder" }
   | { readonly status: "error"; readonly message: string };
 
+export type FolderChoice = { readonly status: "chosen"; readonly chat: ChatState } | { readonly status: "cancelled" };
+export type StartChatSource = { readonly source: "browse" } | { readonly source: "fromChat"; readonly id: string };
+export type StartChatResult = FolderChoice | { readonly status: "error"; readonly message: string };
+
 export interface GentleBridge {
+  /** Choose a native folder or resolve a stored chat's folder on the host. Never accepts a path. */
+  startChat(source: StartChatSource): Promise<StartChatResult>;
+  /** Main-process native folder dialog; no renderer-supplied path. */
+  chooseFolder(): Promise<FolderChoice>;
   /** One level under the active chat folder; empty path means root. Read-only. */
   listDirectory(relativePath: string): Promise<DirectoryListing>;
   /** Read-only Git metadata for the active chat folder. No renderer-supplied cwd. */

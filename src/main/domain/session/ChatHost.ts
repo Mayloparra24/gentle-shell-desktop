@@ -1,4 +1,4 @@
-import type { DirectoryListing, GitSummary, ChatState, ChatSummary, DialogAnswer, DiagnosticKind, PromptResult, SettingKey, SettingState, SlashCommand } from "@shared/bridge-types";
+import type { StartChatSource, StartChatResult, FolderChoice, DirectoryListing, GitSummary, ChatState, ChatSummary, DialogAnswer, DiagnosticKind, PromptResult, SettingKey, SettingState, SlashCommand } from "@shared/bridge-types";
 import { boundedStop } from "../lifecycle/boundedStop";
 import type { RpcEvent } from "../rpc/types";
 import type { GitSummaryReader, WorkspaceReader, HomeSettings, LauncherLocator, ProcessSpawner, SessionStore } from "../../ports";
@@ -40,6 +40,8 @@ function waitForHistoryResponse(session: PiSession): Promise<void> {
 
 export interface ChatHostDeps {
   readonly spawner: ProcessSpawner;
+  readonly chooseFolder?: () => Promise<string | undefined>;
+  readonly folderExists?: (cwd: string) => Promise<boolean>;
   readonly locator: LauncherLocator;
   readonly sessionStore: SessionStore;
   readonly env: NodeJS.ProcessEnv;
@@ -112,8 +114,25 @@ export class ChatHost {
   }
 
   /** Starts a fresh chat: no sessionPath, so PiSession omits `--session`. */
-  async newChat(): Promise<ChatState> {
-    return this.startSession(undefined);
+  async newChat(cwd?: string): Promise<ChatState> {
+    return this.startSession(undefined, cwd);
+  }
+
+  async startChat(request: StartChatSource): Promise<StartChatResult> {
+    if (request.source === "browse") return this.chooseFolder();
+    const sessions = await this.deps.sessionStore.listAll();
+    const match = sessions.find((session) => session.id === request.id);
+    if (!match?.cwd || !await this.deps.folderExists?.(match.cwd)) {
+      return { status: "error", message: "That folder no longer exists." };
+    }
+    return { status: "chosen", chat: await this.newChat(match.cwd) };
+  }
+
+  async chooseFolder(): Promise<FolderChoice> {
+    if (!this.deps.chooseFolder) throw new Error("Folder dialog unavailable");
+    const cwd = await this.deps.chooseFolder();
+    if (!cwd) return { status: "cancelled" };
+    return { status: "chosen", chat: await this.newChat(cwd) };
   }
 
   async listDirectory(relativePath: string): Promise<DirectoryListing> {
@@ -219,7 +238,7 @@ export class ChatHost {
       session.start();
     }
 
-    return session.getState();
+    return { ...session.getState(), cwd };
   }
 
   /** Settings run as silent commands in the open session; the command list tells which ones this gentle-shell has. */

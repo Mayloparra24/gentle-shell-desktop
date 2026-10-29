@@ -1,5 +1,5 @@
 import path from "node:path";
-import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from "electron";
 import {
   createAppConfigStore,
   createDynamicPiSessionStore,
@@ -9,6 +9,8 @@ import {
   createSetupService,
   createWorkspaceReader,
   createGitSummaryReader,
+  createFolderDialog,
+  folderExists,
 } from "./adapters";
 import { boundedStop } from "./domain/lifecycle/boundedStop";
 import { homeDirFor, resolveHomeMode, withoutGentleHomeAsPiDir } from "./domain/home/home";
@@ -63,6 +65,8 @@ const setupService = createSetupService(configStore, appEnv);
 // doc comment.
 const chatHost = new ChatHost({
   spawner: createNodeProcessSpawner(),
+  chooseFolder: createFolderDialog((options) => dialog.showOpenDialog(options)),
+  folderExists,
   locator: createLauncherLocator(),
   sessionStore: createDynamicPiSessionStore(() => homeDirFor(resolveHomeMode(configStore.read()), appEnv)),
   env: appEnv,

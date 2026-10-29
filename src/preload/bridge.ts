@@ -1,4 +1,6 @@
 import type {
+  FolderChoice,
+  StartChatResult,
   DirectoryListing,
   GitSummary,
   ChatState,
@@ -34,6 +36,8 @@ export interface RendererIpc {
  * this with the real Electron ipcRenderer. */
 export function createBridge(ipc: RendererIpc): GentleBridge {
   return {
+    startChat: (request) => ipc.invoke(IPC_CHANNELS.START_CHAT, request.source === "browse" ? { source: "browse" } : { source: "fromChat", id: request.id }) as Promise<StartChatResult>,
+    chooseFolder: () => ipc.invoke(IPC_CHANNELS.CHOOSE_FOLDER) as Promise<FolderChoice>,
     listDirectory: (relativePath: string) => ipc.invoke(IPC_CHANNELS.LIST_DIRECTORY, relativePath) as Promise<DirectoryListing>,
     gitSummary: () => ipc.invoke(IPC_CHANNELS.GIT_SUMMARY) as Promise<GitSummary>,
     listChats: () => ipc.invoke(IPC_CHANNELS.LIST_CHATS) as Promise<ChatSummary[]>,

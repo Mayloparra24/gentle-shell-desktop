@@ -114,6 +114,45 @@ async function respondToHistoryRequest(
 }
 
 describe("ChatHost", () => {
+  it("resolves a recent chat id on the host, validates its folder, and never trusts an extra path", async () => {
+    const { spawner, handles } = createFakeSpawner();
+    const spawn = vi.spyOn(spawner, "spawn");
+    const folderExists = vi.fn().mockResolvedValue(true);
+    const chooseFolder = vi.fn().mockResolvedValue(undefined);
+    const host = new ChatHost({ spawner, locator: fakeLocator, sessionStore: fakeSessionStore([session()]), env: {}, chooseFolder, folderExists });
+    const request = { source: "fromChat" as const, id: "sess-1", cwd: "/untrusted" };
+    expect(await host.startChat(request)).toMatchObject({ status: "chosen", chat: { cwd: "/tmp/proj" } });
+    expect(folderExists).toHaveBeenCalledExactlyOnceWith("/tmp/proj");
+    expect(spawn.mock.calls[0]?.[3]).toBe("/tmp/proj");
+    expect(chooseFolder).not.toHaveBeenCalled();
+    folderExists.mockResolvedValue(false);
+    expect(await host.startChat({ source: "fromChat", id: "sess-1" })).toEqual({ status: "error", message: "That folder no longer exists." });
+    expect(await host.startChat({ source: "fromChat", id: "missing" })).toEqual({ status: "error", message: "That folder no longer exists." });
+    expect(await host.startChat({ source: "browse" })).toEqual({ status: "cancelled" });
+    expect(spawn).toHaveBeenCalledTimes(1);
+    expect(handles).toHaveLength(1);
+    expect(await host.sendMessage("still open")).toEqual({ queued: true });
+  });
+  it("native folder cancellation spawns nothing and keeps the current chat; every choice asks again", async () => {
+    const { spawner, handles } = createFakeSpawner();
+    const spawn = vi.spyOn(spawner, "spawn");
+    const chooseFolder = vi.fn().mockResolvedValueOnce(undefined).mockResolvedValueOnce("/picked").mockResolvedValueOnce(undefined).mockResolvedValue("/other");
+    const host = new ChatHost({ spawner, locator: fakeLocator, sessionStore: fakeSessionStore([]), env: {}, chooseFolder });
+    expect(await host.chooseFolder()).toEqual({ status: "cancelled" });
+    expect(spawn).not.toHaveBeenCalled();
+    expect(await host.chooseFolder()).toMatchObject({ status: "chosen", chat: { cwd: "/picked" } });
+    expect(spawn.mock.calls[0]?.[3]).toBe("/picked");
+    expect(await host.chooseFolder()).toEqual({ status: "cancelled" });
+    expect(spawn).toHaveBeenCalledTimes(1);
+    expect(await host.sendMessage("still here")).toEqual({ queued: true });
+    expect(handles[0]!.writes.join("")).toContain("still here");
+    const next = host.chooseFolder();
+    handles[0]!.resolveExited({ code: 0, signal: null });
+    await next;
+    expect(chooseFolder).toHaveBeenCalledTimes(4);
+    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(spawn.mock.calls[1]?.[3]).toBe("/other");
+  });
   it("workspace reads use only the active stored cwd and return no folder for a new chat", async () => {
     const { spawner, handles } = createFakeSpawner();
     const listDirectory = vi.fn().mockResolvedValue({ status: "ready", entries: [], truncated: false });

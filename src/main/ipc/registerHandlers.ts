@@ -33,6 +33,16 @@ export function registerHandlers(host: ChatHost, setup: SetupService, webContent
   registerRequestHandler(ipc, IPC_CHANNELS.GIT_SUMMARY, () => host.gitSummary());
   registerRequestHandler(ipc, IPC_CHANNELS.OPEN_CHAT, (_event, id: string) => host.openChat(id));
   registerRequestHandler(ipc, IPC_CHANNELS.NEW_CHAT, () => host.newChat());
+  registerRequestHandler(ipc, IPC_CHANNELS.CHOOSE_FOLDER, () => host.chooseFolder());
+  registerRequestHandler(ipc, IPC_CHANNELS.START_CHAT, (_event, request: unknown) => {
+    if (request && typeof request === "object" && "source" in request) {
+      if (request.source === "browse") return host.startChat({ source: "browse" });
+      if (request.source === "fromChat" && "id" in request && typeof request.id === "string") {
+        return host.startChat({ source: "fromChat", id: request.id });
+      }
+    }
+    return { status: "error", message: "Invalid folder request" };
+  });
   registerRequestHandler(ipc, IPC_CHANNELS.SEND_MESSAGE, (_event, text: string) => host.sendMessage(text));
   registerRequestHandler(ipc, IPC_CHANNELS.ABORT, () => host.abort());
   registerRequestHandler(ipc, IPC_CHANNELS.ANSWER_DIALOG, (_event, id: string, answer: DialogAnswer) =>

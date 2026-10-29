@@ -470,6 +470,16 @@ function startHelpersScenario(): void {
 }
 
 export const mockBridge: GentleBridge = {
+  async startChat(request) {
+    if (request.source === "browse") return mockBridge.chooseFolder();
+    const chat = EXAMPLE_CHATS.find(chat => chat.id === request.id);
+    if (!chat) return { status: "error", message: "That folder no longer exists." };
+    return { status: "chosen", chat: { ...await mockBridge.newChat(), cwd: chat.cwd } };
+  },
+  async chooseFolder() {
+    const chat = await mockBridge.newChat();
+    return { status: "chosen", chat: { ...chat, cwd: "/Users/dev/preview" } };
+  },
   async listDirectory(relativePath) {
     if (relativePath === "") return { status: "ready", truncated: false, entries: [{ name: "src", kind: "directory" }, { name: "README.md", kind: "file", size: 1280 }] };
     if (relativePath === "src") return { status: "ready", truncated: false, entries: [{ name: "index.ts", kind: "file", size: 320 }] };

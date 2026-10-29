@@ -10,3 +10,4 @@ export * from "./homeSettings";
 export * from "./setupService";
 export * from "./workspaceReader";
 export * from "./gitSummary";
+export * from "./folderDialog";

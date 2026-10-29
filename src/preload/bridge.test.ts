@@ -29,6 +29,22 @@ function createFakeIpc(): { ipc: RendererIpc; invoke: ReturnType<typeof vi.fn>; 
 }
 
 describe("createBridge", () => {
+  it("startChat sends a source or chat id, never an extra renderer path", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    invoke.mockResolvedValue({ status: "cancelled" });
+    const bridge = createBridge(ipc);
+    expect(await bridge.startChat({ source: "browse" })).toEqual({ status: "cancelled" });
+    expect(invoke).toHaveBeenLastCalledWith("chat.start", { source: "browse" });
+    const request = { source: "fromChat" as const, id: "stored", cwd: "/untrusted" };
+    await bridge.startChat(request);
+    expect(invoke).toHaveBeenLastCalledWith("chat.start", { source: "fromChat", id: "stored" });
+  });
+  it("chooses a native folder without sending a renderer path", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    invoke.mockResolvedValue({ status: "cancelled" });
+    expect(await createBridge(ipc).chooseFolder()).toEqual({ status: "cancelled" });
+    expect(invoke).toHaveBeenCalledExactlyOnceWith("chat.chooseFolder");
+  });
   it("workspace methods send only the relative path or no payload and preserve status results", async () => {
     const { ipc, invoke } = createFakeIpc();
     const bridge = createBridge(ipc);

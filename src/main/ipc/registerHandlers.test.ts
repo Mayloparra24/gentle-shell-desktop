@@ -47,6 +47,29 @@ function fakeWebContents(): WebContents {
 }
 
 describe("registerHandlers", () => {
+  it("startChat accepts only a browse intent or stored id and rejects malformed input", async () => {
+    const host = fakeHost({ startChat: vi.fn().mockResolvedValue({ status: "cancelled" }) });
+    const ipc = fakeIpcMain();
+    registerHandlers(host, fakeSetup(), fakeWebContents(), ipc);
+    const start = registeredHandler(ipc, "chat.start");
+    await start({}, { source: "fromChat", id: "stored", cwd: "/untrusted" });
+    expect(host.startChat).toHaveBeenLastCalledWith({ source: "fromChat", id: "stored" });
+    await start({}, { source: "browse", cwd: "/untrusted" });
+    expect(host.startChat).toHaveBeenLastCalledWith({ source: "browse" });
+    for (const input of [null, "/path", {}, { source: "fromChat", id: 1 }, { source: "path", cwd: "/path" }]) {
+      expect(await start({}, input)).toEqual({ status: "error", message: "Invalid folder request" });
+    }
+    expect(host.startChat).toHaveBeenCalledTimes(2);
+  });
+  it("folder and new-chat handlers never forward renderer-supplied paths", async () => {
+    const host = fakeHost({ chooseFolder: vi.fn().mockResolvedValue({ status: "cancelled" }) });
+    const ipc = fakeIpcMain();
+    registerHandlers(host, fakeSetup(), fakeWebContents(), ipc);
+    expect(await registeredHandler(ipc, "chat.chooseFolder")({}, "/untrusted")).toEqual({ status: "cancelled" });
+    expect(host.chooseFolder).toHaveBeenCalledExactlyOnceWith();
+    await registeredHandler(ipc, "chat.new")({}, "/untrusted");
+    expect(host.newChat).toHaveBeenCalledExactlyOnceWith();
+  });
   it("wires workspace reads, ignores extra cwd payloads and rejects malformed paths as data", async () => {
     const host = fakeHost({ listDirectory: vi.fn().mockResolvedValue({ status: "ready", entries: [], truncated: false }), gitSummary: vi.fn().mockResolvedValue({ status: "not-a-repository" }) });
     const ipc = fakeIpcMain();

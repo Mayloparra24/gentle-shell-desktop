@@ -11,6 +11,8 @@ export const IPC_CHANNELS = {
   GIT_SUMMARY: "workspace.gitSummary",
   OPEN_CHAT: "chat.open",
   NEW_CHAT: "chat.new",
+  CHOOSE_FOLDER: "chat.chooseFolder",
+  START_CHAT: "chat.start",
   SEND_MESSAGE: "chat.send",
   ABORT: "chat.abort",
   ANSWER_DIALOG: "dialog.answer",

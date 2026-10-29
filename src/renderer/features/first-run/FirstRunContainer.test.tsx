@@ -14,6 +14,8 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
     listChats: vi.fn(),
     openChat: vi.fn(),
     newChat: vi.fn(),
+    chooseFolder: vi.fn(),
+    startChat: vi.fn(),
     sendMessage: vi.fn(),
     abort: vi.fn(),
     answerDialog: vi.fn(),
