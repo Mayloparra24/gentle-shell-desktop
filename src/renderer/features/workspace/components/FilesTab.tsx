@@ -1,54 +1,53 @@
-import { useState } from "react";
 import { TextField } from "@renderer/shared/ui/atoms/TextField";
-import type { FileEntry } from "../types";
+import type { ListingState } from "../WorkspaceDataContainer";
 import "./FilesTab.css";
 
 export interface FilesTabProps {
-  readonly files: readonly FileEntry[];
+  readonly listings: Readonly<Record<string, ListingState>>;
+  readonly expanded: ReadonlySet<string>;
+  readonly query: string;
+  readonly onQueryChange: (query: string) => void;
+  readonly onToggle: (path: string) => void;
+  readonly onRetry: (path: string) => void;
 }
 
-export function FilesTab({ files }: FilesTabProps) {
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
-  const visible = files.filter((file) => file.name.toLowerCase().includes(query.toLowerCase()));
-  const ordered = [...visible.filter((file) => file.kind === "folder"), ...visible.filter((file) => file.kind === "file")];
-
-  return (
-    <div className="gc-files">
-      <TextField type="search" aria-label="Search files" placeholder="Search files"
-        value={query} onChange={(event) => setQuery(event.target.value)} />
-      <ul className="gc-files__list" aria-label="Files">
-        {ordered.map((file) => (
-          <li key={file.name}>
-            <button type="button" className={`gc-files__row${file.ignored ? " gc-files__row--ignored" : ""}`}
-              aria-pressed={selected === file.name} onClick={() => setSelected(file.name)}>
-              <span className="gc-files__chevron" aria-hidden="true">{file.kind === "folder" ? "›" : ""}</span>
-              <span className={`gc-files__icon${file.kind === "folder" ? " gc-files__icon--folder" : ""}`}><FileIcon file={file} /></span>
-              <span>{file.name}</span>
-              {file.ignored && <span className="gc-files__ignored" title="Ignored" aria-label="Ignored">⊘</span>}
-            </button>
-          </li>
-        ))}
+export function FilesTab(props: FilesTabProps) {
+  function directory(path: string) {
+    const listing = props.listings[path];
+    if (!listing || listing.status === "loading") return <p>Loading…</p>;
+    if (listing.status === "no-chat-folder") return <p>Choose a folder to see its files.</p>;
+    if (listing.status === "error") return <div><p>{listing.message}</p><button type="button" onClick={() => props.onRetry(path)}>Retry</button></div>;
+    const entries = [...listing.entries].sort((a, b) => Number(b.kind === "directory") - Number(a.kind === "directory"))
+      .filter(entry => entry.name.toLowerCase().includes(props.query.toLowerCase()));
+    return <>
+      {listing.entries.length === 0 && <p>This folder is empty.</p>}
+      <ul className="gc-files__list" aria-label={path || "Files"}>
+        {entries.map(entry => {
+          const childPath = path ? `${path}/${entry.name}` : entry.name;
+          const expandable = entry.kind === "directory" && entry.name !== ".git" && entry.name !== "node_modules";
+          const open = props.expanded.has(childPath);
+          return <li key={entry.name}>
+            {expandable ? <button type="button" className="gc-files__row" aria-expanded={open} onClick={() => props.onToggle(childPath)}>
+              <span aria-hidden="true">{open ? "⌄" : "›"}</span><span>{entry.name}</span>
+            </button> : <div className="gc-files__row"><span>{entry.name}</span>
+              {entry.kind === "file" && entry.size !== undefined && <small className="gc-files__size">{humanSize(entry.size)}</small>}
+            </div>}
+            {expandable && open && directory(childPath)}
+          </li>;
+        })}
       </ul>
-    </div>
-  );
+      {listing.truncated && <small>Showing the first 500 entries</small>}
+    </>;
+  }
+  return <div className="gc-files">
+    <TextField type="search" aria-label="Search files" placeholder="Search files" value={props.query}
+      onChange={event => props.onQueryChange(event.target.value)} />
+    {directory("")}
+  </div>;
 }
 
-function FileIcon({ file }: { readonly file: FileEntry }) {
-  let detail = <path d="M9 13h6M9 17h4" />;
-  if (file.name === "package.json") detail = <path d="m9 12 3-1.5 3 1.5v4l-3 1.5L9 16zM9 12l3 1.5 3-1.5M12 13.5v4" />;
-  else if (/lock(?:\.|-)|\.lock$/.test(file.name)) detail = <><rect x="9" y="14" width="6" height="4" rx="1" /><path d="M10 14v-2a2 2 0 0 1 4 0v2" /></>;
-  else if (file.name.toLowerCase() === "readme.md") detail = <path d="M8 17v-5l2 3 2-3v5M15 12v5m-1-1 1 1 1-1" />;
-  else if (file.name.endsWith(".json")) detail = <path d="M10 12c-2 0 0 3-2 3 2 0 0 3 2 3M14 12c2 0 0 3 2 3-2 0 0 3-2 3" />;
-  else if (file.name === ".gitignore") detail = <><circle cx="12" cy="15" r="3" /><path d="m10 17 4-4" /></>;
-
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {file.kind === "folder" ? <path d="M3 8a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /> : <>
-        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5" />
-        {detail}
-      </>}
-    </svg>
-  );
+function humanSize(bytes: number): string {
+  if (bytes < 1000) return `${bytes} B`;
+  const unit = Math.min(Math.floor(Math.log(bytes) / Math.log(1000)), 4);
+  return `${(bytes / 1000 ** unit).toFixed(1)} ${["B", "KB", "MB", "GB", "TB"][unit]}`;
 }

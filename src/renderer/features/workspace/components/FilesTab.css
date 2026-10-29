@@ -31,8 +31,11 @@
   cursor: pointer;
 }
 
-.gc-files__row:hover { background: var(--raised); }
-.gc-files__row[aria-pressed="true"] {
+button.gc-files__row:hover { background: var(--raised); }
+div.gc-files__row { cursor: default; }
+.gc-files__size { margin-left: auto; color: var(--muted); }
+.gc-files__list .gc-files__list { margin: 0 0 0 14px; padding-top: 0; border: 0; }
+.gc-files__row[aria-expanded="true"] {
   background: var(--raised);
   box-shadow: inset 2px 0 var(--accent);
 }

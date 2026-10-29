@@ -56,6 +56,22 @@ it("returns focus to Settings when opened with the composer focused and closed w
 });
 
 describe("App", () => {
+  it("waits for the selected chat to open before refetching workspace data", async () => {
+    let resolve!: (state: Awaited<ReturnType<typeof mockBridge.openChat>>) => void;
+    const initial = await mockBridge.newChat();
+    vi.spyOn(mockBridge, "openChat").mockImplementation(() => new Promise(r => { resolve = r; }));
+    const list = vi.spyOn(mockBridge, "listDirectory");
+    const git = vi.spyOn(mockBridge, "gitSummary");
+    render(<App />);
+    await screen.findByRole("textbox", { name: "Message" });
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: /Write the README intro/ }));
+    expect(list).toHaveBeenCalledTimes(1);
+    resolve(initial);
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(2));
+    expect(git).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("textbox", { name: "Message" })).toBeInTheDocument();
+  });
   it("opens models without unmounting chat and restores its draft on Back", async () => {
     const newChat = vi.spyOn(mockBridge, "newChat");
     render(<App />);

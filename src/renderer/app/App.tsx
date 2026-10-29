@@ -42,6 +42,7 @@ export function App() {
   const bridge = useBridge();
   const [screen, setScreen] = useState<Screen>(SCREEN.LOADING);
   const [activeChat, setActiveChat] = useState<ActiveChat>(NEW_CHAT);
+  const [openedChat, setOpenedChat] = useState<ActiveChat | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [view, setView] = useState<"chat" | "models">("chat");
   const openModels = (): void => setView("models");
@@ -99,12 +100,14 @@ export function App() {
         </div>
         <div className="gc-app__center">
           <div className="gc-app__chat" hidden={view !== "chat"}>
-            <ConversationContainer key={homeVersion} activeChat={activeChat} onOpenModels={openModels} />
+            <ConversationContainer key={homeVersion} activeChat={activeChat} onOpenModels={openModels} onChatReady={setOpenedChat} />
           </div>
           {view === "models" && <ModelsContainer key={homeVersion} onBack={() => setView("chat")} />}
         </div>
         <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen}>
-          <WorkspacePanel snapshot={PREVIEW_WORKSPACE} />
+          <WorkspacePanel snapshot={PREVIEW_WORKSPACE}
+            chatId={`${homeVersion}-${activeChat.kind === "existing" ? activeChat.chat.id : "new"}`}
+            ready={openedChat === activeChat} />
         </div>
       </div>
       <StatusBar info={statusInfo} sample onOpenModels={openModels} />
@@ -114,7 +117,7 @@ export function App() {
         themeId={themeId}
         onChangeTheme={setTheme}
         onClose={() => { setSettingsOpen(false); settingsButtonRef.current?.focus(); }}
-        onHomeChanged={() => { handleNewChat(); setHomeVersion((version) => version + 1); }}
+        onHomeChanged={() => { setOpenedChat(null); handleNewChat(); setHomeVersion((version) => version + 1); }}
       />}
     </div>
   );

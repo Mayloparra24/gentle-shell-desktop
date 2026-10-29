@@ -46,6 +46,20 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
 }
 
 describe("ConversationContainer", () => {
+  it("still renders the opened conversation and sends messages when reporting workspace readiness", async () => {
+    const state: ChatState = { ...emptyState(), messages: [{ id: "opened", role: MESSAGE_ROLE.ASSISTANT, text: "Existing conversation" }] };
+    const bridge = makeBridge({ openChat: vi.fn().mockResolvedValue(state) });
+    window.gentle = bridge;
+    const selected: ActiveChat = { kind: "existing", chat: EXISTING_CHAT };
+    const ready = vi.fn();
+    render(<ConversationContainer activeChat={selected} onChatReady={ready} />);
+    expect(await screen.findByText("Existing conversation")).toBeInTheDocument();
+    expect(ready).toHaveBeenCalledExactlyOnceWith(selected);
+    expect(bridge.openChat).toHaveBeenCalledExactlyOnceWith("chat-1");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "hello" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(bridge.sendMessage).toHaveBeenCalledExactlyOnceWith("hello");
+  });
   it("opens models for the exact trimmed profiles command but sends arguments and other text normally", async () => {
     const bridge = makeBridge({ listCommands: vi.fn().mockResolvedValue([]) });
     window.gentle = bridge;

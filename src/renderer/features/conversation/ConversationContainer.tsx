@@ -21,6 +21,7 @@ export type ActiveChat = { readonly kind: "new" } | { readonly kind: "existing";
 export interface ConversationContainerProps {
   readonly activeChat: ActiveChat;
   readonly onOpenModels?: () => void;
+  readonly onChatReady?: (chat: ActiveChat) => void;
 }
 
 function emptyChatState(): ChatState {
@@ -44,7 +45,7 @@ function errorText(cause: unknown): string {
  * bridge.onError pushes) render in a dedicated StatusLine, never as a
  * synthetic ChatMessage appended to the thread.
  */
-export function ConversationContainer({ activeChat, onOpenModels }: ConversationContainerProps) {
+export function ConversationContainer({ activeChat, onOpenModels, onChatReady }: ConversationContainerProps) {
   const bridge = useBridge();
   const [chatState, setChatState] = useState<ChatState>(emptyChatState());
   const [bridgeError, setBridgeError] = useState<string | undefined>(undefined);
@@ -85,7 +86,10 @@ export function ConversationContainer({ activeChat, onOpenModels }: Conversation
     const opening = activeChat.kind === "existing" ? bridge.openChat(activeChat.chat.id) : bridge.newChat();
     opening
       .then((state) => {
-        if (!cancelled) setChatState(state);
+        if (!cancelled) {
+          setChatState(state);
+          onChatReady?.(activeChat);
+        }
       })
       .catch((cause: unknown) => {
         if (!cancelled) setBridgeError(errorText(cause));
@@ -93,7 +97,7 @@ export function ConversationContainer({ activeChat, onOpenModels }: Conversation
     return () => {
       cancelled = true;
     };
-  }, [bridge, activeChat]);
+  }, [bridge, activeChat, onChatReady]);
 
   const handleSend = (): void => {
     const text = draft.trim();
