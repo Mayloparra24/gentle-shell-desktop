@@ -1,10 +1,8 @@
-import type { ReactNode } from "react";
 import { THEMES, type ThemeId } from "@renderer/shared/theme/themes";
 import "./TopBar.css";
 
 export interface TopBarProps {
   readonly title: string;
-  readonly home?: ReactNode;
   readonly leftOpen: boolean;
   readonly rightOpen: boolean;
   readonly onToggleLeft: () => void;
@@ -26,7 +24,7 @@ function PanelIcon({ side }: { readonly side: PanelSide }) {
 
 // Presentational: brand, the two panel toggles and the open chat's title.
 // The toggles expose their state with aria-pressed (pressed = panel visible).
-export function TopBar({ title, home, leftOpen, rightOpen, onToggleLeft, onToggleRight, themeId, onChangeTheme }: TopBarProps) {
+export function TopBar({ title, leftOpen, rightOpen, onToggleLeft, onToggleRight, themeId, onChangeTheme }: TopBarProps) {
   return (
     <header className="gc-topbar">
       <div className="gc-topbar__start">
@@ -42,7 +40,6 @@ export function TopBar({ title, home, leftOpen, rightOpen, onToggleLeft, onToggl
       </div>
       <h2 className="gc-topbar__title">{title}</h2>
       <div className="gc-topbar__end">
-        {home}
         <select
           className="gc-topbar__theme"
           aria-label="Theme"

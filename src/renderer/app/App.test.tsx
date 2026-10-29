@@ -1,41 +1,7 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { App } from "./App";
-import { mockBridge, resetMockBridge } from "@renderer/shared/bridge/mockBridge";
-
-describe("App home", () => {
-  beforeEach(() => {
-    resetMockBridge();
-    window.history.pushState({}, "", "?firstRun=0");
-  });
-  afterEach(() => {
-    vi.restoreAllMocks();
-    resetMockBridge();
-    window.history.pushState({}, "", "/");
-  });
-
-  it.each([false, true])("switches home and reloads chats (existing chat: %s)", async (existing) => {
-    const choose = vi.spyOn(mockBridge, "chooseHome");
-    const list = vi.spyOn(mockBridge, "listChats");
-    const fresh = vi.spyOn(mockBridge, "newChat");
-    render(<App />);
-    const item = await screen.findByRole("button", { name: /Write the README intro/ });
-    await waitFor(() => expect(fresh).toHaveBeenCalledTimes(1));
-    if (existing) {
-      fireEvent.click(item);
-      await screen.findByRole("heading", { name: "Write the README intro" });
-    }
-    list.mockResolvedValue([]);
-    fireEvent.change(await screen.findByRole("combobox", { name: "Home" }), { target: { value: "link" } });
-    await waitFor(() => expect(list).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(fresh).toHaveBeenCalledTimes(2));
-    expect(choose).toHaveBeenCalledExactlyOnceWith("link");
-    expect(screen.getByRole("heading", { name: "New chat" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Write the README intro/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Home" })).toHaveValue("link");
-  });
-});
 
 // `?firstRun=0` forces mockBridge.setupStatus() to needsChoice: false (see
 // mockBridge's firstRunOverride), so these tests exercise the normal chat
