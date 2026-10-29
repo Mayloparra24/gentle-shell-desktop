@@ -44,6 +44,25 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
 }
 
 describe("ConversationContainer", () => {
+  it("opens models for the exact trimmed profiles command but sends arguments and other text normally", async () => {
+    const bridge = makeBridge({ listCommands: vi.fn().mockResolvedValue([]) });
+    window.gentle = bridge;
+    const onOpenModels = vi.fn();
+    render(<ConversationContainer activeChat={NEW_CHAT} onOpenModels={onOpenModels} />);
+    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    const field = screen.getByRole("textbox");
+    fireEvent.change(field, { target: { value: "  /gentle:profiles  " } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(onOpenModels).toHaveBeenCalledTimes(1);
+    expect(bridge.sendMessage).not.toHaveBeenCalled();
+    expect(field).toHaveValue("");
+    for (const text of ["/gentle:profiles help", "hello"]) {
+      fireEvent.change(field, { target: { value: text } });
+      fireEvent.click(screen.getByRole("button", { name: "Send" }));
+      expect(bridge.sendMessage).toHaveBeenCalledWith(text);
+    }
+    expect(onOpenModels).toHaveBeenCalledTimes(1);
+  });
   it("sends a picked command and its arguments through the normal bridge path", async () => {
     const bridge = makeBridge({ listCommands: vi.fn().mockResolvedValue([{ name: "commit-message", source: "prompt" }]) });
     window.gentle = bridge;

@@ -20,6 +20,7 @@ export type ActiveChat = { readonly kind: "new" } | { readonly kind: "existing";
 
 export interface ConversationContainerProps {
   readonly activeChat: ActiveChat;
+  readonly onOpenModels?: () => void;
 }
 
 function emptyChatState(): ChatState {
@@ -43,7 +44,7 @@ function errorText(cause: unknown): string {
  * bridge.onError pushes) render in a dedicated StatusLine, never as a
  * synthetic ChatMessage appended to the thread.
  */
-export function ConversationContainer({ activeChat }: ConversationContainerProps) {
+export function ConversationContainer({ activeChat, onOpenModels }: ConversationContainerProps) {
   const bridge = useBridge();
   const [chatState, setChatState] = useState<ChatState>(emptyChatState());
   const [bridgeError, setBridgeError] = useState<string | undefined>(undefined);
@@ -99,6 +100,10 @@ export function ConversationContainer({ activeChat }: ConversationContainerProps
     if (text.length === 0 || chatState.working) return;
 
     setDraft("");
+    if (text === "/gentle:profiles") {
+      onOpenModels?.();
+      return;
+    }
     bridge
       .sendMessage(text)
       .then((result) => {

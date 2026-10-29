@@ -19,16 +19,26 @@ function setup(found = true) {
     runDiagnostic: vi.fn().mockResolvedValue("All checks passed"),
   };
   window.gentle = bridge;
-  const props = { onClose: vi.fn(), onHomeChanged: vi.fn(), homeVersion: 0, themeId: "gentleman-cute" as const, onChangeTheme: vi.fn() };
+  const props = { onOpenModels: vi.fn(), onClose: vi.fn(), onHomeChanged: vi.fn(), homeVersion: 0, themeId: "gentleman-cute" as const, onChangeTheme: vi.fn() };
   const view = render(<SettingsContainer {...props} />);
   return { bridge, props, unmount: view.unmount };
 }
 afterEach(() => { delete window.gentle; vi.restoreAllMocks(); });
 
 describe("Settings", () => {
+  it("closes settings and opens the models screen from its dedicated row", async () => {
+    const { props, bridge } = setup();
+    expect(screen.getByText("Profiles, models and effort")).toBeInTheDocument();
+    expect(screen.getByText("They have their own screen, the same one as /gentle:profiles in gentle-shell.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open models screen →" }));
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+    expect(props.onOpenModels).toHaveBeenCalledTimes(1);
+    expect(bridge.setSetting).not.toHaveBeenCalled();
+    await screen.findByRole("radio", { checked: true });
+  });
   it("renders ordered sections, confirmed switches, commands and unavailable compatibility", async () => {
     const { bridge } = setup();
-    expect(within(screen.getByRole("navigation")).getAllByRole("button").map((el) => el.textContent)).toEqual(["Home", "Appearance", "Editing", "Permissions", "Workflow", "Privacy", "Diagnostics"]);
+    expect(within(screen.getByRole("navigation")).getAllByRole("button").map((el) => el.textContent)).toEqual(["Home", "Models", "Appearance", "Editing", "Permissions", "Workflow", "Privacy", "Diagnostics"]);
     const control = await screen.findByRole("switch", { name: "Vim prompt editing" });
     await waitFor(() => expect(control).not.toBeDisabled());
     expect(screen.queryByRole("switch", { name: "Background subagents" })).not.toBeInTheDocument();

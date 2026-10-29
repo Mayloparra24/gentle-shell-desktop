@@ -19,6 +19,23 @@
   border-right: 1px solid var(--line);
 }
 
+.gc-status-bar button.gc-status-bar__segment {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.gc-status-bar button.gc-status-bar__model { color: var(--blue); }
+.gc-status-bar button:hover { background: var(--raised); }
+.gc-status-bar button:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: -2px;
+}
+
 .gc-status-bar__brand {
   gap: 0.4rem;
   color: var(--accent);

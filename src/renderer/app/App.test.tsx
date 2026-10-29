@@ -56,6 +56,31 @@ it("returns focus to Settings when opened with the composer focused and closed w
 });
 
 describe("App", () => {
+  it("opens models without unmounting chat and restores its draft on Back", async () => {
+    const newChat = vi.spyOn(mockBridge, "newChat");
+    render(<App />);
+    const composer = await screen.findByRole("textbox", { name: "Message" });
+    fireEvent.change(composer, { target: { value: "keep this draft" } });
+    const opens = newChat.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: /Open models screen \(model/ }));
+    expect(await screen.findByRole("heading", { name: "Models" })).toBeInTheDocument();
+    expect(composer).toBeInTheDocument();
+    expect(composer).not.toBeVisible();
+    expect(newChat).toHaveBeenCalledTimes(opens);
+    fireEvent.click(screen.getByRole("button", { name: "← Back to chat" }));
+    expect(composer).toBeVisible();
+    expect(composer).toHaveValue("keep this draft");
+    expect(newChat).toHaveBeenCalledTimes(opens);
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open models screen →" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Models" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "← Back to chat" }));
+    fireEvent.change(composer, { target: { value: "/gentle:profiles" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByRole("heading", { name: "Models" })).toBeInTheDocument();
+    expect(composer).toHaveValue("");
+  });
   beforeEach(() => {
     window.history.pushState({}, "", "?firstRun=0");
   });

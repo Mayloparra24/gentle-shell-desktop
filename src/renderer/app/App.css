@@ -32,6 +32,17 @@
   flex-direction: column;
 }
 
+.gc-app__center,
+.gc-app__chat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.gc-app__chat[hidden] { display: none; }
+
 .gc-app__right {
   background: var(--panel);
   border-left: 1px solid var(--line);

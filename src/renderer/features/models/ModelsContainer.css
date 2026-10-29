@@ -1,0 +1,9 @@
+.gc-models {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px 28px 28px;
+  color: var(--text);
+  background: var(--bg);
+}

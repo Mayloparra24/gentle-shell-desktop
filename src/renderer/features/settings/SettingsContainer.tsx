@@ -10,13 +10,14 @@ import "./SettingsContainer.css";
 
 export interface SettingsContainerProps {
   onClose: () => void;
+  onOpenModels?: () => void;
   onHomeChanged: () => void;
   homeVersion: number;
   themeId: ThemeId;
   onChangeTheme: (id: ThemeId) => void;
 }
 
-export function SettingsContainer({ onClose, onHomeChanged, homeVersion, themeId, onChangeTheme }: SettingsContainerProps) {
+export function SettingsContainer({ onClose, onOpenModels, onHomeChanged, homeVersion, themeId, onChangeTheme }: SettingsContainerProps) {
   const bridge = useBridge();
   const settings = useSettings(bridge, homeVersion);
   const [home, setHome] = useState<HomeStatus>();
@@ -94,7 +95,7 @@ export function SettingsContainer({ onClose, onHomeChanged, homeVersion, themeId
   }
 
   return <SettingsDialog rows={settings.rows} error={settings.error} onReload={settings.reload} onRetry={settings.retry} onChange={change}
-    onClose={onClose} themeId={themeId} onChangeTheme={onChangeTheme} home={home} homePending={homePending} homeError={homeError}
+    onOpenModels={() => { onClose(); onOpenModels?.(); }} onClose={onClose} themeId={themeId} onChangeTheme={onChangeTheme} home={home} homePending={homePending} homeError={homeError}
     onChooseHome={chooseHome} onRetryHome={retryHome} diagnostic={diagnostic} onDiagnostic={runDiagnostic}
     confirmation={confirmation && <Confirmation text={confirmation.text} onCancel={() => setConfirmation(undefined)} onConfirm={() => {
       void settings.change(confirmation.key, confirmation.value); setConfirmation(undefined);

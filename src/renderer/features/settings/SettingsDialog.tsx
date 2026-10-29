@@ -14,6 +14,7 @@ export interface SettingsDialogProps {
   onRetry: (key: SettingKey) => void;
   onChange: (key: SettingKey, value: string) => void;
   onClose: () => void;
+  onOpenModels?: () => void;
   themeId: ThemeId;
   onChangeTheme: (id: ThemeId) => void;
   home?: HomeStatus;
@@ -76,6 +77,10 @@ export function SettingsDialog(props: SettingsDialogProps) {
                   {props.homeError && <div role="alert" className="gc-settings__error">{props.homeError} <button type="button" disabled={props.homePending} onClick={props.onRetryHome}>Retry</button></div>}
                   <div className="gc-settings__note"><b>What switching does:</b> the chat list reloads from the chosen home and a new chat starts. Nothing is copied, moved or deleted, and you can switch back at any time.</div>
                 </>}
+                {name === "Models" && <div className="gc-setting-row">
+                  <div><div className="gc-setting-row__title">Profiles, models and effort</div><p>They have their own screen, the same one as /gentle:profiles in gentle-shell.</p></div>
+                  <button type="button" className="gc-settings__button" onClick={props.onOpenModels}>Open models screen →</button>
+                </div>}
                 {name === "Appearance" && <div className="gc-setting-row">
                   <div><div className="gc-setting-row__title">Theme</div><p>Colors for this window. Saved in this browser</p><div className="gc-setting-row__meta">current: {props.themeId} {themeApplied && <span role="status" className="gc-setting-row__applied">Applied</span>}</div></div>
                   <div role="group" aria-label="Theme" className="gc-settings-segment">{THEMES.map((theme) => <button type="button" aria-pressed={props.themeId === theme.id} key={theme.id} onClick={() => {

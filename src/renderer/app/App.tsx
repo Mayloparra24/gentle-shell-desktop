@@ -11,6 +11,7 @@ import { PREVIEW_STATUS } from "@renderer/features/shell/previewStatus";
 import { useTheme } from "@renderer/shared/theme/useTheme";
 import { TopBar } from "@renderer/features/shell/components/TopBar";
 import { useShellLayout } from "@renderer/features/shell/useShellLayout";
+import { ModelsContainer } from "@renderer/features/models/ModelsContainer";
 import { SettingsContainer } from "@renderer/features/settings/SettingsContainer";
 import "./App.css";
 
@@ -42,6 +43,8 @@ export function App() {
   const [screen, setScreen] = useState<Screen>(SCREEN.LOADING);
   const [activeChat, setActiveChat] = useState<ActiveChat>(NEW_CHAT);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [view, setView] = useState<"chat" | "models">("chat");
+  const openModels = (): void => setView("models");
   const [homeVersion, setHomeVersion] = useState(0);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const { leftOpen, rightOpen, toggleLeft, toggleRight } = useShellLayout();
@@ -94,13 +97,19 @@ export function App() {
             selectedChatId={activeChat.kind === "existing" ? activeChat.chat.id : undefined}
           />
         </div>
-        <ConversationContainer key={homeVersion} activeChat={activeChat} />
+        <div className="gc-app__center">
+          <div className="gc-app__chat" hidden={view !== "chat"}>
+            <ConversationContainer key={homeVersion} activeChat={activeChat} onOpenModels={openModels} />
+          </div>
+          {view === "models" && <ModelsContainer key={homeVersion} onBack={() => setView("chat")} />}
+        </div>
         <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen}>
           <WorkspacePanel snapshot={PREVIEW_WORKSPACE} />
         </div>
       </div>
-      <StatusBar info={statusInfo} sample />
+      <StatusBar info={statusInfo} sample onOpenModels={openModels} />
       {settingsOpen && <SettingsContainer
+        onOpenModels={openModels}
         homeVersion={homeVersion}
         themeId={themeId}
         onChangeTheme={setTheme}

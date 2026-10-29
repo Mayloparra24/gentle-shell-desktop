@@ -1,6 +1,6 @@
 import type { SettingKey } from "@shared/bridge-types";
 
-export const SECTIONS = ["Home", "Appearance", "Editing", "Permissions", "Workflow", "Privacy", "Diagnostics"] as const;
+export const SECTIONS = ["Home", "Models", "Appearance", "Editing", "Permissions", "Workflow", "Privacy", "Diagnostics"] as const;
 export interface SettingRowDefinition {
   key: SettingKey;
   section: (typeof SECTIONS)[number];

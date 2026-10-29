@@ -1,0 +1,27 @@
+.gc-models__wrap { max-width: 980px; margin: 0 auto; }
+.gc-models h1, .gc-models h2 { font-family: var(--font-display); }
+.gc-models h1 { font-size: 20px; margin: 0 0 4px; }
+.gc-models h2 { font-size: 16px; margin: 0 0 4px; }
+.gc-models button { font: inherit; color: var(--text-2); background: none; border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+.gc-models button:hover { background: var(--raised); color: var(--text); }
+.gc-models button:focus-visible, .gc-models [role="tabpanel"]:focus-visible { outline: 2px solid var(--accent-active); outline-offset: 2px; }
+.gc-models .gc-models__back { color: var(--blue); border: 0; padding: 0; margin-bottom: 12px; font-size: 13px; }
+.gc-models__lead, .gc-models__note, .gc-models__legend { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+.gc-models code { font-family: var(--font-mono); font-size: 12px; }
+.gc-models__tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; padding-top: 3px; }
+.gc-models__tabs button { display: flex; gap: 8px; align-items: center; flex-shrink: 0; padding: 9px 14px; border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; font-size: 13px; }
+.gc-models__tabs button[aria-selected="true"] { background: var(--panel); border-color: var(--line); color: var(--text); box-shadow: inset 0 -2px var(--accent); }
+.gc-models__star { color: var(--accent-active); font-size: 12px; }
+.gc-models__card { padding: 16px 18px; background: var(--panel); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 12px 12px; }
+.gc-models__notice { margin: 10px 0 0; color: var(--amber); font-size: 13px; }
+.gc-models__table-scroll { overflow-x: auto; }
+.gc-models table { width: 100%; border-collapse: collapse; margin-top: 14px; text-align: left; }
+.gc-models th, .gc-models td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+.gc-models thead th { color: var(--muted); font-size: 12px; font-weight: 500; }
+.gc-models tbody th, .gc-models td { font-family: var(--font-mono); font-size: 12px; font-weight: 400; }
+.gc-models__orchestrator { background: var(--raised); }
+.gc-models__inherit { color: var(--muted); }
+.gc-models__legend { margin: 16px 0 0; }
+.gc-models__error { color: var(--red); }
+.gc-models__skeleton { display: grid; gap: 12px; }
+.gc-models__skeleton span { display: block; height: 32px; border-radius: 8px; background: var(--raised); }
