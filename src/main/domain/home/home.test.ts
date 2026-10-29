@@ -1,6 +1,24 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { detectPi, homeDirFor, piAgentDir, resolveHomeArgs, resolveHomeMode } from "./home";
+import { detectPi, homeDirFor, piAgentDir, resolveHomeArgs, resolveHomeMode, withoutGentleHomeAsPiDir } from "./home";
+
+describe("withoutGentleHomeAsPiDir", () => {
+  const homedir = () => "/Users/dev";
+  const gentleHome = path.join("/Users/dev", ".gentle-shell", "agent");
+
+  it("drops a PI_CODING_AGENT_DIR that points at the Gentle Shell home (a Gentle Shell session exports it), so .pi and .gentle-shell never resolve to the same folder", () => {
+    const env = withoutGentleHomeAsPiDir({ PI_CODING_AGENT_DIR: gentleHome + path.sep, PATH: "/bin" }, homedir);
+
+    expect(env).toEqual({ PATH: "/bin" });
+    expect(piAgentDir(env, homedir)).toBe(path.join("/Users/dev", ".pi", "agent"));
+  });
+
+  it("keeps a PI_CODING_AGENT_DIR that points anywhere else", () => {
+    const env = { PI_CODING_AGENT_DIR: "/custom/pi-dir" };
+
+    expect(withoutGentleHomeAsPiDir(env, homedir)).toEqual(env);
+  });
+});
 
 describe("resolveHomeMode", () => {
   it("returns the persisted mode when a choice was made", () => {

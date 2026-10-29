@@ -47,6 +47,20 @@ export function piAgentDir(env: NodeJS.ProcessEnv = process.env, resolveHomedir:
 }
 
 /**
+ * A Gentle Shell session exports PI_CODING_AGENT_DIR pointing at its own home, and a child app
+ * launched from it inherits that. It is not a pi setup: left in place, `--link` and `--isolated`
+ * would resolve to the same folder and pi detection would report the isolated home as pi.
+ */
+export function withoutGentleHomeAsPiDir(env: NodeJS.ProcessEnv, resolveHomedir: () => string = homedir): NodeJS.ProcessEnv {
+  const dir = env.PI_CODING_AGENT_DIR;
+  const gentleHome = path.join(resolveHomedir(), ".gentle-shell", "agent");
+  if (!dir || path.relative(path.resolve(dir), path.resolve(gentleHome)) !== "") return env;
+
+  const { PI_CODING_AGENT_DIR: _dropped, ...rest } = env;
+  return rest;
+}
+
+/**
  * Resolves the actual directory this process's own SessionStore
  * (adapters/piSessionStore.ts) reads from for a given mode — must stay in
  * lockstep with resolveHomeArgs' flags (T2's ChatHostDeps.homeArgs doc
