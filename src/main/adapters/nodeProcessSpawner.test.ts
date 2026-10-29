@@ -63,11 +63,38 @@ describe("createNodeProcessSpawner", () => {
     );
   });
 
-  it("quotes cmd.exe metacharacters and escapes inner double quotes", () => {
+  it("quotes safe ampersands and empty arguments", () => {
     const { spawn, calls } = fakeSpawn();
-    createNodeProcessSpawner({ spawn, platform: "win32" }).spawn("C:\\a\\x.bat", ["a&b", 'say "hi"', ""], ENV);
+    createNodeProcessSpawner({ spawn, platform: "win32" }).spawn("C:\\a\\x.bat", ["a&b", ""], ENV);
 
-    expect(only(calls).command).toBe('C:\\a\\x.bat "a&b" "say \\"hi\\"" ""');
+    expect(only(calls).command).toBe('C:\\a\\x.bat "a&b" ""');
+  });
+
+  for (const ext of ["cmd", "bat"]) {
+    for (const token of ['x" & echo SP_SAFE_MARKER & rem "', "%SP_PROBE_WORD%", "a!b", "a^b", "a\rb", "a\nb"]) {
+      for (const location of ["command", "argument"]) {
+        it(`rejects unsafe ${location} ${JSON.stringify(token)} for .${ext} before spawn`, () => {
+          const { spawn, calls } = fakeSpawn();
+          const command = location === "command" ? `C:\\${token}\\run.${ext}` : `C:\\run.${ext}`;
+          expect(() => createNodeProcessSpawner({ spawn, platform: "win32" }).spawn(
+            command, location === "argument" ? [token, "after"] : [], ENV,
+          )).toThrow("Unsafe Windows batch token; use GENTLE_SHELL_BIN with a supported .mjs entry instead.");
+          expect(calls).toEqual([]);
+        });
+      }
+    }
+  }
+
+  it.each([
+    ["win32", "C:\\run.exe"], ["win32", "C:\\entry.mjs"],
+    ["linux", "/tmp/run.cmd"], ["darwin", "/tmp/run.bat"],
+  ] as const)("preserves unrestricted tokens on %s direct route %s", (platform, command) => {
+    const { spawn, calls } = fakeSpawn();
+    const args = ['say "hi"', "%SP_PROBE_WORD%", "a!b^c\n", "C:\\Folder Space\\", "after"];
+    createNodeProcessSpawner({ spawn, platform }).spawn(command, args, ENV);
+    expect(calls).toHaveLength(1);
+    expect(only(calls)).toMatchObject({ command, args });
+    expect(only(calls).options.shell).toBeUndefined();
   });
 
   it("does not use the shell for a win32 .exe", () => {

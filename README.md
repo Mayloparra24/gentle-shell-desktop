@@ -109,6 +109,8 @@ pnpm smoke:electron # build, launch the packaged main entry through Playwright, 
 
 The app resolves the launcher from `GENTLE_SHELL_BIN` (a path to a gentle-pi checkout's `bin/gentle-shell.mjs`, or another gentle-shell executable) or a `gentle-shell` binary on `PATH`; see `src/main/adapters/launcherLocator.ts`.
 
+On Windows, `.cmd`/`.bat` launchers reject command paths or arguments containing `"`, `%`, `!`, `^`, CR or LF before spawning; ordinary tokens, spaces, empty arguments and ampersands are supported, not arbitrary shell quoting. Set `GENTLE_SHELL_BIN` to the supported `bin/gentle-shell.mjs` entry to bypass batch-shell restrictions (direct JS/executable routes are unchanged).
+
 See "What it shows" above for why the app sets `GENTLE_SHELL_INTERACTIVE_HOST=1`; the spawn itself lives in `src/main/domain/session/PiSession.ts`.
 
 See `src/README.md` for why the source tree is shaped the way it is.

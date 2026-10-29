@@ -10,15 +10,14 @@ export interface NodeProcessSpawnerOptions {
   readonly platform?: NodeJS.Platform;
 }
 
-// Same rule as gentle-shell's own launcher (lib/gentle-shell-launcher.ts):
-// quote a token when it is empty or holds whitespace or any of `"&|<>^%()`,
-// and escape an inner `"` as `\"`. `%VAR%` still expands inside quotes in
-// cmd.exe; accepted, as upstream does, since paths with `%` are rare.
-const CMD_EXE_SPECIAL_CHARS = /[\s"&|<>^%()]/;
-
+// Batch shims support only a restricted token set, not arbitrary shell quoting.
 function quoteForCmdExe(token: string): string {
-  if (token.length > 0 && !CMD_EXE_SPECIAL_CHARS.test(token)) return token;
-  return `"${token.replace(/"/g, '\\"')}"`;
+  if (/["%!^\r\n]/.test(token)) {
+    throw new Error("Unsafe Windows batch token; use GENTLE_SHELL_BIN with a supported .mjs entry instead.");
+  }
+  if (token.length > 0 && !/[\s&|<>()]/.test(token)) return token;
+  // Node's argv parser needs doubled trailing backslashes before a closing quote.
+  return `"${token.replace(/\\+$/, "$&$&")}"`;
 }
 
 /**
