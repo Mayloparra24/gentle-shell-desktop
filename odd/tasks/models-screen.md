@@ -14,7 +14,7 @@ Out of this phase, pending the maintainer's go-ahead because they write his `pro
 
 ## Tasks
 
-- [ ] T1 (S2, S3, S5) main and bridge: read-only profiles reader, `readProfiles` through `SetupService`, IPC, preload, mock — inline — commit: pending
+- [x] T1 (S2, S3, S5) main and bridge: read-only profiles reader, `readProfiles` through `SetupService`, IPC, preload, mock — inline — commit: f27ce7d
 - [ ] T2 (S1, S2, S3, S4, S6) renderer: models screen, navigation from the status bar, composer and Settings — worker — commit: pending
 
 ## Log
