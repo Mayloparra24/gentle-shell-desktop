@@ -10,8 +10,6 @@ function renderBar(overrides: Partial<Parameters<typeof TopBar>[0]> = {}) {
     rightOpen: true,
     onToggleLeft: vi.fn(),
     onToggleRight: vi.fn(),
-    themeId: "gentleman-cute" as const,
-    onChangeTheme: vi.fn(),
     ...overrides,
   };
   render(<TopBar {...props} />);
@@ -19,15 +17,26 @@ function renderBar(overrides: Partial<Parameters<typeof TopBar>[0]> = {}) {
 }
 
 describe("TopBar", () => {
-  it("opens settings from the labelled gear before the theme picker", () => {
+  it("opens settings from the labelled gear", () => {
     const onOpenSettings = vi.fn();
     renderBar({ onOpenSettings });
     const button = screen.getByRole("button", { name: "Settings" });
     expect(button).toHaveAttribute("aria-haspopup", "dialog");
     expect(button.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
-    expect(button.nextElementSibling).toBe(screen.getByRole("combobox", { name: "Theme" }));
     fireEvent.click(button);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it("draws the settings icon as a cog: a hub circle inside a toothed outline", () => {
+    renderBar();
+    const icon = screen.getByRole("button", { name: "Settings" }).querySelector("svg");
+    expect(icon?.querySelector("circle")).not.toBeNull();
+    expect(icon?.querySelector("path")?.getAttribute("d")?.startsWith("M19.4")).toBe(true);
+  });
+
+  it("no longer carries a theme picker, which lives in Settings", () => {
+    renderBar();
+    expect(screen.queryByRole("combobox", { name: "Theme" })).not.toBeInTheDocument();
   });
   it("shows the brand and the chat title", () => {
     renderBar();
@@ -49,29 +58,5 @@ describe("TopBar", () => {
 
     screen.getByRole("button", { name: "Toggle side panel" }).click();
     expect(props.onToggleRight).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("TopBar theme picker", () => {
-  it("lists the themes and reports the choice", () => {
-    const onChangeTheme = vi.fn();
-    render(
-      <TopBar
-        title="Chat"
-        leftOpen
-        rightOpen
-        onToggleLeft={vi.fn()}
-        onToggleRight={vi.fn()}
-        themeId="gentleman-cute"
-        onChangeTheme={onChangeTheme}
-      />,
-    );
-
-    const select = screen.getByRole("combobox", { name: "Theme" });
-    expect(select).toHaveValue("gentleman-cute");
-    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["Gentleman-Cute", "Gentle", "Gentleman-Sexy"]);
-
-    fireEvent.change(select, { target: { value: "gentle" } });
-    expect(onChangeTheme).toHaveBeenCalledWith("gentle");
   });
 });

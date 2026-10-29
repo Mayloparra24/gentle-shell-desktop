@@ -73,7 +73,7 @@
 .gc-topbar__settings {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 32px;
   padding: 0 8px;
   border: 0;
@@ -86,19 +86,3 @@
 }
 .gc-topbar__settings:hover { background: var(--raised); }
 .gc-topbar__settings:focus-visible { outline: 2px solid var(--accent-active); outline-offset: 2px; }
-
-.gc-topbar__theme {
-  height: 28px;
-  padding: 0 0.5rem;
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  color: var(--text-2);
-  background: var(--raised);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-}
-
-.gc-topbar__theme:focus-visible {
-  outline: 2px solid var(--accent-active);
-  outline-offset: 1px;
-}

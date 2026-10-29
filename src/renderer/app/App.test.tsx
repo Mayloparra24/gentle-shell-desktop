@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { App } from "./App";
 import { mockBridge } from "@renderer/shared/bridge/mockBridge";
 
@@ -178,11 +178,19 @@ describe("App theme", () => {
     document.documentElement.removeAttribute("data-theme");
   });
 
-  it("switches the whole app to the chosen theme", async () => {
+  it("has no theme picker in the top bar", async () => {
     render(<App />);
-    const select = await screen.findByRole("combobox", { name: "Theme" });
+    await screen.findByRole("button", { name: /Settings/ });
 
-    fireEvent.change(select, { target: { value: "gentleman-sexy" } });
+    expect(screen.queryByRole("combobox", { name: "Theme" })).not.toBeInTheDocument();
+  });
+
+  it("switches the whole app to the theme chosen in Settings", async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Settings/ }));
+    const dialog = await screen.findByRole("dialog");
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Gentleman-Sexy" }));
 
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("gentleman-sexy"));
   });

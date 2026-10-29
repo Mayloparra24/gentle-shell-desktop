@@ -82,8 +82,6 @@ export function App() {
   return (
     <div className="gc-app">
       <TopBar title={title} leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight}
-        themeId={themeId}
-        onChangeTheme={setTheme}
         onOpenSettings={() => setSettingsOpen(true)}
         settingsButtonRef={settingsButtonRef}
       />
