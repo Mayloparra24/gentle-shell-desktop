@@ -11,6 +11,8 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
     listChats: vi.fn().mockResolvedValue([]),
     openChat: vi.fn(),
     newChat: vi.fn(),
+    chooseFolder: vi.fn(),
+    startChat: vi.fn(),
     sendMessage: vi.fn(),
     abort: vi.fn(),
     answerDialog: vi.fn(),
@@ -82,13 +84,12 @@ it("filters the chat list by title from the search field", async () => {
   expect(screen.getByRole("button", { name: /Fix cart rounding/ })).toBeInTheDocument();
 });
 
-it("offers Chat in another folder, disabled until it is connected", () => {
+it("offers Chat in another folder through the same native folder flow", () => {
   window.gentle = makeBridge();
-  render(<ChatsContainer onSelectChat={vi.fn()} onNewChat={vi.fn()} />);
-
-  const button = screen.getByRole("button", { name: "Chat in another folder…" });
-  expect(button).toBeDisabled();
-  expect(button).toHaveAttribute("title", "Not connected yet");
+  const choose = vi.fn();
+  render(<ChatsContainer onSelectChat={vi.fn()} onNewChat={vi.fn()} onChooseFolder={choose} />);
+  fireEvent.click(screen.getByRole("button", { name: "Chat in another folder…" }));
+  expect(choose).toHaveBeenCalledTimes(1);
 });
 
 it("labels the list as Projects", () => {

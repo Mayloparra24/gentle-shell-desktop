@@ -39,6 +39,13 @@
   overflow: auto;
 }
 
+/* Hints, loading and empty messages: quiet text, not body copy. */
+.gc-workspace__pane > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .gc-workspace__footer {
   flex-shrink: 0;
   border-top: 1px solid var(--line);

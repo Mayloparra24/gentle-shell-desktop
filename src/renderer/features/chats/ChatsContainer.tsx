@@ -9,6 +9,7 @@ export interface ChatsContainerProps {
   readonly onSelectChat: (chat: ChatSummary) => void;
   /** Notifies the parent that "New chat" was clicked. */
   readonly onNewChat: () => void;
+  readonly onChooseFolder?: () => void;
   /** The currently open chat's id, for highlighting; undefined while a fresh chat is open. */
   readonly selectedChatId?: string;
 }
@@ -21,7 +22,7 @@ export interface ChatsContainerProps {
  * GentleBridge's single-current-chat shape, so this only reports selection
  * intent up to App.
  */
-export function ChatsContainer({ onSelectChat, onNewChat, selectedChatId }: ChatsContainerProps) {
+export function ChatsContainer({ onSelectChat, onNewChat, onChooseFolder, selectedChatId }: ChatsContainerProps) {
   const bridge = useBridge();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +61,7 @@ export function ChatsContainer({ onSelectChat, onNewChat, selectedChatId }: Chat
       <button type="button" className="gc-chats__new" onClick={onNewChat}>
         <span aria-hidden="true">+ </span>New chat
       </button>
-      <button type="button" className="gc-chats__other-folder" disabled title="Not connected yet">
+      <button type="button" className="gc-chats__other-folder" onClick={onChooseFolder}>
         Chat in another folder…
       </button>
       <h2 className="gc-chats__heading">Projects</h2>

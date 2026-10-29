@@ -6,7 +6,7 @@
 // bridge, or a genuine BrowserWindow). Plain `playwright` (not
 // `@playwright/test`) is enough — this is one linear check, not a suite
 // that needs the test runner's fixtures/reporters.
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,10 +22,14 @@ async function main() {
   // or writes a real developer's config.json.
   const userDataDir = mkdtempSync(path.join(tmpdir(), "gentle-shell-smoke-"));
 
+  const spawnMarker = path.join(userDataDir, "spawned");
+  const fakeLauncher = path.join(userDataDir, "fake-launcher.mjs");
+  writeFileSync(fakeLauncher, `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(spawnMarker)}, "spawned");`);
+
   const app = await electron.launch({
     args: [mainEntry],
     cwd: projectRoot,
-    env: { ...process.env, GENTLE_SHELL_SMOKE_USERDATA: userDataDir },
+    env: { ...process.env, HOME: userDataDir, USERPROFILE: userDataDir, PI_CODING_AGENT_DIR: path.join(userDataDir, "pi"), GENTLE_SHELL_SMOKE_USERDATA: userDataDir, GENTLE_SHELL_BIN: fakeLauncher },
   });
 
   try {
@@ -39,11 +43,20 @@ async function main() {
     await window.waitForFunction(
       () => {
         const text = document.body.innerText || "";
-        return text.includes("Welcome to Gentle Shell Desktop") || text.includes("Chats");
+        return text.includes("Welcome to Gentle Shell Desktop") || text.includes("Start a chat in any folder");
       },
       undefined,
       { timeout: 15_000 },
     );
+
+    // Keep first-run unchanged, then prove reaching the folder prompt starts no launcher.
+    if (await window.getByRole("button", { name: "Keep it separate" }).isVisible()) {
+      await window.getByRole("button", { name: "Keep it separate" }).click();
+    }
+    await window.getByText("Start a chat in any folder").waitFor();
+    await window.waitForTimeout(250);
+    if (existsSync(spawnMarker)) throw new Error("launcher spawned at startup before a folder was chosen");
+    if (await window.getByRole("textbox", { name: "Message" }).count()) throw new Error("composer visible before choosing a folder");
 
     const title = await window.title();
     if (title !== "Gentle Shell Desktop") {
@@ -62,8 +75,8 @@ async function main() {
     if (!iconLoads) throw new Error("expected build/icon.png to load as the window icon");
 
     const bodyText = await window.locator("body").innerText();
-    if (!bodyText.includes("Welcome to Gentle Shell Desktop") && !bodyText.includes("Chats")) {
-      throw new Error(`expected the DOM to contain "Welcome to Gentle Shell Desktop" or "Chats", got:\n${bodyText.slice(0, 500)}`);
+    if (!bodyText.includes("Start a chat in any folder")) {
+      throw new Error(`expected the folder start screen, got:\n${bodyText.slice(0, 500)}`);
     }
 
     const screenshotDir = path.join(projectRoot, "release");
@@ -71,7 +84,7 @@ async function main() {
     const screenshotPath = path.join(screenshotDir, "smoke.png");
     await window.screenshot({ path: screenshotPath });
 
-    console.log(`smoke:electron OK — title "${title}" and expected body content verified; screenshot at ${screenshotPath}`);
+    console.log(`smoke:electron OK — title "${title}" and folder prompt verified, zero launcher starts; screenshot at ${screenshotPath}`);
   } finally {
     await app.close();
     rmSync(userDataDir, { recursive: true, force: true });

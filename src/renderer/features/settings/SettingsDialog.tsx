@@ -75,7 +75,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
                     })}
                   </div>}
                   {props.homeError && <div role="alert" className="gc-settings__error">{props.homeError} <button type="button" disabled={props.homePending} onClick={props.onRetryHome}>Retry</button></div>}
-                  <div className="gc-settings__note"><b>What switching does:</b> the chat list reloads from the chosen home and a new chat starts. Nothing is copied, moved or deleted, and you can switch back at any time.</div>
+                  <div className="gc-settings__note"><b>What switching does:</b> the chat list reloads from the chosen home and the open chat closes. Nothing is copied, moved or deleted, and you can switch back at any time.</div>
                 </>}
                 {name === "Models" && <div className="gc-setting-row">
                   <div><div className="gc-setting-row__title">Profiles, models and effort</div><p>They have their own screen, the same one as /gentle:profiles in gentle-shell.</p></div>

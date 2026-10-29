@@ -1,0 +1,14 @@
+.gc-folder-dialog { width: min(440px, calc(100% - 32px)); max-height: calc(100% - 48px); display: flex; flex-direction: column; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--panel); color: var(--text); font: 14px var(--font-body); overflow: hidden; }
+.gc-folder-dialog > header { padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.gc-folder-dialog h2 { margin: 0; font: 500 16px var(--font-display); }
+.gc-folder-dialog__body { padding: 18px 20px; overflow: auto; }
+.gc-folder-dialog h3 { margin: 0 0 12px; color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
+.gc-folder-dialog p { color: var(--muted); font-size: 13px; margin: 0; }
+.gc-folder-dialog ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+.gc-folder-dialog li button { width: 100%; text-align: left; padding: 10px 12px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-2); font: inherit; cursor: pointer; }
+.gc-folder-dialog li button:hover { background: var(--raised); border-color: var(--line); }
+.gc-folder-dialog small { display: block; color: var(--muted); font: 11px var(--font-mono); margin-top: 5px; overflow-wrap: anywhere; }
+.gc-folder-dialog button:focus-visible { outline: 2px solid var(--accent-active); outline-offset: 2px; }
+.gc-folder-dialog button:disabled { opacity: .55; cursor: not-allowed; }
+.gc-folder-dialog p.gc-folder-dialog__error { margin-top: 12px; color: var(--red); }
+.gc-folder-dialog > footer { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line); }

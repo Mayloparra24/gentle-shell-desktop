@@ -4,7 +4,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { CHAT_STATE, MESSAGE_ROLE, type ChatState, type ChatSummary, type GentleBridge } from "@shared/bridge-types";
 import { ConversationContainer, type ActiveChat } from "./ConversationContainer";
 
-const NEW_CHAT: ActiveChat = { kind: "new" };
+const READY_CHAT: ActiveChat = { kind: "ready", state: { messages: [], working: false, pendingDialogs: [], activity: 0, helpers: { summary: { running: 0, queued: 0, waiting: 0, finished: 0 }, tasks: [] } } };
 
 const EXISTING_CHAT: ChatSummary = {
   id: "chat-1",
@@ -28,6 +28,8 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
     listChats: vi.fn().mockResolvedValue([]),
     openChat: vi.fn().mockResolvedValue(emptyState()),
     newChat: vi.fn().mockResolvedValue(emptyState()),
+    chooseFolder: vi.fn().mockResolvedValue({ status: "cancelled" }),
+    startChat: vi.fn().mockResolvedValue({ status: "cancelled" }),
     sendMessage: vi.fn().mockResolvedValue({ queued: true }),
     abort: vi.fn().mockResolvedValue(undefined),
     answerDialog: vi.fn().mockResolvedValue(undefined),
@@ -64,8 +66,8 @@ describe("ConversationContainer", () => {
     const bridge = makeBridge({ listCommands: vi.fn().mockResolvedValue([]) });
     window.gentle = bridge;
     const onOpenModels = vi.fn();
-    render(<ConversationContainer activeChat={NEW_CHAT} onOpenModels={onOpenModels} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} onOpenModels={onOpenModels} />);
+    await screen.findByRole("textbox");
     const field = screen.getByRole("textbox");
     fireEvent.change(field, { target: { value: "  /gentle:profiles  " } });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
@@ -82,8 +84,8 @@ describe("ConversationContainer", () => {
   it("sends a picked command and its arguments through the normal bridge path", async () => {
     const bridge = makeBridge({ listCommands: vi.fn().mockResolvedValue([{ name: "commit-message", source: "prompt" }]) });
     window.gentle = bridge;
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
     const field = screen.getByRole("textbox");
     fireEvent.change(field, { target: { value: "/" } });
     fireEvent.click(await screen.findByText("/commit-message"));
@@ -94,13 +96,15 @@ describe("ConversationContainer", () => {
     expect(bridge.sendMessage).toHaveBeenCalledWith("/commit-message staged changes");
     expect(field).toHaveValue("");
   });
-  it('calls bridge.newChat() for activeChat { kind: "new" }', async () => {
+  it("uses an already host-started chat without calling bridge.newChat again", async () => {
     const bridge = makeBridge();
     window.gentle = bridge;
+    const ready = vi.fn();
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
+    render(<ConversationContainer activeChat={READY_CHAT} onChatReady={ready} />);
 
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    await vi.waitFor(() => expect(ready).toHaveBeenCalledExactlyOnceWith(READY_CHAT));
+    expect(bridge.newChat).not.toHaveBeenCalled();
     expect(bridge.openChat).not.toHaveBeenCalled();
   });
 
@@ -118,11 +122,13 @@ describe("ConversationContainer", () => {
     const bridge = makeBridge();
     window.gentle = bridge;
 
-    const { rerender } = render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalledTimes(1));
+    const { rerender } = render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "keep this draft" } });
 
     rerender(<ConversationContainer activeChat={{ kind: "existing", chat: EXISTING_CHAT }} />);
     await vi.waitFor(() => expect(bridge.openChat).toHaveBeenCalledWith("chat-1"));
+    expect(screen.getByRole("textbox")).toHaveValue("keep this draft");
   });
 
   it("renders only the pushed ChatState", async () => {
@@ -135,8 +141,8 @@ describe("ConversationContainer", () => {
     });
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
 
     pushState({
       messages: [{ id: "m1", role: MESSAGE_ROLE.ASSISTANT, text: "Hello there", streaming: false }],
@@ -153,8 +159,8 @@ describe("ConversationContainer", () => {
     const bridge = makeBridge();
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
 
     fireEvent.change(screen.getByPlaceholderText("Tell Gentle what you need…"), { target: { value: "  hi Gentle  " } });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
@@ -172,8 +178,8 @@ describe("ConversationContainer", () => {
     });
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
 
     pushError("Gentle is still working");
 
@@ -191,8 +197,8 @@ describe("ConversationContainer", () => {
     });
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
 
     pushState({ messages: [], working: false, pendingDialogs: [], activity: 0, helpers: EMPTY_HELPERS, lastError: "pi exited unexpectedly" });
 
@@ -209,8 +215,8 @@ describe("ConversationContainer", () => {
     });
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
 
     pushState({
       messages: [],
@@ -235,8 +241,8 @@ describe("ConversationContainer", () => {
     });
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
 
     pushState({ messages: [], working: true, pendingDialogs: [], activity: 0, helpers: EMPTY_HELPERS });
 
@@ -288,8 +294,8 @@ describe("ConversationContainer", () => {
     const bridge = makeBridge();
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
 
     fireEvent.change(screen.getByPlaceholderText("Tell Gentle what you need…"), { target: { value: "   " } });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
@@ -325,8 +331,8 @@ describe("ConversationContainer", () => {
     });
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
 
     expect(screen.queryByText(/Helpers ·/)).not.toBeInTheDocument();
 
@@ -349,8 +355,8 @@ describe("ConversationContainer", () => {
     });
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
     pushState({ messages: [], working: false, pendingDialogs: [], activity: 0, helpers: HELPERS_WITH_TASKS });
     await screen.findByText("Helpers · 1 running");
 
@@ -372,8 +378,8 @@ describe("ConversationContainer", () => {
     });
     window.gentle = bridge;
 
-    const { rerender } = render(<ConversationContainer activeChat={NEW_CHAT} />);
-    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    const { rerender } = render(<ConversationContainer activeChat={READY_CHAT} />);
+    await screen.findByRole("textbox");
     pushState({ messages: [], working: false, pendingDialogs: [], activity: 0, helpers: HELPERS_WITH_TASKS });
     await screen.findByText("Helpers · 1 running");
 

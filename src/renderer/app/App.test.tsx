@@ -29,9 +29,10 @@ it("opens settings, restores focus on Escape and resets an existing chat after s
   fireEvent.click(otherHome);
   expect(await screen.findByRole("heading", { name: "New chat" })).toBeInTheDocument();
   await waitFor(() => expect(listChats).toHaveBeenCalledTimes(listsBefore + 1));
-  expect(newChat).toHaveBeenCalledTimes(chatsBefore + 1);
+  expect(newChat).toHaveBeenCalledTimes(chatsBefore);
   await waitFor(() => expect(readSettings).toHaveBeenCalledTimes(readsBefore + 1));
-  expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue("");
+  expect(screen.queryByRole("textbox", { name: "Message" })).not.toBeInTheDocument();
+  expect(screen.getByText("Start a chat in any folder")).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Write the README intro" })).not.toBeInTheDocument();
   fireEvent.keyDown(dialog, { key: "Escape" });
   expect(screen.queryByRole("dialog", { name: "Settings" })).not.toBeInTheDocument();
@@ -46,6 +47,7 @@ it("opens settings, restores focus on Escape and resets an existing chat after s
 it("returns focus to Settings when opened with the composer focused and closed with the close button", async () => {
   window.history.pushState({}, "", "?firstRun=0");
   render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
   const composer = await screen.findByRole("textbox", { name: "Message" });
   composer.focus();
   const settings = screen.getByRole("button", { name: "Settings" });
@@ -53,6 +55,73 @@ it("returns focus to Settings when opened with the composer focused and closed w
   fireEvent.click(screen.getByRole("button", { name: "Close settings" }));
   expect(settings).toHaveFocus();
   window.history.pushState({}, "", "/");
+});
+
+describe("folder start", () => {
+  beforeEach(() => window.history.pushState({}, "", "?firstRun=0"));
+  it("starts nothing on mount and shows a compact empty state, not the old page", async () => {
+    const start = vi.spyOn(mockBridge, "newChat");
+    render(<App />);
+    expect(await screen.findByText("Start a chat in any folder")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Choose a folder to start" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Choose a folder…" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Message" })).not.toBeInTheDocument();
+    expect(start).not.toHaveBeenCalled();
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Choose a folder");
+    fireEvent.click(screen.getByRole("tab", { name: "Git" }));
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Choose a folder");
+  });
+  it("all three entry points open the same modal, cancellation restores focus and starts nothing", async () => {
+    const start = vi.spyOn(mockBridge, "startChat");
+    const legacy = vi.spyOn(mockBridge, "newChat");
+    render(<App />);
+    await screen.findByText("Start a chat in any folder");
+    const triggers = [...screen.getAllByRole("button", { name: "New chat" }), screen.getByRole("button", { name: "Chat in another folder…" })];
+    expect(triggers).toHaveLength(3);
+    for (const trigger of triggers) {
+      trigger.focus();
+      fireEvent.click(trigger);
+      const dialog = await screen.findByRole("dialog", { name: "Choose a folder" });
+      fireEvent.keyDown(dialog, { key: "Escape" });
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+    }
+    expect(start).not.toHaveBeenCalled();
+    expect(legacy).not.toHaveBeenCalled();
+  });
+  it("New chat with a selected chat asks again and cancelling Browse or Cancel preserves it", async () => {
+    const start = vi.spyOn(mockBridge, "startChat").mockResolvedValue({ status: "cancelled" });
+    const legacy = vi.spyOn(mockBridge, "newChat");
+    const open = vi.spyOn(mockBridge, "openChat");
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+    const composer = await screen.findByRole("textbox", { name: "Message" });
+    fireEvent.change(composer, { target: { value: "keep my draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Browse…" }));
+    await waitFor(() => expect(start).toHaveBeenCalledExactlyOnceWith({ source: "browse" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Cancel" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(legacy).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(composer).toHaveValue("keep my draft");
+    expect(screen.getByRole("heading", { name: "Write the README intro" })).toBeInTheDocument();
+  });
+  it("choosing a folder starts once and refetches workspace", async () => {
+    const initial = await mockBridge.newChat();
+    const legacy = vi.spyOn(mockBridge, "newChat");
+    const start = vi.spyOn(mockBridge, "startChat").mockResolvedValue({ status: "chosen", chat: { ...initial, cwd: "/picked" } });
+    const list = vi.spyOn(mockBridge, "listDirectory");
+    render(<App />);
+    fireEvent.click((await screen.findAllByRole("button", { name: "New chat" }))[1]!);
+    fireEvent.click(await screen.findByRole("button", { name: "Browse…" }));
+    await screen.findByRole("textbox", { name: "Message" });
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(1));
+    expect(start).toHaveBeenCalledExactlyOnceWith({ source: "browse" });
+    expect(legacy).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("contentinfo", { name: "Status bar" })).toHaveTextContent("picked");
+  });
 });
 
 describe("App", () => {
@@ -63,18 +132,19 @@ describe("App", () => {
     const list = vi.spyOn(mockBridge, "listDirectory");
     const git = vi.spyOn(mockBridge, "gitSummary");
     render(<App />);
-    await screen.findByRole("textbox", { name: "Message" });
-    await waitFor(() => expect(list).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole("button", { name: /Write the README intro/ }));
-    expect(list).toHaveBeenCalledTimes(1);
+    await screen.findByText("Start a chat in any folder");
+    expect(list).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+    expect(list).not.toHaveBeenCalled();
     resolve(initial);
-    await waitFor(() => expect(list).toHaveBeenCalledTimes(2));
-    expect(git).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(1));
+    expect(git).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("textbox", { name: "Message" })).toBeInTheDocument();
   });
   it("opens models without unmounting chat and restores its draft on Back", async () => {
     const newChat = vi.spyOn(mockBridge, "newChat");
     render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
     const composer = await screen.findByRole("textbox", { name: "Message" });
     fireEvent.change(composer, { target: { value: "keep this draft" } });
     const opens = newChat.mock.calls.length;
@@ -110,12 +180,10 @@ describe("App", () => {
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText("Tell Gentle what you need…"),
-    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "New chat" })).toHaveLength(2);
   });
 
-  it('opens a fresh "New chat" by default', async () => {
+  it('shows the folder start screen by default', async () => {
     render(<App />);
 
     expect(await screen.findAllByRole("heading", { name: "New chat" })).toHaveLength(1);
@@ -184,14 +252,14 @@ describe("App shell layout", () => {
 
     await waitFor(() => expect(screen.getByTestId("right-panel")).toHaveAttribute("data-open", "false"));
     expect(screen.getByTestId("left-panel")).toHaveAttribute("data-open", "true");
-    expect(screen.getByPlaceholderText("Tell Gentle what you need…")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "New chat" })).toHaveLength(2);
   });
 });
 
 describe("App status bar", () => {
   it("renders no old workspace or status samples with the mock bridge", async () => {
     render(<App />);
-    await screen.findByRole("textbox", { name: "Message" });
+    await screen.findByText("Start a chat in any folder");
     for (const text of ["Login with magic link", "claude-sonnet-5", "$0.84", "Sample data · not connected yet"]) {
       expect(screen.queryByText(text, { exact: false })).not.toBeInTheDocument();
     }
@@ -203,14 +271,15 @@ describe("App status bar", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
     const bar = screen.getByRole("contentinfo", { name: "Status bar" });
     await waitFor(() => expect(bar).toHaveTextContent("live"));
-    expect(git).toHaveBeenCalledTimes(2);
+    expect(git).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("tab", { name: "Git" }));
     git.mockResolvedValue({ status: "not-a-repository" });
     fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
     await waitFor(() => expect(bar).not.toHaveTextContent("live"));
-    expect(git).toHaveBeenCalledTimes(3);
+    expect(git).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("button", { name: "New chat" }));
-    await waitFor(() => expect(bar).toHaveTextContent("No folder chosen"));
+    fireEvent.click(await screen.findByRole("button", { name: "Browse…" }));
+    await waitFor(() => expect(bar).toHaveTextContent("preview"));
   });
   beforeEach(() => {
     window.history.pushState({}, "", "?firstRun=0");

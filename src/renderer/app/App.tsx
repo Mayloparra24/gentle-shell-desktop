@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatSummary } from "@shared/bridge-types";
 import { useBridge } from "@renderer/shared/bridge/useBridge";
 import { ChatsContainer } from "@renderer/features/chats/ChatsContainer";
+import { FolderDialog } from "@renderer/features/chats/FolderDialog";
 import { ConversationContainer, type ActiveChat } from "@renderer/features/conversation/ConversationContainer";
 import { FirstRunContainer } from "@renderer/features/first-run/FirstRunContainer";
 import { WorkspacePanel } from "@renderer/features/workspace/WorkspacePanel";
@@ -14,7 +15,7 @@ import { ModelsContainer } from "@renderer/features/models/ModelsContainer";
 import { SettingsContainer } from "@renderer/features/settings/SettingsContainer";
 import "./App.css";
 
-const NEW_CHAT: ActiveChat = { kind: "new" };
+const NO_CHAT: ActiveChat = { kind: "none" };
 
 const SCREEN = {
   LOADING: "loading",
@@ -40,9 +41,10 @@ type Screen = (typeof SCREEN)[keyof typeof SCREEN];
 export function App() {
   const bridge = useBridge();
   const [screen, setScreen] = useState<Screen>(SCREEN.LOADING);
-  const [activeChat, setActiveChat] = useState<ActiveChat>(NEW_CHAT);
+  const [activeChat, setActiveChat] = useState<ActiveChat>(NO_CHAT);
   const [openedChat, setOpenedChat] = useState<ActiveChat | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [view, setView] = useState<"chat" | "models">("chat");
   const openModels = (): void => setView("models");
   const [homeVersion, setHomeVersion] = useState(0);
@@ -75,9 +77,7 @@ export function App() {
     setActiveChat({ kind: "existing", chat });
   };
 
-  const handleNewChat = (): void => {
-    setActiveChat(NEW_CHAT);
-  };
+  const handleChooseFolder = (): void => setFolderDialogOpen(true);
 
   if (screen === SCREEN.LOADING) return <div className="gc-app-loading" />;
   if (screen === SCREEN.FIRST_RUN) return <FirstRunContainer onDone={() => setScreen(SCREEN.CHAT)} />;
@@ -87,12 +87,12 @@ export function App() {
   const git = openedChat === activeChat && workspaceGit?.chat === activeChat && workspaceGit.home === homeVersion
     ? workspaceGit.git : undefined;
   const statusInfo = {
-    cwd: activeChat.kind === "existing" ? activeChat.chat.cwd : undefined,
+    cwd: activeChat.kind === "existing" ? activeChat.chat.cwd : activeChat.kind === "ready" ? activeChat.state.cwd : undefined,
     branch: git?.status === "ready" ? git.branch : undefined,
   };
 
   return (
-    <div className="gc-app">
+    <><div className="gc-app" inert={folderDialogOpen}>
       <TopBar title={title} leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight}
         onOpenSettings={() => setSettingsOpen(true)}
         settingsButtonRef={settingsButtonRef}
@@ -102,13 +102,14 @@ export function App() {
           <ChatsContainer
             key={homeVersion}
             onSelectChat={handleSelectChat}
-            onNewChat={handleNewChat}
+            onNewChat={handleChooseFolder}
+            onChooseFolder={handleChooseFolder}
             selectedChatId={activeChat.kind === "existing" ? activeChat.chat.id : undefined}
           />
         </div>
         <div className="gc-app__center">
           <div className="gc-app__chat" hidden={view !== "chat"}>
-            <ConversationContainer key={homeVersion} activeChat={activeChat} onOpenModels={openModels} onChatReady={setOpenedChat} />
+            <ConversationContainer key={homeVersion} activeChat={activeChat} onOpenModels={openModels} onChatReady={setOpenedChat} onChooseFolder={handleChooseFolder} />
           </div>
           {view === "models" && <ModelsContainer key={homeVersion} onBack={() => setView("chat")} />}
         </div>
@@ -125,8 +126,14 @@ export function App() {
         themeId={themeId}
         onChangeTheme={setTheme}
         onClose={() => { setSettingsOpen(false); settingsButtonRef.current?.focus(); }}
-        onHomeChanged={() => { setOpenedChat(null); handleNewChat(); setHomeVersion((version) => version + 1); }}
+        onHomeChanged={() => { setOpenedChat(null); setActiveChat(NO_CHAT); setHomeVersion((version) => version + 1); }}
       />}
     </div>
+    {folderDialogOpen && <FolderDialog onClose={() => setFolderDialogOpen(false)} onStarted={(state) => {
+      setActiveChat({ kind: "ready", state });
+      setView("chat");
+      setFolderDialogOpen(false);
+    }} />}
+    </>
   );
 }

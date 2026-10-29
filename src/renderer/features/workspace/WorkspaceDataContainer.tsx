@@ -49,6 +49,7 @@ export function WorkspaceDataContainer({ tab, ready, onGitChange }: {
     else { next.add(path); if (!listings[path]) void loadDirectory(path); }
     setExpanded(next);
   }
+  if (!ready) return <p>Choose a folder to see its files and Git status.</p>;
   if (tab === "git") return <GitTab git={git} onRefresh={() => void loadGit()} />;
   return <FilesTab listings={listings} expanded={expanded} query={query} onQueryChange={setQuery}
     onToggle={toggle} onRetry={path => void loadDirectory(path)} />;

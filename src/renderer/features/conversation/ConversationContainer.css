@@ -6,3 +6,8 @@
   min-height: 0;
   background: var(--bg);
 }
+
+.gc-conversation--empty { align-items: center; justify-content: center; gap: 16px; }
+.gc-conversation__mark { color: var(--accent); font-size: 30px; opacity: .7; }
+.gc-conversation--empty p { margin: 0; color: var(--muted); font: 14px var(--font-body); }
+.gc-conversation--empty .gc-button { flex: none; width: auto; }

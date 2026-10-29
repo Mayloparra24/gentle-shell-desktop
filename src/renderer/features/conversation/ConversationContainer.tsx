@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ChatState, ChatSummary, DialogAnswer } from "@shared/bridge-types";
 import { useBridge } from "@renderer/shared/bridge/useBridge";
+import { Button } from "@renderer/shared/ui/atoms/Button";
 import { HelpersContainer } from "@renderer/features/helpers/HelpersContainer";
 import { Composer } from "./components/Composer";
 import { CONVERSATION_PANE, ConversationHeader, type ConversationPane } from "./components/ConversationHeader";
@@ -16,11 +17,12 @@ import "./ConversationContainer.css";
  * calls chat.open/chat.new itself, because GentleBridge tracks exactly one
  * "currently open" chat.
  */
-export type ActiveChat = { readonly kind: "new" } | { readonly kind: "existing"; readonly chat: ChatSummary };
+export type ActiveChat = { readonly kind: "none" } | { readonly kind: "ready"; readonly state: ChatState } | { readonly kind: "existing"; readonly chat: ChatSummary };
 
 export interface ConversationContainerProps {
   readonly activeChat: ActiveChat;
   readonly onOpenModels?: () => void;
+  readonly onChooseFolder?: () => void;
   readonly onChatReady?: (chat: ActiveChat) => void;
 }
 
@@ -45,7 +47,7 @@ function errorText(cause: unknown): string {
  * bridge.onError pushes) render in a dedicated StatusLine, never as a
  * synthetic ChatMessage appended to the thread.
  */
-export function ConversationContainer({ activeChat, onOpenModels, onChatReady }: ConversationContainerProps) {
+export function ConversationContainer({ activeChat, onOpenModels, onChatReady, onChooseFolder }: ConversationContainerProps) {
   const bridge = useBridge();
   const [chatState, setChatState] = useState<ChatState>(emptyChatState());
   const [bridgeError, setBridgeError] = useState<string | undefined>(undefined);
@@ -68,7 +70,7 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady }:
     };
   }, [bridge]);
 
-  // Opens (or starts) the selected chat whenever the selection changes.
+  // Opens the selected saved chat, or displays the chat already started by the folder dialog.
   // Guarded against stale resolutions: if the selection changes again
   // before this request settles (e.g. quickly clicking two chats), its
   // resolved/rejected result must not clobber the state that belongs to
@@ -83,7 +85,9 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady }:
   useEffect(() => {
     setBridgeError(undefined);
     let cancelled = false;
-    const opening = activeChat.kind === "existing" ? bridge.openChat(activeChat.chat.id) : bridge.newChat();
+    if (activeChat.kind === "none") return;
+    const opening = activeChat.kind === "ready" ? Promise.resolve(activeChat.state)
+      : bridge.openChat(activeChat.chat.id);
     opening
       .then((state) => {
         if (!cancelled) {
@@ -125,6 +129,14 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady }:
   };
 
   const error = bridgeError ?? chatState.lastError;
+
+  if (activeChat.kind === "none") return (
+    <section className="gc-conversation gc-conversation--empty">
+      <span className="gc-conversation__mark" aria-hidden="true">✿</span>
+      <p>Start a chat in any folder</p>
+      <Button variant="ghost" onClick={onChooseFolder}>New chat</Button>
+    </section>
+  );
 
   return (
     <section className="gc-conversation">
