@@ -12,12 +12,19 @@ const execute: GitExec = (command, args, options) => new Promise((resolve, rejec
   });
 });
 
+/**
+ * A chat folder may be a cloned repository, and a repository can name programs in its own config.
+ * These command-line overrides win over every config file: no fsmonitor hook (run by `git status`)
+ * and no signature verification (`gpg.program`, run by `git log` on signed commits).
+ */
+const HARDENING = ["-c", "core.fsmonitor=false", "-c", "log.showSignature=false"];
+
 /** Fixed argv only; neither a shell nor renderer input is used to construct a command. */
 export function createGitSummaryReader(exec: GitExec = execute): GitSummaryReader {
   return {
     async gitSummary(cwd): Promise<GitSummary> {
       if (!cwd) return { status: "no-chat-folder" };
-      const run = async (args: string[]) => (await exec("git", ["-C", cwd, ...args], {
+      const run = async (args: string[]) => (await exec("git", [...HARDENING, "-C", cwd, ...args], {
         encoding: "utf8", shell: false, windowsHide: true, timeout: 5000, maxBuffer: 1024 * 1024,
         // Do not discover an unrelated repository above the chat's filesystem boundary.
         env: { ...process.env, GIT_OPTIONAL_LOCKS: "0", GIT_CEILING_DIRECTORIES: path.dirname(cwd), LC_ALL: "C" },

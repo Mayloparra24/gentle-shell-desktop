@@ -15,6 +15,8 @@ export function createWorkspaceReader(): WorkspaceReader {
         return { status: "error", message: "Invalid relative directory path" };
       }
       try {
+        // shortcut: realpath and readdir are separate steps, so a writer racing us could swap a link in between;
+        // acceptable for read-only metadata of a folder the user chose, revisit if folders ever become untrusted.
         const root = await realpath(cwd);
         const directory = await realpath(path.join(root, ...relativePath.split(/[\\/]/)));
         const relative = path.relative(root, directory);

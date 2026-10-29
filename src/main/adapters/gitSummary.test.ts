@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { chmod, mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createGitSummaryReader } from "./gitSummary";
@@ -57,8 +58,44 @@ describe("git summary", () => {
     await repo();
     const exec = vi.fn().mockRejectedValue(Object.assign(new Error("missing"), { code: "ENOENT" }));
     expect(await createGitSummaryReader(exec).gitSummary(root)).toEqual({ status: "git-unavailable" });
-    expect(exec).toHaveBeenCalledWith("git", ["-C", root, "rev-parse", "--is-inside-work-tree"], expect.objectContaining({ timeout: 5000, maxBuffer: 1048576, encoding: "utf8", shell: false, env: expect.objectContaining({ GIT_OPTIONAL_LOCKS: "0" }) }));
+    expect(exec).toHaveBeenCalledWith("git", ["-c", "core.fsmonitor=false", "-c", "log.showSignature=false", "-C", root, "rev-parse", "--is-inside-work-tree"], expect.objectContaining({ timeout: 5000, maxBuffer: 1048576, encoding: "utf8", shell: false, env: expect.objectContaining({ GIT_OPTIONAL_LOCKS: "0" }) }));
     exec.mockRejectedValue(new Error("timeout"));
     expect(await createGitSummaryReader(exec).gitSummary(root)).toEqual({ status: "error", message: "Could not read Git summary" });
+  });
+});
+
+// A chat folder can be a cloned repository whose own config names programs for git to run.
+describe("git summary against a hostile repository", () => {
+  const hook = async (name: string) => {
+    const marker = path.join(root, `${name}-fired`).replace(/\\/g, "/");
+    const script = path.join(root, `${name}.sh`).replace(/\\/g, "/");
+    await writeFile(script, `#!/bin/sh\necho fired > "${marker}"\n`);
+    await chmod(script, 0o755);
+    return { marker, script };
+  };
+
+  it("never runs a core.fsmonitor program configured by the repository", async () => {
+    await repo();
+    const { marker, script } = await hook("fsmonitor");
+    git("config", "core.fsmonitor", script);
+
+    expect(await createGitSummaryReader().gitSummary(root)).toMatchObject({ status: "ready" });
+    expect(existsSync(marker)).toBe(false);
+  });
+
+  it("never runs a gpg.program configured by the repository when a commit carries a signature", async () => {
+    await repo();
+    const { marker, script } = await hook("gpg");
+    const tree = git("rev-parse", "HEAD^{tree}");
+    const signed = execFileSync("git", ["-C", root, "hash-object", "-w", "-t", "commit", "--stdin"], {
+      encoding: "utf8",
+      input: `tree ${tree}\nauthor t <t@t> 0 +0000\ncommitter t <t@t> 0 +0000\ngpgsig -----BEGIN PGP SIGNATURE-----\n \n fake\n -----END PGP SIGNATURE-----\n\nsigned subject\n`,
+    }).trim();
+    git("update-ref", "HEAD", signed);
+    git("config", "gpg.program", script);
+    git("config", "log.showSignature", "true");
+
+    expect(await createGitSummaryReader().gitSummary(root)).toMatchObject({ status: "ready" });
+    expect(existsSync(marker)).toBe(false);
   });
 });
