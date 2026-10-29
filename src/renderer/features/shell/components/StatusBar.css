@@ -1,0 +1,45 @@
+.gc-status-bar {
+  display: flex;
+  align-items: stretch;
+  height: 34px;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  background: var(--panel);
+  border-top: 1px solid var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+.gc-status-bar__segment {
+  display: flex;
+  align-items: center;
+  padding: 0 0.9rem;
+  border-right: 1px solid var(--line);
+}
+
+.gc-status-bar__brand {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.gc-status-bar__branch {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.gc-status-bar__model {
+  color: var(--blue);
+}
+
+.gc-status-bar__context {
+  color: var(--amber);
+}
+
+.gc-status-bar__workflow {
+  margin-left: auto;
+  border-right: 0;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+}

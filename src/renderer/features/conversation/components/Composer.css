@@ -1,24 +1,63 @@
 .gc-composer {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.75rem;
-  border-top: 1px solid var(--line);
-  background: var(--panel);
-}
-
-.gc-composer__row {
-  display: flex;
-  align-items: flex-end;
   gap: 0.5rem;
+  padding: 0.75rem 1.5rem 0.9rem;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
 }
 
+.gc-composer__box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+}
+
+.gc-composer__box:focus-within {
+  outline: 2px solid var(--accent-active);
+  outline-offset: 1px;
+}
+
+/* The box owns the border and focus ring; the field inside stays flat. */
 .gc-composer .gc-text-field {
   flex: 1;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+  field-sizing: content;
+  min-height: 1.5rem;
+  max-height: 10rem;
+}
+
+.gc-composer .gc-text-field:focus {
+  outline: none;
+}
+
+.gc-composer .gc-composer__send {
+  background: var(--blue);
+  color: var(--bg);
+}
+
+.gc-composer .gc-composer__send:hover:not(:disabled) {
+  background: var(--text);
 }
 
 .gc-composer__hints {
-  margin: 0;
+  display: flex;
+  gap: 1.1rem;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 0.15rem;
   font-size: 0.75rem;
   color: var(--muted);
 }

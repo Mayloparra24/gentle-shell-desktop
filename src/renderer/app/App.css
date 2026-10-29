@@ -32,6 +32,15 @@
   flex-direction: column;
 }
 
+.gc-app__right {
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+}
+
+.gc-app__right[data-open="false"] {
+  border-left-width: 0;
+}
+
 .gc-app__left[data-open="false"],
 .gc-app__right[data-open="false"] {
   visibility: hidden;

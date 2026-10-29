@@ -97,3 +97,23 @@ describe("App shell layout", () => {
     expect(screen.getByPlaceholderText("Tell Gentle what you need…")).toBeInTheDocument();
   });
 });
+
+describe("App status bar", () => {
+  beforeEach(() => {
+    window.history.pushState({}, "", "?firstRun=0");
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    window.history.pushState({}, "", "/");
+  });
+
+  it("shows the status bar and swaps in the open chat's folder", async () => {
+    render(<App />);
+    expect(await screen.findByRole("contentinfo", { name: "Status bar" })).toBeInTheDocument();
+
+    (await screen.findByRole("button", { name: /Write the README intro/ })).click();
+
+    await waitFor(() => expect(screen.getByRole("contentinfo", { name: "Status bar" })).toHaveTextContent("/Users/dev/gentle-shell-desktop"));
+  });
+});

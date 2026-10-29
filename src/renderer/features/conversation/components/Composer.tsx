@@ -44,21 +44,25 @@ export function Composer({ value, working, onChange, onSend, onAbort }: Composer
 
   return (
     <form className="gc-composer" onSubmit={handleSubmit}>
-      <div className="gc-composer__row">
+      <div className="gc-composer__box">
         <TextField
           multiline
-          rows={2}
+          rows={1}
           placeholder="Tell Gentle what you need…"
           value={value}
           readOnly={working}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
         />
-        <Button type="submit" disabled={!canSend}>
+        <Button type="submit" className="gc-composer__send" disabled={!canSend}>
           Send
         </Button>
       </div>
-      <p className="gc-composer__hints">Enter to send · Shift+Enter for a new line · Esc to stop</p>
+      <p className="gc-composer__hints">
+        <span>Enter to send</span>
+        <span>Shift+Enter for a new line</span>
+        <span>Esc to stop the agent</span>
+      </p>
     </form>
   );
 }

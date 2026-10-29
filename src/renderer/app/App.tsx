@@ -4,6 +4,10 @@ import { useBridge } from "@renderer/shared/bridge/useBridge";
 import { ChatsContainer } from "@renderer/features/chats/ChatsContainer";
 import { ConversationContainer, type ActiveChat } from "@renderer/features/conversation/ConversationContainer";
 import { FirstRunContainer } from "@renderer/features/first-run/FirstRunContainer";
+import { WorkspacePanel } from "@renderer/features/workspace/WorkspacePanel";
+import { PREVIEW_WORKSPACE } from "@renderer/features/workspace/preview";
+import { StatusBar } from "@renderer/features/shell/components/StatusBar";
+import { PREVIEW_STATUS } from "@renderer/features/shell/previewStatus";
 import { TopBar } from "@renderer/features/shell/components/TopBar";
 import { useShellLayout } from "@renderer/features/shell/useShellLayout";
 import "./App.css";
@@ -67,6 +71,8 @@ export function App() {
 
   const title = activeChat.kind === "existing" ? activeChat.chat.title : "New chat";
 
+  const statusInfo = activeChat.kind === "existing" ? { ...PREVIEW_STATUS, cwd: activeChat.chat.cwd } : PREVIEW_STATUS;
+
   return (
     <div className="gc-app">
       <TopBar title={title} leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight} />
@@ -79,8 +85,11 @@ export function App() {
           />
         </div>
         <ConversationContainer activeChat={activeChat} />
-        <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen} />
+        <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen}>
+          <WorkspacePanel snapshot={PREVIEW_WORKSPACE} />
+        </div>
       </div>
+      <StatusBar info={statusInfo} sample />
     </div>
   );
 }
