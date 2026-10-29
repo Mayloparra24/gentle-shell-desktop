@@ -20,8 +20,8 @@ Out of scope for this feature: the models screen (own feature, `design/gentle-we
 ## Tasks
 
 - [x] T1 (S3, S4, S6, S9) main and bridge: silent command runner in `PiSession`, settings service with parsers and allowlist, `ChatHost`, IPC, preload, mock bridge — inline — commit: f10811d
-- [ ] T2 (S1, S2, S3, S4, S5, S6, S8) renderer: Settings modal, sections, rows, states, confirmation — worker — commit: pending
-- [ ] T3 (S7) Home section wired into `App` (reset chat, remount list) — worker, with T2 — commit: pending
+- [x] T2 (S1, S2, S3, S4, S5, S6, S8) renderer: Settings modal, sections, rows, states, confirmation — worker — commit: dfd926a
+- [x] T3 (S7) Home section wired into `App` (reset chat, remount list) — worker, with T2 — commit: dfd926a
 
 ## Log
 
@@ -31,3 +31,6 @@ Out of scope for this feature: the models screen (own feature, `design/gentle-we
 - L4: (agent) Finding for the user: this machine's telemetry is enabled by default (source: default).
 - L5: (user) "es que no es que no edite ningun archivo, osea que edite lo que hace igual la TUI de gentle-shell osea lo normal, la idea es que cualquier persona que ya tengo gentle-shell instalado y luego descargué gentle-web ya se puede usar despues de elegir la carpeta de origen obvio, no se sí me captas y además esto no afecte nada de gentle-shell ni con lo normal ni con actualizaciones me entiendes?" Also: "No crees archivos en mi .gentle-shell por FAVOR, la idea es que estó sea por aparte y si hace falta algo me preguntas". Principle: gentle-web is a client of the user's installed gentle-shell; it may do what the TUI does, never more, and must not affect gentle-shell in normal use or across updates. Tests and development never run the real gentle-shell.
 - L6: (user) "si porque la idea es ir actualizando gentle-web conforme va saliendo release de gentle-shell". Consequence: `src/main/domain/settings/settingsCatalog.ts` is the single table to review on each gentle-shell release (command names, status wording, allowed values); a setting the installed gentle-shell lacks is hidden, an unrecognized status reads as unknown. The wording above was observed on gentle-pi 4.5.0-main (the build installed on the maintainer machine).
+- L7: (agent) T2 and T3 were delegated to one `gentle-ai-worker` run. Verified by the parent: 471 of 472 tests pass (the one failure is the existing `launcherLocator` Windows test), `tsc` clean, and a browser check with the mock bridge (no gentle-shell) showed the modal sections, a switch change, the risky-value confirmation (Esc cancels without changing the value), diagnostics output, Esc closing the dialog and focus returning to the Settings button.
+- L8: (agent) The worker reported it had read (not changed) a skill file under the forbidden `~/.gentle-shell` while preparing. Nothing was written there and no real gentle-shell was run.
+- L9: (agent) Not covered by this feature and not verified against the real gentle-shell: reading real values in the modal, and Home switching against a real session.
