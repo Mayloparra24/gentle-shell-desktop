@@ -57,7 +57,8 @@ describe("createLauncherLocator", () => {
     expect(locator.locate().env).toBeUndefined();
   });
 
-  it("skips a PATH entry that has the name but is not executable", () => {
+  // Windows X_OK checks existence; chmod cannot remove POSIX executable bits there.
+  it.skipIf(process.platform === "win32")("skips a PATH entry that has the name but is not executable", () => {
     tmpDir = mkdtempSync(path.join(tmpdir(), "gentle-shell-locator-"));
     const binPath = path.join(tmpDir, "gentle-shell");
     writeFileSync(binPath, "not executable");

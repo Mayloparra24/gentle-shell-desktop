@@ -33,6 +33,7 @@ describe("createPiSessionStore", () => {
     home = undefined;
   });
 
+  // First call cold-imports pi (~2s isolated; T3 took 14.5s under full-suite contention).
   it("lists sessions across every project subdirectory under <home>/sessions", async () => {
     home = mkdtempSync(path.join(tmpdir(), "gentle-shell-home-"));
 
@@ -67,7 +68,7 @@ describe("createPiSessionStore", () => {
       messageCount: 1,
       firstMessage: "Write the README intro",
     });
-  });
+  }, 30_000);
 
   it("restores a previously-unset PI_CODING_AGENT_DIR after the call", async () => {
     home = mkdtempSync(path.join(tmpdir(), "gentle-shell-home-"));
