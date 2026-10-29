@@ -16,6 +16,8 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
     onError: vi.fn(),
     setupStatus: vi.fn().mockResolvedValue({ needsChoice: false, detection: { found: false, dir: "", hasAuth: false, hasModels: false } }),
     chooseHome: vi.fn(),
+    homeStatus: vi.fn(),
+    listCommands: vi.fn(),
     ...overrides,
   };
 }

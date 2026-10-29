@@ -76,6 +76,26 @@ function handleLine(line) {
     return;
   }
 
+  if (cmd.type === "get_commands") {
+    if (process.env.FAKE_COMMANDS_FAIL === "1") {
+      write({ type: "response", id: cmd.id, command: "get_commands", success: false, error: "no commands" });
+      return;
+    }
+    write({
+      type: "response",
+      id: cmd.id,
+      command: "get_commands",
+      success: true,
+      data: {
+        commands: [
+          { name: "gentle-status", description: "Show status", source: "extension", sourceInfo: {} },
+          { name: "skill:review", source: "skill", sourceInfo: {} },
+        ],
+      },
+    });
+    return;
+  }
+
   if (cmd.type === "get_messages") {
     write({
       type: "response",
@@ -167,6 +187,38 @@ describe("PiSession", () => {
     expect(settled.messages[1]).toMatchObject({ role: "assistant", text: "hello world", streaming: false });
 
     await session.stop();
+  });
+
+  it("listCommands resolves the commands pi reports, keeping only the fields the UI needs", async () => {
+    const scriptPath = writeFakeScript();
+    const session = createSession({ GENTLE_SHELL_BIN: scriptPath });
+
+    session.start();
+    const commands = await session.listCommands();
+
+    expect(commands).toEqual([
+      { name: "gentle-status", description: "Show status", source: "extension" },
+      { name: "skill:review", source: "skill" },
+    ]);
+
+    await session.stop();
+  });
+
+  it("listCommands rejects with pi's error when get_commands fails", async () => {
+    const scriptPath = writeFakeScript();
+    const session = createSession({ GENTLE_SHELL_BIN: scriptPath, FAKE_COMMANDS_FAIL: "1" });
+
+    session.start();
+
+    await expect(session.listCommands()).rejects.toThrow("no commands");
+
+    await session.stop();
+  });
+
+  it("listCommands rejects instead of hanging when no process is active", async () => {
+    const session = createSession({ GENTLE_SHELL_BIN: writeFakeScript() });
+
+    await expect(session.listCommands()).rejects.toThrow("no active process");
   });
 
   it("seeds ChatState.messages from get_messages history when started with a sessionPath", async () => {

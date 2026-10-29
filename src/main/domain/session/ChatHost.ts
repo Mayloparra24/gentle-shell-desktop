@@ -1,4 +1,4 @@
-import type { ChatState, ChatSummary, DialogAnswer, PromptResult } from "@shared/bridge-types";
+import type { ChatState, ChatSummary, DialogAnswer, PromptResult, SlashCommand } from "@shared/bridge-types";
 import { boundedStop } from "../lifecycle/boundedStop";
 import type { RpcEvent } from "../rpc/types";
 import type { HomeSettings, LauncherLocator, ProcessSpawner, SessionStore } from "../../ports";
@@ -118,6 +118,11 @@ export class ChatHost {
    * would report it a second time through the IPC error path. */
   async sendMessage(text: string): Promise<PromptResult> {
     return this.requireCurrent().prompt(text);
+  }
+
+  /** The commands the open chat can run with `/name`; rejects when no chat is open. */
+  async listCommands(): Promise<SlashCommand[]> {
+    return this.requireCurrent().listCommands();
   }
 
   async abort(): Promise<void> {

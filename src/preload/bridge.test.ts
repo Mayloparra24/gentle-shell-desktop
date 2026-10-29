@@ -138,6 +138,23 @@ describe("createBridge", () => {
     expect(invoke).toHaveBeenCalledWith(IPC_CHANNELS.CHOOSE_HOME, "link");
   });
 
+  it("homeStatus invokes setup.homeStatus with no payload", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    const status = { mode: "link", dir: "/pi", detection: { found: true, dir: "/pi", hasAuth: true, hasModels: true } };
+    invoke.mockResolvedValue(status);
+
+    await expect(createBridge(ipc).homeStatus()).resolves.toEqual(status);
+    expect(invoke).toHaveBeenCalledWith(IPC_CHANNELS.HOME_STATUS);
+  });
+
+  it("listCommands invokes commands.list with no payload", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    invoke.mockResolvedValue([{ name: "gentle-status", source: "extension" }]);
+
+    await expect(createBridge(ipc).listCommands()).resolves.toEqual([{ name: "gentle-status", source: "extension" }]);
+    expect(invoke).toHaveBeenCalledWith(IPC_CHANNELS.LIST_COMMANDS);
+  });
+
   it("onError's returned unsubscribe removes the listener", () => {
     const { ipc, listeners } = createFakeIpc();
     const bridge = createBridge(ipc);

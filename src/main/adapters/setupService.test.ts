@@ -47,6 +47,32 @@ describe("createSetupService", () => {
     expect(status.detection.found).toBe(false);
   });
 
+  it("homeStatus() reports isolated and its folder when nothing is persisted", async () => {
+    const service = createSetupService(fakeConfigStore({}), { GENTLE_SHELL_HOME: "", PI_CODING_AGENT_DIR: "/pi-dir" }, () => true);
+
+    const status = await service.homeStatus();
+
+    expect(status.mode).toBe("isolated");
+    expect(status.dir).toMatch(/.gentle-shell/);
+    expect(status.detection).toMatchObject({ found: true, dir: "/pi-dir" });
+  });
+
+  it("homeStatus() follows a persisted link choice to the pi folder", async () => {
+    const service = createSetupService(fakeConfigStore({ home: "link" }), { PI_CODING_AGENT_DIR: "/pi-dir" }, () => true);
+
+    const status = await service.homeStatus();
+
+    expect(status).toMatchObject({ mode: "link", dir: "/pi-dir" });
+  });
+
+  it("homeStatus() reflects a choice made through chooseHome", async () => {
+    const service = createSetupService(fakeConfigStore({}), { PI_CODING_AGENT_DIR: "/pi-dir" }, () => true);
+
+    await service.chooseHome("link");
+
+    expect((await service.homeStatus()).mode).toBe("link");
+  });
+
   it("chooseHome(mode) persists the choice through configStore.write", async () => {
     const configStore = fakeConfigStore({});
     const service = createSetupService(configStore, {}, () => false);

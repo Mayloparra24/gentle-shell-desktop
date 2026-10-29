@@ -1,4 +1,13 @@
-import { MESSAGE_ROLE, type ChatMessage, type ChatState, type DialogAnswer, type PromptResult } from "@shared/bridge-types";
+import {
+  MESSAGE_ROLE,
+  SLASH_COMMAND_SOURCE,
+  type ChatMessage,
+  type ChatState,
+  type DialogAnswer,
+  type PromptResult,
+  type SlashCommand,
+  type SlashCommandSource,
+} from "@shared/bridge-types";
 import { INITIAL_CHAT_STATE, reduceChat } from "../rpc/chatReducer";
 import { decodeLine, encodeCommand } from "../rpc/codec";
 import { extractHistoryMessages, historyToMessages } from "../rpc/history";
@@ -56,6 +65,9 @@ class TypedEmitter<Events> {
 
 const STOP_GRACE_PERIOD_MS = 3000;
 
+/** How long `listCommands` waits for pi's `get_commands` response. */
+const COMMANDS_TIMEOUT_MS = 3000;
+
 /**
  * Set on every spawned pi process (M2 prerequisite, see
  * odd/tasks/desktop-m2-helpers.md): only with this flag does gentle-pi
@@ -92,6 +104,7 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
   private process: SpawnedProcess | undefined;
   private stopping = false;
   private historyRequestCounter = 0;
+  private commandsRequestCounter = 0;
   /** Set right after a `get_messages` history request is sent (reopening a
    * session with a `sessionPath`); cleared once its matching response
    * arrives. Lets `applyHistoryResponse` correlate the response by `id`
@@ -183,6 +196,40 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
     this.emit("state", this.state);
     this.send({ type: "prompt", message: text });
     return { queued: true };
+  }
+
+  /**
+   * Asks pi which commands `/name` can run (extension commands, prompt
+   * templates, skills) with `get_commands`, correlated by `id`. Rejects (it
+   * never throws synchronously) when there is no active process, when pi
+   * answers with an error, or when pi does not answer in time.
+   */
+  listCommands(timeoutMs: number = COMMANDS_TIMEOUT_MS): Promise<SlashCommand[]> {
+    if (!this.process || this.stopping) {
+      return Promise.reject(new Error("PiSession: cannot list commands (no active process)"));
+    }
+
+    const id = `commands-${this.commandsRequestCounter++}`;
+
+    return new Promise<SlashCommand[]>((resolve, reject) => {
+      const finish = (settle: () => void): void => {
+        clearTimeout(timer);
+        this.off("event", onEvent);
+        settle();
+      };
+      const onEvent = (event: RpcEvent): void => {
+        if (event.type !== "response" || event.id !== id) return;
+        if (event.success) finish(() => resolve(toSlashCommands(event.data)));
+        else finish(() => reject(new Error(event.error)));
+      };
+      const timer = setTimeout(
+        () => finish(() => reject(new Error("Timed out waiting for the command list"))),
+        timeoutMs,
+      );
+
+      this.on("event", onEvent);
+      this.send({ type: "get_commands", id });
+    });
   }
 
   abort(): void {
@@ -337,4 +384,23 @@ function appendUserMessage(state: ChatState, text: string): ChatState {
 
 function toError(value: unknown): Error {
   return value instanceof Error ? value : new Error(String(value));
+}
+
+const COMMAND_SOURCES: readonly string[] = Object.values(SLASH_COMMAND_SOURCE);
+
+/** Keeps the fields the UI needs from pi's `get_commands` payload and drops entries it cannot use. */
+function toSlashCommands(data: unknown): SlashCommand[] {
+  const commands = (data as { commands?: unknown } | undefined)?.commands;
+  if (!Array.isArray(commands)) return [];
+
+  const result: SlashCommand[] = [];
+  for (const entry of commands) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const { name, description, source } = entry as Record<string, unknown>;
+    if (typeof name !== "string" || name.length === 0) continue;
+    if (typeof source !== "string" || !COMMAND_SOURCES.includes(source)) continue;
+    const kind = source as SlashCommandSource;
+    result.push(typeof description === "string" ? { name, description, source: kind } : { name, source: kind });
+  }
+  return result;
 }

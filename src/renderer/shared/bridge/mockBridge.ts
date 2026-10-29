@@ -1,6 +1,7 @@
 import {
   CHAT_STATE,
   HELPER_STATUS,
+  HOME_MODE,
   MESSAGE_ROLE,
   type ChatMessage,
   type ChatState,
@@ -15,9 +16,11 @@ import {
   type HelpersActivity,
   type HelpersSummary,
   type HomeMode,
+  type HomeStatus,
   type PiDetection,
   type PromptResult,
   type SetupStatus,
+  type SlashCommand,
 } from "@shared/bridge-types";
 
 /**
@@ -105,6 +108,17 @@ function emptyState(): ChatState {
   // HelpersActivity so it keeps matching the real ChatState shape.
   return { messages: [], working: false, pendingDialogs: [], activity: 0, helpers: { summary: { running: 0, queued: 0, waiting: 0, finished: 0 }, tasks: [] } };
 }
+
+const MOCK_PI_DIR = "~/.pi/agent";
+const MOCK_ISOLATED_DIR = "~/.gentle-shell/agent";
+
+/** Sample commands of every source so the browser preview can exercise the `/` menu. */
+const MOCK_COMMANDS: SlashCommand[] = [
+  { name: "gentle-status", description: "Show the current ODD phase and tasks", source: "extension" },
+  { name: "gentle-review", description: "Start a native review of the current change", source: "extension" },
+  { name: "commit-message", description: "Draft a Conventional Commit message", source: "prompt" },
+  { name: "skill:work-unit-commits", description: "Plan commits as reviewable work units", source: "skill" },
+];
 
 let currentState: ChatState = emptyState();
 let nextMessageId = 0;
@@ -485,5 +499,18 @@ export const mockBridge: GentleBridge = {
 
   async chooseHome(mode: HomeMode): Promise<void> {
     homeChoice = mode;
+  },
+
+  async homeStatus(): Promise<HomeStatus> {
+    const mode = homeChoice ?? HOME_MODE.ISOLATED;
+    return {
+      mode,
+      dir: mode === HOME_MODE.LINK ? MOCK_PI_DIR : MOCK_ISOLATED_DIR,
+      detection: { found: true, dir: MOCK_PI_DIR, hasAuth: true, hasModels: true },
+    };
+  },
+
+  async listCommands(): Promise<SlashCommand[]> {
+    return MOCK_COMMANDS;
   },
 };

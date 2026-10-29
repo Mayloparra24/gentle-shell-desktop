@@ -19,6 +19,8 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
     onError: vi.fn().mockReturnValue(() => {}),
     setupStatus: vi.fn().mockResolvedValue(status),
     chooseHome: vi.fn().mockResolvedValue(undefined),
+    homeStatus: vi.fn(),
+    listCommands: vi.fn(),
     ...overrides,
   };
 }

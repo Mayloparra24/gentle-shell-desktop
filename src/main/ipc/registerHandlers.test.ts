@@ -21,6 +21,7 @@ function fakeHost(overrides: Partial<ChatHost> = {}): ChatHost {
 function fakeSetup(): SetupService {
   return {
     status: vi.fn().mockResolvedValue({ needsChoice: false, detection: { found: false, dir: "", hasAuth: false, hasModels: false } }),
+    homeStatus: vi.fn().mockResolvedValue({ mode: "isolated", dir: "/home/.gentle-shell/agent", detection: { found: false, dir: "", hasAuth: false, hasModels: false } }),
     chooseHome: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -97,6 +98,7 @@ describe("registerHandlers", () => {
     const ipc = fakeIpcMain();
     const setup: SetupService = {
       status: vi.fn(),
+      homeStatus: vi.fn(),
       chooseHome: vi.fn().mockRejectedValue(new Error("Could not save the home choice: EACCES")),
     };
 
@@ -112,3 +114,27 @@ function registeredHandler(ipc: IpcMain, channel: string): (...args: unknown[]) 
   if (!call) throw new Error(`no handler registered for channel "${channel}"`);
   return call[1] as (...args: unknown[]) => unknown;
 }
+
+describe("registerHandlers: home status and commands", () => {
+  it("registers setup.homeStatus wired to the SetupService", async () => {
+    const ipc = fakeIpcMain();
+    const setup = fakeSetup();
+
+    registerHandlers(fakeHost(), setup, fakeWebContents(), ipc);
+    const status = await registeredHandler(ipc, "setup.homeStatus")({} as never);
+
+    expect(setup.homeStatus).toHaveBeenCalledTimes(1);
+    expect(status).toMatchObject({ mode: "isolated" });
+  });
+
+  it("registers commands.list wired to ChatHost.listCommands", async () => {
+    const ipc = fakeIpcMain();
+    const host = fakeHost({ listCommands: vi.fn().mockResolvedValue([{ name: "gentle-status", source: "extension" }]) });
+
+    registerHandlers(host, fakeSetup(), fakeWebContents(), ipc);
+    const commands = await registeredHandler(ipc, "commands.list")({} as never);
+
+    expect(host.listCommands).toHaveBeenCalledTimes(1);
+    expect(commands).toEqual([{ name: "gentle-status", source: "extension" }]);
+  });
+});

@@ -20,6 +20,10 @@ export const IPC_CHANNELS = {
   SETUP_STATUS: "setup.status",
   /** Persists the chosen home mode (T5). */
   CHOOSE_HOME: "setup.chooseHome",
+  /** The home in use now and its resolved folder. */
+  HOME_STATUS: "setup.homeStatus",
+  /** Slash commands the open chat can run (pi `get_commands`). */
+  LIST_COMMANDS: "commands.list",
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

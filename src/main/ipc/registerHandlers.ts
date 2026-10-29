@@ -34,6 +34,8 @@ export function registerHandlers(host: ChatHost, setup: SetupService, webContent
     host.answerDialog(id, answer),
   );
   registerRequestHandler(ipc, IPC_CHANNELS.SETUP_STATUS, () => setup.status());
+  registerRequestHandler(ipc, IPC_CHANNELS.HOME_STATUS, () => setup.homeStatus());
+  registerRequestHandler(ipc, IPC_CHANNELS.LIST_COMMANDS, () => host.listCommands());
   registerRequestHandler(ipc, IPC_CHANNELS.CHOOSE_HOME, (_event, mode: HomeMode) => setup.chooseHome(mode));
 
   const unsubscribeState = host.onState((state) => webContents.send(IPC_CHANNELS.STATE_PUSH, state));

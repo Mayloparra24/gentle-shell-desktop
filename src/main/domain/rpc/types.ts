@@ -30,6 +30,8 @@ export type RpcCommand =
   | { readonly type: "new_session" }
   | { readonly type: "switch_session"; readonly sessionPath: string }
   | { readonly type: "get_state" }
+  /** Lists extension commands, prompt templates and skills; correlated by `id` like `get_messages`. */
+  | { readonly type: "get_commands"; readonly id?: string }
   /**
    * `id` is the optional request/response correlation id rpc.md documents
    * for every command ("All commands support an optional `id` field...").

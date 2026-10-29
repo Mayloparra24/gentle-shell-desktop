@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import type { HomeMode, SetupStatus } from "@shared/bridge-types";
-import { detectPi } from "../domain/home/home";
+import type { HomeMode, HomeStatus, SetupStatus } from "@shared/bridge-types";
+import { detectPi, homeDirFor, resolveHomeMode } from "../domain/home/home";
 import type { SetupService } from "../ports";
 import type { AppConfigStore } from "./appConfigStore";
 
@@ -22,6 +22,11 @@ export function createSetupService(
       const detection = detectPi(env, homedir, exists);
       const hasChoice = configStore.read().home !== undefined;
       return { needsChoice: !hasChoice && detection.found, detection };
+    },
+
+    async homeStatus(): Promise<HomeStatus> {
+      const mode = resolveHomeMode(configStore.read());
+      return { mode, dir: homeDirFor(mode, env), detection: detectPi(env, homedir, exists) };
     },
 
     async chooseHome(mode: HomeMode): Promise<void> {

@@ -1,4 +1,14 @@
-import type { ChatState, ChatSummary, DialogAnswer, GentleBridge, HomeMode, PromptResult, SetupStatus } from "@shared/bridge-types";
+import type {
+  ChatState,
+  ChatSummary,
+  DialogAnswer,
+  GentleBridge,
+  HomeMode,
+  HomeStatus,
+  PromptResult,
+  SetupStatus,
+  SlashCommand,
+} from "@shared/bridge-types";
 import { IPC_CHANNELS } from "@shared/ipc-channels";
 
 /**
@@ -27,6 +37,8 @@ export function createBridge(ipc: RendererIpc): GentleBridge {
       ipc.invoke(IPC_CHANNELS.ANSWER_DIALOG, id, answer) as Promise<void>,
     setupStatus: () => ipc.invoke(IPC_CHANNELS.SETUP_STATUS) as Promise<SetupStatus>,
     chooseHome: (mode: HomeMode) => ipc.invoke(IPC_CHANNELS.CHOOSE_HOME, mode) as Promise<void>,
+    homeStatus: () => ipc.invoke(IPC_CHANNELS.HOME_STATUS) as Promise<HomeStatus>,
+    listCommands: () => ipc.invoke(IPC_CHANNELS.LIST_COMMANDS) as Promise<SlashCommand[]>,
 
     onState(callback: (state: ChatState) => void): () => void {
       const listener = (_event: unknown, state: unknown): void => callback(state as ChatState);

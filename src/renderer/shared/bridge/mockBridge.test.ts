@@ -36,6 +36,21 @@ describe("mockBridge", () => {
     expect(status.detection).toMatchObject({ found: true, hasAuth: true, hasModels: true });
   });
 
+  it("homeStatus() starts isolated and follows chooseHome", async () => {
+    expect((await mockBridge.homeStatus()).mode).toBe("isolated");
+
+    await mockBridge.chooseHome("link");
+
+    expect(await mockBridge.homeStatus()).toMatchObject({ mode: "link", dir: expect.stringContaining(".pi") });
+  });
+
+  it("listCommands() returns sample commands of every source", async () => {
+    const commands = await mockBridge.listCommands();
+
+    expect(commands.length).toBeGreaterThan(0);
+    expect(new Set(commands.map((command) => command.source))).toEqual(new Set(["extension", "prompt", "skill"]));
+  });
+
   it("lists two example chats plus one already-working chat", async () => {
     const chats = await mockBridge.listChats();
 

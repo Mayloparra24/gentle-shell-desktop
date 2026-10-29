@@ -264,6 +264,37 @@ export interface SetupStatus {
 }
 
 /**
+ * Which pi home the app is using right now and what it resolves to:
+ * `link` is the plain pi folder (`~/.pi/agent`), `isolated` is
+ * `~/.gentle-shell/agent`. `detection` says whether a pi folder exists, so
+ * the UI can offer `link` only when there is something to link.
+ */
+export interface HomeStatus {
+  readonly mode: HomeMode;
+  readonly dir: string;
+  readonly detection: PiDetection;
+}
+
+export const SLASH_COMMAND_SOURCE = {
+  EXTENSION: "extension",
+  PROMPT: "prompt",
+  SKILL: "skill",
+} as const;
+
+export type SlashCommandSource = (typeof SLASH_COMMAND_SOURCE)[keyof typeof SLASH_COMMAND_SOURCE];
+
+/**
+ * A command pi can run through `prompt` (`get_commands`): an extension
+ * command, a prompt template or a skill. `name` has no leading slash.
+ * Pi's built-in slash commands are not listed: they do not exist over RPC.
+ */
+export interface SlashCommand {
+  readonly name: string;
+  readonly description?: string;
+  readonly source: SlashCommandSource;
+}
+
+/**
  * Surface exposed on `window.gentle` by the preload script. T1 typed the
  * listChats/sendMessage skeleton; T3 finalizes the full shape and wires it
  * to the real IPC bridge (src/preload/bridge.ts) and main-process ChatHost
@@ -292,6 +323,10 @@ export interface GentleBridge {
   /** Persists the chosen home mode; the next spawned session and the
    * session list use it. */
   chooseHome(mode: HomeMode): Promise<void>;
+  /** The home in use now and the folder it resolves to. */
+  homeStatus(): Promise<HomeStatus>;
+  /** Commands the open chat can run with `/name`. Rejects when no chat is open or pi does not answer. */
+  listCommands(): Promise<SlashCommand[]>;
 }
 
 declare global {
