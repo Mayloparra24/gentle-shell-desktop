@@ -15,7 +15,7 @@ Out of this phase, pending the maintainer's go-ahead because they write his `pro
 ## Tasks
 
 - [x] T1 (S2, S3, S5) main and bridge: read-only profiles reader, `readProfiles` through `SetupService`, IPC, preload, mock — inline — commit: f27ce7d
-- [ ] T2 (S1, S2, S3, S4, S6) renderer: models screen, navigation from the status bar, composer and Settings — worker — commit: pending
+- [x] T2 (S1, S2, S3, S4, S6) renderer: models screen, navigation from the status bar, composer and Settings — worker — commit: 5a9d29c
 
 ## Log
 
@@ -23,3 +23,5 @@ Out of this phase, pending the maintainer's go-ahead because they write his `pro
 - L2: (agent) Source for the screen and the file: gentle-pi `docs/readme-reference.md` "Agent-model profiles" and `lib/agent-profiles.ts` (kind `gentle-pi.agent_model_profiles`, version 1, `active`, `profiles` as name → { orchestrator?, <agent>: { model, thinking } }). `/gentle:profiles` only opens a terminal screen, so there is no RPC to edit profiles.
 - L3: (agent) Decision: phase 1 is read-only because the maintainer asked that nothing be changed in his gentle-shell without asking first; the editing phase needs his explicit go-ahead and a plan for guards (format check, atomic write, backup).
 - L4: (agent) Tests never read the real `~/.gentle-shell` or `~/.pi`; the reader takes an injected file reader.
+- L5: (agent) T2 was delegated to one `gentle-ai-worker` run. Verified by the parent: 502 of 503 tests pass (the one failure is the existing `launcherLocator` Windows test), `tsc` clean, and a browser check with the mock bridge (no gentle-shell) showed the tabs with the active profile starred, the table with `inherit`, no editing controls, the chat draft kept after opening and closing the screen, and the screen opening from the status bar, from `/gentle:profiles` and from Settings.
+- L6: (agent) Closed as phase 1. Pending for the next session, in the order proposed: (a) the maintainer reviews the web; (b) editing phase (model/effort pickers, Save, Use in this session, Make default, profile menu) only with his explicit go-ahead and a plan for guards (format check, atomic write, backup); (c) real model, effort and profile in the status bar and the session marker, from `get_state`; (d) the lead line of the screen still says "Same screen as /gentle:profiles", to reword while it is read-only; (e) a custom theme in Settings (asked by the maintainer), to design first in gentle-design.
