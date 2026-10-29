@@ -68,6 +68,20 @@ const STOP_GRACE_PERIOD_MS = 3000;
 /** How long `listCommands` waits for pi's `get_commands` response. */
 const COMMANDS_TIMEOUT_MS = 3000;
 
+/** How long `runSilent` waits for a command's response. */
+const SILENT_TIMEOUT_MS = 8000;
+
+/** Extra wait after a silent command's response, for notifications that trail it. */
+const SILENT_SETTLE_MS = 150;
+
+/** What `handleLine` hands to an active silent run: the notifications and the command's response. */
+interface SilentCapture {
+  readonly id: string;
+  readonly messages: string[];
+  onResponse(response: RpcResponse): void;
+  onExit(error: Error): void;
+}
+
 /**
  * Set on every spawned pi process (M2 prerequisite, see
  * odd/tasks/desktop-m2-helpers.md): only with this flag does gentle-pi
@@ -105,6 +119,9 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
   private stopping = false;
   private historyRequestCounter = 0;
   private commandsRequestCounter = 0;
+  private silentCounter = 0;
+  private capture: SilentCapture | undefined;
+  private silentChain: Promise<unknown> = Promise.resolve();
   /** Set right after a `get_messages` history request is sent (reopening a
    * session with a `sessionPath`); cleared once its matching response
    * arrives. Lets `applyHistoryResponse` correlate the response by `id`
@@ -232,6 +249,59 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
     });
   }
 
+  /**
+   * Runs one slash command and resolves with the notification texts it
+   * printed, without touching the chat: nothing is added to `messages` and
+   * those notifications never reach the reducer, even right after the user
+   * ran a command themselves. Runs are queued one at a time. Rejects (it
+   * never throws synchronously) when there is no active process, when the
+   * agent is working, when pi answers with an error, or when pi does not
+   * answer in time.
+   */
+  runSilent(command: string, timeoutMs: number = SILENT_TIMEOUT_MS): Promise<string[]> {
+    if (!this.process || this.stopping) {
+      return Promise.reject(new Error("PiSession: cannot run a command (no active process)"));
+    }
+    if (this.state.working) {
+      return Promise.reject(new Error("Gentle is still working; try again when it finishes"));
+    }
+
+    const run = this.silentChain.then(() => this.execSilent(command, timeoutMs));
+    this.silentChain = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  private execSilent(command: string, timeoutMs: number): Promise<string[]> {
+    return new Promise<string[]>((resolve, reject) => {
+      const id = `silent-${this.silentCounter++}`;
+      const messages: string[] = [];
+      let settleTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const finish = (settle: () => void): void => {
+        clearTimeout(timer);
+        clearTimeout(settleTimer);
+        this.capture = undefined;
+        settle();
+      };
+      const timer = setTimeout(() => finish(() => reject(new Error("Timed out waiting for gentle-shell"))), timeoutMs);
+
+      this.capture = {
+        id,
+        messages,
+        onResponse: (response) => {
+          if (!response.success) finish(() => reject(new Error(response.error)));
+          else settleTimer = setTimeout(() => finish(() => resolve(messages)), SILENT_SETTLE_MS);
+        },
+        onExit: (error) => finish(() => reject(error)),
+      };
+
+      this.send({ type: "prompt", message: command, id });
+    });
+  }
+
   abort(): void {
     this.send({ type: "abort" });
   }
@@ -293,6 +363,7 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
     try {
       const decoded = decodeLine(line);
       if ("kind" in decoded) return; // unknown/unmodeled line: nothing to fold or emit
+      if (this.capture && this.takeForSilentRun(decoded)) return;
 
       // `now` feeds reduceChat's setWidget helpers-retention fallback
       // (endedAt for a task gentle-pi drops after it finishes); PiSession
@@ -307,6 +378,23 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
     } catch (error) {
       this.surfaceError(toError(error));
     }
+  }
+
+  /** True when an active silent run consumed this event (a notification, or its own response). */
+  private takeForSilentRun(event: RpcEvent): boolean {
+    const capture = this.capture;
+    if (!capture) return false;
+
+    if (event.type === "extension_ui_request" && event.method === "notify") {
+      const message = (event as { readonly message?: unknown }).message;
+      if (typeof message === "string") capture.messages.push(message);
+      return true;
+    }
+    if (event.type === "response" && event.command === "prompt" && event.id === capture.id) {
+      capture.onResponse(event);
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -358,6 +446,7 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
     if (this.stopping) return;
 
     this.state = { ...this.state, working: false, pendingDialogs: [] };
+    this.capture?.onExit(new Error("gentle-shell exited before it answered"));
 
     if (spawnError) {
       this.emit("state", this.state);

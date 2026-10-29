@@ -24,6 +24,12 @@ export const IPC_CHANNELS = {
   HOME_STATUS: "setup.homeStatus",
   /** Slash commands the open chat can run (pi `get_commands`). */
   LIST_COMMANDS: "commands.list",
+  /** Every setting's current value. */
+  SETTINGS_READ: "settings.read",
+  /** Sets one setting to one allowed value. */
+  SETTINGS_SET: "settings.set",
+  /** Runs one read-only diagnostic. */
+  DIAGNOSTIC_RUN: "diagnostic.run",
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

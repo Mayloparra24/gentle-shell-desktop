@@ -155,6 +155,20 @@ describe("createBridge", () => {
     expect(invoke).toHaveBeenCalledWith(IPC_CHANNELS.LIST_COMMANDS);
   });
 
+  it("readSettings, setSetting and runDiagnostic invoke their channels with the typed arguments", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    invoke.mockResolvedValue("done");
+    const bridge = createBridge(ipc);
+
+    await bridge.readSettings();
+    await bridge.setSetting("vim", "on");
+    await bridge.runDiagnostic("doctor");
+
+    expect(invoke).toHaveBeenNthCalledWith(1, IPC_CHANNELS.SETTINGS_READ);
+    expect(invoke).toHaveBeenNthCalledWith(2, IPC_CHANNELS.SETTINGS_SET, "vim", "on");
+    expect(invoke).toHaveBeenNthCalledWith(3, IPC_CHANNELS.DIAGNOSTIC_RUN, "doctor");
+  });
+
   it("onError's returned unsubscribe removes the listener", () => {
     const { ipc, listeners } = createFakeIpc();
     const bridge = createBridge(ipc);

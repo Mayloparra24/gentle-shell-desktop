@@ -1,5 +1,5 @@
 import type { IpcMain, WebContents } from "electron";
-import type { DialogAnswer, HomeMode } from "@shared/bridge-types";
+import type { DialogAnswer, DiagnosticKind, HomeMode, SettingKey } from "@shared/bridge-types";
 import { IPC_CHANNELS } from "@shared/ipc-channels";
 import type { ChatHost } from "../domain/session/ChatHost";
 import type { SetupService } from "../ports";
@@ -36,6 +36,15 @@ export function registerHandlers(host: ChatHost, setup: SetupService, webContent
   registerRequestHandler(ipc, IPC_CHANNELS.SETUP_STATUS, () => setup.status());
   registerRequestHandler(ipc, IPC_CHANNELS.HOME_STATUS, () => setup.homeStatus());
   registerRequestHandler(ipc, IPC_CHANNELS.LIST_COMMANDS, () => host.listCommands());
+  registerRequestHandler(ipc, IPC_CHANNELS.SETTINGS_READ, () => host.readSettings());
+  registerRequestHandler(ipc, IPC_CHANNELS.SETTINGS_SET, async (_event, key: unknown, value: unknown) => {
+    if (typeof key !== "string" || typeof value !== "string") throw new Error("Invalid settings request");
+    return host.setSetting(key as SettingKey, value);
+  });
+  registerRequestHandler(ipc, IPC_CHANNELS.DIAGNOSTIC_RUN, async (_event, kind: unknown) => {
+    if (typeof kind !== "string") throw new Error("Invalid diagnostic request");
+    return host.runDiagnostic(kind as DiagnosticKind);
+  });
   registerRequestHandler(ipc, IPC_CHANNELS.CHOOSE_HOME, (_event, mode: HomeMode) => setup.chooseHome(mode));
 
   const unsubscribeState = host.onState((state) => webContents.send(IPC_CHANNELS.STATE_PUSH, state));

@@ -307,6 +307,45 @@ export interface SlashCommand {
 }
 
 /**
+ * The gentle-shell settings the Settings screen can read and change. Each one
+ * maps to a fixed gentle-shell command in the main process
+ * (src/main/domain/settings/settingsCatalog.ts); the page only ever names a
+ * key and a value, never a command.
+ */
+export const SETTING_KEY = {
+  VIM: "vim",
+  ANIMATIONS: "animations",
+  DOUBLE_ESC_CANCEL: "double-esc-cancel",
+  PERMISSION_MODE: "permission-mode",
+  YOLO: "yolo",
+  REVIEW_MODE: "review-mode",
+  BACKGROUND_SUBAGENTS: "background-subagents",
+  TELEMETRY: "telemetry",
+} as const;
+
+export type SettingKey = (typeof SETTING_KEY)[keyof typeof SETTING_KEY];
+
+/**
+ * One setting as gentle-shell reports it. `value` is `on`/`off` for switches
+ * or the level for the others. Exactly one of `value`, `error` or
+ * `unavailable` is set: `error` means the value could not be read (shown as
+ * "unknown"), `unavailable` means this gentle-shell does not have the command.
+ */
+export interface SettingState {
+  readonly key: SettingKey;
+  readonly value?: string;
+  readonly error?: string;
+  readonly unavailable?: true;
+}
+
+export const DIAGNOSTIC_KIND = {
+  DOCTOR: "doctor",
+  STATUS: "status",
+} as const;
+
+export type DiagnosticKind = (typeof DIAGNOSTIC_KIND)[keyof typeof DIAGNOSTIC_KIND];
+
+/**
  * Surface exposed on `window.gentle` by the preload script. T1 typed the
  * listChats/sendMessage skeleton; T3 finalizes the full shape and wires it
  * to the real IPC bridge (src/preload/bridge.ts) and main-process ChatHost
@@ -339,6 +378,12 @@ export interface GentleBridge {
   homeStatus(): Promise<HomeStatus>;
   /** Commands the open chat can run with `/name`. Rejects when no chat is open or pi does not answer. */
   listCommands(): Promise<SlashCommand[]>;
+  /** Every setting's current value, read from gentle-shell. Rejects when no chat is open. */
+  readSettings(): Promise<SettingState[]>;
+  /** Sets one setting to one allowed value and resolves with the value gentle-shell confirms; rejects otherwise. */
+  setSetting(key: SettingKey, value: string): Promise<SettingState>;
+  /** Runs one read-only diagnostic and resolves with what gentle-shell printed. */
+  runDiagnostic(kind: DiagnosticKind): Promise<string>;
 }
 
 declare global {

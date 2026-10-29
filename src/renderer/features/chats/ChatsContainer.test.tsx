@@ -18,6 +18,9 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
     chooseHome: vi.fn(),
     homeStatus: vi.fn(),
     listCommands: vi.fn(),
+    readSettings: vi.fn(),
+    setSetting: vi.fn(),
+    runDiagnostic: vi.fn(),
     ...overrides,
   };
 }

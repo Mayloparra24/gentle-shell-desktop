@@ -54,6 +54,16 @@ function streamReply(text) {
 function handleLine(line) {
   const cmd = JSON.parse(line);
 
+  if (cmd.type === "prompt" && cmd.message === "/fake:hang") {
+    return;
+  }
+
+  if (cmd.type === "prompt" && cmd.message.startsWith("/fake:")) {
+    write({ type: "extension_ui_request", id: "n-" + cmd.id, method: "notify", message: "fake: on (decided by test)", notifyType: "info" });
+    write({ id: cmd.id, type: "response", command: "prompt", success: true, data: { disposition: "handled" } });
+    return;
+  }
+
   if (cmd.type === "prompt" && cmd.message === "ask") {
     write({ type: "agent_start" });
     write({ type: "extension_ui_request", id: "dlg-1", method: "select", title: "Pick one", options: ["A", "B"] });
@@ -219,6 +229,56 @@ describe("PiSession", () => {
     const session = createSession({ GENTLE_SHELL_BIN: writeFakeScript() });
 
     await expect(session.listCommands()).rejects.toThrow("no active process");
+  });
+
+  it("runSilent returns what a command printed without adding anything to the chat", async () => {
+    const scriptPath = writeFakeScript();
+    const session = createSession({ GENTLE_SHELL_BIN: scriptPath });
+
+    session.start();
+    const printed = await session.runSilent("/fake:status");
+
+    expect(printed).toEqual(["fake: on (decided by test)"]);
+    expect(session.getState().messages).toEqual([]);
+
+    await session.stop();
+  });
+
+  it("runSilent keeps its notifications out of the thread even right after the user ran a slash command", async () => {
+    const scriptPath = writeFakeScript();
+    const session = createSession({ GENTLE_SHELL_BIN: scriptPath });
+
+    session.start();
+    session.prompt("/fake:typed");
+    await waitFor(session, (state) => state.messages.length >= 2);
+    const before = session.getState().messages.length;
+
+    await session.runSilent("/fake:status");
+
+    expect(session.getState().messages).toHaveLength(before);
+    await session.stop();
+  });
+
+  it("runSilent rejects instead of hanging when gentle-shell never answers", async () => {
+    const scriptPath = writeFakeScript();
+    const session = createSession({ GENTLE_SHELL_BIN: scriptPath });
+
+    session.start();
+
+    await expect(session.runSilent("/fake:hang", 300)).rejects.toThrow("Timed out waiting for gentle-shell");
+    await session.stop();
+  });
+
+  it("runSilent rejects when there is no active process or while the agent is working", async () => {
+    const idle = createSession({ GENTLE_SHELL_BIN: writeFakeScript() });
+    await expect(idle.runSilent("/fake:status")).rejects.toThrow("no active process");
+
+    const session = createSession({ GENTLE_SHELL_BIN: writeFakeScript() });
+    session.start();
+    session.prompt("ask");
+    await waitFor(session, (state) => state.working);
+    await expect(session.runSilent("/fake:status")).rejects.toThrow("still working");
+    await session.stop();
   });
 
   it("seeds ChatState.messages from get_messages history when started with a sessionPath", async () => {

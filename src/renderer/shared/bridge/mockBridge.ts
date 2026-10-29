@@ -8,6 +8,7 @@ import {
   type ChatSummary,
   type Dialog,
   type DialogAnswer,
+  type DiagnosticKind,
   type GentleBridge,
   type HelperTask,
   type HelperThread,
@@ -19,6 +20,8 @@ import {
   type HomeStatus,
   type PiDetection,
   type PromptResult,
+  type SettingKey,
+  type SettingState,
   type SetupStatus,
   type SlashCommand,
 } from "@shared/bridge-types";
@@ -120,6 +123,28 @@ const MOCK_COMMANDS: SlashCommand[] = [
   { name: "skill:work-unit-commits", description: "Plan commits as reviewable work units", source: "skill" },
 ];
 
+/** Sample settings so the browser preview can exercise the Settings screen. */
+const MOCK_SETTING_DEFAULTS: Record<SettingKey, string> = {
+  vim: "off",
+  animations: "performance",
+  "double-esc-cancel": "off",
+  "permission-mode": "normal",
+  yolo: "off",
+  "review-mode": "on",
+  "background-subagents": "on",
+  telemetry: "off",
+};
+const MOCK_SETTING_ALLOWED: Partial<Record<SettingKey, readonly string[]>> = {
+  vim: ["on", "off"],
+  animations: ["quality", "performance", "potato"],
+  "double-esc-cancel": ["on", "off"],
+  "permission-mode": ["normal", "auto", "yolo", "super-yolo"],
+  "review-mode": ["on", "off"],
+  "background-subagents": ["on", "off"],
+  telemetry: ["on", "off"],
+};
+let mockSettings: Record<SettingKey, string> = { ...MOCK_SETTING_DEFAULTS };
+
 let currentState: ChatState = emptyState();
 let nextMessageId = 0;
 let nextDialogId = 0;
@@ -140,6 +165,7 @@ const errorListeners = new Set<(message: string) => void>();
 export function resetMockBridge(): void {
   helpersScenarioToken += 1; // invalidate any in-flight D4 growth loop
   homeChoice = undefined;
+  mockSettings = { ...MOCK_SETTING_DEFAULTS };
   currentState = emptyState();
   nextMessageId = 0;
   nextDialogId = 0;
@@ -512,5 +538,22 @@ export const mockBridge: GentleBridge = {
 
   async listCommands(): Promise<SlashCommand[]> {
     return MOCK_COMMANDS;
+  },
+
+  async readSettings(): Promise<SettingState[]> {
+    return (Object.keys(mockSettings) as SettingKey[]).map((key) => ({ key, value: mockSettings[key] }));
+  },
+
+  async setSetting(key: SettingKey, value: string): Promise<SettingState> {
+    const allowed = MOCK_SETTING_ALLOWED[key];
+    if (!(key in mockSettings)) throw new Error(`Unknown setting "${String(key)}"`);
+    if (!allowed) throw new Error(`"${key}" is read-only here.`);
+    if (!allowed.includes(value)) throw new Error(`"${value}" is not allowed for "${key}"`);
+    mockSettings = { ...mockSettings, [key]: value };
+    return { key, value };
+  },
+
+  async runDiagnostic(kind: DiagnosticKind): Promise<string> {
+    return kind === "doctor" ? "Doctor: 9 checks passed" : "el Gentleman package is active";
   },
 };

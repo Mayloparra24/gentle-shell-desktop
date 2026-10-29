@@ -1,7 +1,8 @@
-import type { ChatState, ChatSummary, DialogAnswer, PromptResult, SlashCommand } from "@shared/bridge-types";
+import type { ChatState, ChatSummary, DialogAnswer, DiagnosticKind, PromptResult, SettingKey, SettingState, SlashCommand } from "@shared/bridge-types";
 import { boundedStop } from "../lifecycle/boundedStop";
 import type { RpcEvent } from "../rpc/types";
 import type { HomeSettings, LauncherLocator, ProcessSpawner, SessionStore } from "../../ports";
+import { createSettingsService } from "../settings/settingsService";
 import { PiSession } from "./PiSession";
 import { toChatSummaries } from "./sessionList";
 
@@ -125,6 +126,20 @@ export class ChatHost {
     return this.requireCurrent().listCommands();
   }
 
+  /** Every setting's value as the open gentle-shell reports it; rejects when no chat is open. */
+  async readSettings(): Promise<SettingState[]> {
+    return this.settingsService().readAll();
+  }
+
+  /** Sets one allowlisted setting and resolves with the value gentle-shell confirms. */
+  async setSetting(key: SettingKey, value: string): Promise<SettingState> {
+    return this.settingsService().set(key, value);
+  }
+
+  async runDiagnostic(kind: DiagnosticKind): Promise<string> {
+    return this.settingsService().diagnostic(kind);
+  }
+
   async abort(): Promise<void> {
     this.requireCurrent().abort();
   }
@@ -187,6 +202,15 @@ export class ChatHost {
     }
 
     return session.getState();
+  }
+
+  /** Settings run as silent commands in the open session; the command list tells which ones this gentle-shell has. */
+  private settingsService() {
+    const session = this.requireCurrent();
+    return createSettingsService(
+      (command) => session.runSilent(command),
+      async () => (await session.listCommands()).map((command) => command.name),
+    );
   }
 
   private requireCurrent(): PiSession {

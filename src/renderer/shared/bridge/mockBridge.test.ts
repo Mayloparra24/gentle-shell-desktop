@@ -51,6 +51,23 @@ describe("mockBridge", () => {
     expect(new Set(commands.map((command) => command.source))).toEqual(new Set(["extension", "prompt", "skill"]));
   });
 
+  it("readSettings() returns a state for every setting and setSetting() changes one", async () => {
+    const before = await mockBridge.readSettings();
+    expect(before.map((state) => state.key)).toContain("vim");
+    expect(before.find((state) => state.key === "vim")).toMatchObject({ value: "off" });
+
+    expect(await mockBridge.setSetting("vim", "on")).toEqual({ key: "vim", value: "on" });
+    expect((await mockBridge.readSettings()).find((state) => state.key === "vim")).toEqual({ key: "vim", value: "on" });
+  });
+
+  it("setSetting() refuses a read-only setting like the real service", async () => {
+    await expect(mockBridge.setSetting("yolo", "on")).rejects.toThrow("read-only");
+  });
+
+  it("runDiagnostic() returns sample text", async () => {
+    expect(await mockBridge.runDiagnostic("doctor")).toContain("checks");
+  });
+
   it("lists two example chats plus one already-working chat", async () => {
     const chats = await mockBridge.listChats();
 

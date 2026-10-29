@@ -4,8 +4,11 @@ import type {
   DialogAnswer,
   GentleBridge,
   HomeMode,
+  DiagnosticKind,
   HomeStatus,
   PromptResult,
+  SettingKey,
+  SettingState,
   SetupStatus,
   SlashCommand,
 } from "@shared/bridge-types";
@@ -39,6 +42,9 @@ export function createBridge(ipc: RendererIpc): GentleBridge {
     chooseHome: (mode: HomeMode) => ipc.invoke(IPC_CHANNELS.CHOOSE_HOME, mode) as Promise<void>,
     homeStatus: () => ipc.invoke(IPC_CHANNELS.HOME_STATUS) as Promise<HomeStatus>,
     listCommands: () => ipc.invoke(IPC_CHANNELS.LIST_COMMANDS) as Promise<SlashCommand[]>,
+    readSettings: () => ipc.invoke(IPC_CHANNELS.SETTINGS_READ) as Promise<SettingState[]>,
+    setSetting: (key: SettingKey, value: string) => ipc.invoke(IPC_CHANNELS.SETTINGS_SET, key, value) as Promise<SettingState>,
+    runDiagnostic: (kind: DiagnosticKind) => ipc.invoke(IPC_CHANNELS.DIAGNOSTIC_RUN, kind) as Promise<string>,
 
     onState(callback: (state: ChatState) => void): () => void {
       const listener = (_event: unknown, state: unknown): void => callback(state as ChatState);

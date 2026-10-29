@@ -25,7 +25,7 @@
 // ---------------------------------------------------------------------------
 
 export type RpcCommand =
-  | { readonly type: "prompt"; readonly message: string }
+  | { readonly type: "prompt"; readonly message: string; readonly id?: string }
   | { readonly type: "abort" }
   | { readonly type: "new_session" }
   | { readonly type: "switch_session"; readonly sessionPath: string }
