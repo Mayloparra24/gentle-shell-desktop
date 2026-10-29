@@ -1,0 +1,9 @@
+{
+  "title": "Gentle web MVP shell",
+  "brief": "Orca-style three-pane shell for gentle-web: chat list on the left, main chat in the center, right panel with ODD progress, Git manager and Files. Left and right panels can be hidden from the top bar to give the chat more room.",
+  "artboards": [
+    { "file": "01-tabbed-panel.html", "title": "Tabbed right panel", "tradeoff": "Closest to Orca: one tab at a time, maximum room per tool; ODD is hidden unless its tab is open", "width": 1440, "height": 900 },
+    { "file": "02-odd-pinned-stack.html", "title": "ODD pinned stack", "tradeoff": "ODD, Git, Files and Helpers visible together as collapsible sections; denser, needs scrolling in short windows", "width": 1440, "height": 900 },
+    { "file": "03-odd-in-chat-strip.html", "title": "ODD strip above the chat", "tradeoff": "ODD progress always visible even with the right panel hidden; costs one row of chat height", "width": 1440, "height": 900 }
+  ]
+}

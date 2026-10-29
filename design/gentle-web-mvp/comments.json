@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "comments": [
+    {
+      "id": "jrvowubu",
+      "file": "01-tabbed-panel.html",
+      "selector": "#p-files",
+      "excerpt": "▾ shop-web ▾ emails magic-link.tsx welcome.tsx ▾ lib links.ts mailer.ts ▸ pages package.json",
+      "comment": "queria algo así:",
+      "createdAt": "2026-10-29T02:48:31.654Z",
+      "status": "resolved",
+      "sentAt": "2026-10-29T02:48:31.710Z",
+      "resolvedAt": "2026-10-29T02:48:54.478Z",
+      "screenshot": ".screenshots/jrvowubu.png"
+    },
+    {
+      "id": "vyev553u",
+      "file": "01-tabbed-panel.html",
+      "selector": "#p-files",
+      "excerpt": "› ▭ .agents › ▭ .git ⊘ › ▭ .vscode › ▭ emails › ▭ lib › ▭ odd › ▭ pages › ▭ node_modules ⊘ ▤ .gitignore ▤ .mcp.json ▤ package.json ▤ pnpm-lock.yaml ▤ README.md ▤ tsconfig.json",
+      "comment": "se puede mejorar el diseño del icono de la carpeta",
+      "createdAt": "2026-10-29T02:49:30.001Z",
+      "status": "resolved",
+      "sentAt": "2026-10-29T02:49:30.048Z",
+      "resolvedAt": "2026-10-29T02:49:38.809Z"
+    },
+    {
+      "id": "g43eqeup",
+      "file": "01-tabbed-panel.html",
+      "selector": "body > div > div > aside:nth-of-type(1)",
+      "excerpt": "Search chats + New chat PROJECTS + shop-web Add login with magic link Working on task 3 of 5 Fix cart rounding Needs you Upgrade to React 19 Yesterday shop-api Rate limit login endpoint Mon docs-site Spanish translation pass Last week Providers · Extensions Settings",
+      "comment": "Faltó el chat in another folder",
+      "createdAt": "2026-10-29T02:51:26.887Z",
+      "status": "resolved",
+      "sentAt": "2026-10-29T02:51:26.930Z",
+      "resolvedAt": "2026-10-29T02:51:35.695Z"
+    },
+    {
+      "id": "186iix2b",
+      "file": "01-tabbed-panel.html",
+      "selector": "body > div > div > main > div:nth-of-type(2) > div > div",
+      "excerpt": "Message Gentle… Enter to send · Shift+Enter for a new line claude-sonnet-5",
+      "comment": "el chat algo así sin el modelo",
+      "createdAt": "2026-10-29T02:53:53.377Z",
+      "status": "resolved",
+      "sentAt": "2026-10-29T02:53:53.429Z",
+      "resolvedAt": "2026-10-29T02:54:02.386Z",
+      "screenshot": ".screenshots/186iix2b.png"
+    }
+  ]
+}

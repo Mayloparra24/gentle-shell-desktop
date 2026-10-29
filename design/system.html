@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Gentle design system</title>
+<style>
+:root{--bg:#060407;--panel:#100a0f;--raised:#180e15;--line:#2a1720;--line-strong:#563040;--text:#f6eff3;--text-2:#d2cbd0;--muted:#a78e9b;--accent:#f095c8;--accent-active:#ffb1dd;--blue:#a9c7ee;--green:#b4e7c7;--amber:#f2b86d;--red:#ff718f;--purple:#c96aa2;--champagne:#e0c27a;--font-display:"Space Grotesk","Segoe UI",system-ui,sans-serif;--font-body:"Inter","Segoe UI",system-ui,sans-serif;--font-mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);width:1440px;padding:40px;box-sizing:border-box}
+h1{font-family:var(--font-display);margin:0 0 24px}h2{font-family:var(--font-display);color:var(--muted);font-size:14px;text-transform:uppercase;letter-spacing:.08em;margin:32px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.sw{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px}.sw i{display:block;height:36px;border-radius:6px;border:1px solid var(--line-strong);margin-bottom:8px}.sw b{font-size:13px}.sw span{display:block;color:var(--muted);font-family:var(--font-mono);font-size:12px}
+.type p{margin:6px 0}</style></head><body><main>
+<h1>Gentleman-Cute tokens</h1><h2>Colors</h2><div class="grid" id="g"></div>
+<h2>Typography</h2><div class="type"><p style="font-family:var(--font-display);font-size:28px">Space Grotesk — display</p><p>Inter — body text for chat and UI</p><p style="font-family:var(--font-mono)">JetBrains Mono — code, branches, paths</p></div>
+<h2>Spacing, radius, shadows</h2><p style="color:var(--muted)">Not defined in the sources.</p></main>
+<script>const t={bg:'#060407',panel:'#100a0f',raised:'#180e15',line:'#2a1720','line-strong':'#563040',text:'#f6eff3','text-2':'#d2cbd0',muted:'#a78e9b',accent:'#f095c8','accent-active':'#ffb1dd',blue:'#a9c7ee',green:'#b4e7c7',amber:'#f2b86d',red:'#ff718f',purple:'#c96aa2',champagne:'#e0c27a'};document.getElementById('g').innerHTML=Object.entries(t).map(([k,v])=>`<div class="sw"><i style="background:${v}"></i><b>--${k}</b><span>${v}</span></div>`).join('')</script></body></html>

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "chosen": "01-tabbed-panel.html",
+  "handoffs": {
+    "01-tabbed-panel.html": {
+      "status": "implemented",
+      "queued": false,
+      "sentAt": "2026-10-29T02:54:43.504Z",
+      "startedAt": "2026-10-29T02:54:49.143Z",
+      "implementedAt": "2026-10-29T03:07:02.973Z",
+      "note": "Shell, tabbed Files/ODD/Git panel, status bar, composer and theme picker implemented on feat/web-shell-mvp. Panel data and status-bar values are sample data until bridge methods exist.",
+      "previewUrl": "http://localhost:5173/?firstRun=0"
+    }
+  }
+}
