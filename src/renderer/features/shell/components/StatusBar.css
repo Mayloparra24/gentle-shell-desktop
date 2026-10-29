@@ -20,6 +20,7 @@
 }
 
 .gc-status-bar__brand {
+  gap: 0.4rem;
   color: var(--accent);
   font-weight: 600;
 }

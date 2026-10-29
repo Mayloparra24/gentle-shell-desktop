@@ -19,7 +19,7 @@
   letter-spacing: 0;
   color: var(--text-2);
   margin: 0;
-  padding: 0 0.25rem;
+  padding: 0 0.75rem;
 }
 
 .gc-chat-list__items {
