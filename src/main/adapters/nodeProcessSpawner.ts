@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import type { Readable } from "node:stream";
 import { LineSplitter } from "../domain/rpc/codec";
 import type { ProcessSpawner, SpawnedProcess } from "../ports";
@@ -100,6 +100,11 @@ export function createNodeProcessSpawner(options: NodeProcessSpawnerOptions = {}
           errorHandlers.push(handler);
         },
         kill(signal) {
+          // child.kill() would end only cmd.exe and leave the launcher's node tree running.
+          if (isBatch && child.pid) {
+            const result = spawnSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], { windowsHide: true });
+            if (result.status === 0) return;
+          }
           child.kill(signal);
         },
       };

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -72,6 +72,31 @@ process.stdin.on('end', () => {
         rmSync(dir, { recursive: true, force: true });
       }
     });
+
+    it(`kill() ends the whole process tree behind .${ext}, not just cmd.exe`, async () => {
+      const dir = mkdtempSync(path.join(tmpdir(), "spawner-kill-"));
+      let grandchild = 0;
+      try {
+        const pidFile = path.join(dir, "pid.txt");
+        const fixture = path.join(dir, "fixture.cjs");
+        writeFileSync(fixture, "require('node:fs').writeFileSync(process.env.SP_PID_FILE, String(process.pid)); setTimeout(() => {}, 60000);\n");
+        const shim = path.join(dir, `run.${ext}`);
+        writeFileSync(shim, '@echo off\r\n"%SP_NODE%" "%SP_FIXTURE%" %*\r\n');
+        const child = createNodeProcessSpawner().spawn(shim, [], { ...process.env, SP_NODE: process.execPath, SP_FIXTURE: fixture, SP_PID_FILE: pidFile }, dir);
+        for (let i = 0; i < 100 && !existsSync(pidFile); i++) await new Promise(resolve => setTimeout(resolve, 50));
+        grandchild = Number(readFileSync(pidFile, "utf8"));
+        expect(grandchild).toBeGreaterThan(0);
+        child.kill();
+        await child.exited;
+        const alive = () => { try { process.kill(grandchild, 0); return true; } catch { return false; } };
+        for (let i = 0; i < 60 && alive(); i++) await new Promise(resolve => setTimeout(resolve, 50));
+        expect(alive()).toBe(false);
+      } finally {
+        // Only the fixture this test started; never a PID from anywhere else.
+        if (grandchild > 0) { try { process.kill(grandchild); } catch { /* already gone */ } }
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 10000);
 
     it(`rejects dangerous .${ext} tokens without creating a child`, async () => {
       const dir = mkdtempSync(path.join(tmpdir(), "spawner-reject-"));
