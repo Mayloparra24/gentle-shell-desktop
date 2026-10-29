@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { App } from "./App";
 
 // `?firstRun=0` forces mockBridge.setupStatus() to needsChoice: false (see
@@ -115,5 +115,27 @@ describe("App status bar", () => {
     (await screen.findByRole("button", { name: /Write the README intro/ })).click();
 
     await waitFor(() => expect(screen.getByRole("contentinfo", { name: "Status bar" })).toHaveTextContent("/Users/dev/gentle-shell-desktop"));
+  });
+});
+
+describe("App theme", () => {
+  beforeEach(() => {
+    window.history.pushState({}, "", "?firstRun=0");
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    window.history.pushState({}, "", "/");
+    window.localStorage.clear();
+    document.documentElement.removeAttribute("data-theme");
+  });
+
+  it("switches the whole app to the chosen theme", async () => {
+    render(<App />);
+    const select = await screen.findByRole("combobox", { name: "Theme" });
+
+    fireEvent.change(select, { target: { value: "gentleman-sexy" } });
+
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe("gentleman-sexy"));
   });
 });

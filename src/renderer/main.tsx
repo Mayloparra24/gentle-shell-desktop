@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import { App } from "./app/App";
 import { ErrorBoundary } from "./app/ErrorBoundary";
 import "./shared/theme/tokens.css";
+import { applyStoredTheme } from "./shared/theme/useTheme";
+
+applyStoredTheme();
 
 const container = document.getElementById("root");
 if (!container) {

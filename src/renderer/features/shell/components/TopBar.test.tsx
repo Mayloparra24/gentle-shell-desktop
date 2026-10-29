@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { TopBar } from "./TopBar";
 
 function renderBar(overrides: Partial<Parameters<typeof TopBar>[0]> = {}) {
@@ -10,6 +10,8 @@ function renderBar(overrides: Partial<Parameters<typeof TopBar>[0]> = {}) {
     rightOpen: true,
     onToggleLeft: vi.fn(),
     onToggleRight: vi.fn(),
+    themeId: "gentleman-cute" as const,
+    onChangeTheme: vi.fn(),
     ...overrides,
   };
   render(<TopBar {...props} />);
@@ -37,5 +39,29 @@ describe("TopBar", () => {
 
     screen.getByRole("button", { name: "Toggle side panel" }).click();
     expect(props.onToggleRight).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("TopBar theme picker", () => {
+  it("lists the themes and reports the choice", () => {
+    const onChangeTheme = vi.fn();
+    render(
+      <TopBar
+        title="Chat"
+        leftOpen
+        rightOpen
+        onToggleLeft={vi.fn()}
+        onToggleRight={vi.fn()}
+        themeId="gentleman-cute"
+        onChangeTheme={onChangeTheme}
+      />,
+    );
+
+    const select = screen.getByRole("combobox", { name: "Theme" });
+    expect(select).toHaveValue("gentleman-cute");
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["Gentleman-Cute", "Gentle", "Gentleman-Sexy"]);
+
+    fireEvent.change(select, { target: { value: "gentle" } });
+    expect(onChangeTheme).toHaveBeenCalledWith("gentle");
   });
 });

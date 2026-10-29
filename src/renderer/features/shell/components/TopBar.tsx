@@ -1,3 +1,4 @@
+import { THEMES, type ThemeId } from "@renderer/shared/theme/themes";
 import "./TopBar.css";
 
 export interface TopBarProps {
@@ -6,6 +7,8 @@ export interface TopBarProps {
   readonly rightOpen: boolean;
   readonly onToggleLeft: () => void;
   readonly onToggleRight: () => void;
+  readonly themeId: ThemeId;
+  readonly onChangeTheme: (themeId: ThemeId) => void;
 }
 
 type PanelSide = "left" | "right";
@@ -21,7 +24,7 @@ function PanelIcon({ side }: { readonly side: PanelSide }) {
 
 // Presentational: brand, the two panel toggles and the open chat's title.
 // The toggles expose their state with aria-pressed (pressed = panel visible).
-export function TopBar({ title, leftOpen, rightOpen, onToggleLeft, onToggleRight }: TopBarProps) {
+export function TopBar({ title, leftOpen, rightOpen, onToggleLeft, onToggleRight, themeId, onChangeTheme }: TopBarProps) {
   return (
     <header className="gc-topbar">
       <div className="gc-topbar__start">
@@ -36,9 +39,23 @@ export function TopBar({ title, leftOpen, rightOpen, onToggleLeft, onToggleRight
         </button>
       </div>
       <h2 className="gc-topbar__title">{title}</h2>
-      <button type="button" className="gc-topbar__toggle" aria-label="Toggle side panel" aria-pressed={rightOpen} onClick={onToggleRight}>
-        <PanelIcon side="right" />
-      </button>
+      <div className="gc-topbar__end">
+        <select
+          className="gc-topbar__theme"
+          aria-label="Theme"
+          value={themeId}
+          onChange={(event) => onChangeTheme(event.target.value as ThemeId)}
+        >
+          {THEMES.map((theme) => (
+            <option key={theme.id} value={theme.id}>
+              {theme.label}
+            </option>
+          ))}
+        </select>
+        <button type="button" className="gc-topbar__toggle" aria-label="Toggle side panel" aria-pressed={rightOpen} onClick={onToggleRight}>
+          <PanelIcon side="right" />
+        </button>
+        </div>
     </header>
   );
 }

@@ -70,3 +70,48 @@ body {
 *::-webkit-scrollbar-thumb:hover {
   background-color: var(--purple);
 }
+
+/*
+ * Other gentle-shell themes. Values come from gentle-pi's themes/Gentle.json
+ * and themes/Gentleman-Sexy.json. A token those files do not define reuses
+ * the nearest value they do: Gentle's --muted is its lighter comment grey
+ * (its own "muted" fails contrast on the background), and Gentleman-Sexy has
+ * no green, so it reuses Gentleman-Cute's mint.
+ */
+[data-theme="gentle"] {
+  --bg: #06080f;
+  --panel: #0d0f14;
+  --raised: #161d2e;
+  --line: #232a40;
+  --line-strong: #313342;
+  --text: #f3f6f9;
+  --text-2: #a3b5d6;
+  --muted: #8394a3;
+  --accent: #e0c15a;
+  --accent-active: #deba87;
+  --blue: #7fb4ca;
+  --green: #b7cc85;
+  --amber: #deba87;
+  --red: #cb7c94;
+  --purple: #b99bf2;
+  --champagne: #dfbd76;
+}
+
+[data-theme="gentleman-sexy"] {
+  --bg: #060407;
+  --panel: #100a0f;
+  --raised: #2e0f1f;
+  --line: #2a1720;
+  --line-strong: #563040;
+  --text: #f6eff3;
+  --text-2: #d2cbd0;
+  --muted: #a78e9b;
+  --accent: #f43888;
+  --accent-active: #ff4f9a;
+  --blue: #a9c7ee;
+  --green: #b4e7c7;
+  --amber: #f2b86d;
+  --red: #ff718f;
+  --purple: #c49bff;
+  --champagne: #e0c27a;
+}

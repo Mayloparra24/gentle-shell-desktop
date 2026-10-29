@@ -8,6 +8,7 @@ import { WorkspacePanel } from "@renderer/features/workspace/WorkspacePanel";
 import { PREVIEW_WORKSPACE } from "@renderer/features/workspace/preview";
 import { StatusBar } from "@renderer/features/shell/components/StatusBar";
 import { PREVIEW_STATUS } from "@renderer/features/shell/previewStatus";
+import { useTheme } from "@renderer/shared/theme/useTheme";
 import { TopBar } from "@renderer/features/shell/components/TopBar";
 import { useShellLayout } from "@renderer/features/shell/useShellLayout";
 import "./App.css";
@@ -40,6 +41,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>(SCREEN.LOADING);
   const [activeChat, setActiveChat] = useState<ActiveChat>(NEW_CHAT);
   const { leftOpen, rightOpen, toggleLeft, toggleRight } = useShellLayout();
+  const { themeId, setTheme } = useTheme();
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +77,10 @@ export function App() {
 
   return (
     <div className="gc-app">
-      <TopBar title={title} leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight} />
+      <TopBar title={title} leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight}
+        themeId={themeId}
+        onChangeTheme={setTheme}
+      />
       <div className="gc-app__body" data-left-open={leftOpen} data-right-open={rightOpen}>
         <div className="gc-app__left" data-testid="left-panel" data-open={leftOpen} inert={!leftOpen}>
           <ChatsContainer
