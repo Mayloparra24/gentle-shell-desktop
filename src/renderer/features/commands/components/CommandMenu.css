@@ -1,0 +1,58 @@
+.gc-command-menu {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.gc-command-menu__list {
+  max-height: 15rem;
+  overflow-y: auto;
+}
+
+.gc-command-menu__option {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+}
+
+.gc-command-menu__option[aria-selected="true"],
+.gc-command-menu__option:hover {
+  background: var(--raised);
+  box-shadow: inset 3px 0 var(--accent);
+}
+
+.gc-command-menu__name {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.gc-command-menu__description {
+  flex: 1;
+  color: var(--text-2);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.gc-command-menu__source {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.gc-command-menu__status:not(:empty),
+.gc-command-menu__footer {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.gc-command-menu__footer {
+  border-top: 1px solid var(--line);
+}

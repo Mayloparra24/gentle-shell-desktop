@@ -136,7 +136,15 @@ export function ConversationContainer({ activeChat }: ConversationContainerProps
         <>
           <HelpersStrip helpers={chatState.helpers} onOpen={() => setPane(CONVERSATION_PANE.HELPERS)} />
           <MessageThread messages={chatState.messages} dialogs={chatState.pendingDialogs} onAnswerDialog={handleAnswerDialog} />
-          <Composer value={draft} working={chatState.working} onChange={setDraft} onSend={handleSend} onAbort={handleAbort} />
+          <Composer
+            value={draft}
+            working={chatState.working}
+            onChange={setDraft}
+            onSend={handleSend}
+            onAbort={handleAbort}
+            loadCommands={() => bridge.listCommands()}
+            commandsResetKey={activeChat}
+          />
         </>
       )}
     </section>

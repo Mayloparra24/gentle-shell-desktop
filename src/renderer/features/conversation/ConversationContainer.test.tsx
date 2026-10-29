@@ -40,6 +40,21 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
 }
 
 describe("ConversationContainer", () => {
+  it("sends a picked command and its arguments through the normal bridge path", async () => {
+    const bridge = makeBridge({ listCommands: vi.fn().mockResolvedValue([{ name: "commit-message", source: "prompt" }]) });
+    window.gentle = bridge;
+    render(<ConversationContainer activeChat={NEW_CHAT} />);
+    await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
+    const field = screen.getByRole("textbox");
+    fireEvent.change(field, { target: { value: "/" } });
+    fireEvent.click(await screen.findByText("/commit-message"));
+    expect(bridge.sendMessage).not.toHaveBeenCalled();
+    fireEvent.change(field, { target: { value: "/commit-message staged changes" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(bridge.listCommands).toHaveBeenCalledTimes(1);
+    expect(bridge.sendMessage).toHaveBeenCalledWith("/commit-message staged changes");
+    expect(field).toHaveValue("");
+  });
   it('calls bridge.newChat() for activeChat { kind: "new" }', async () => {
     const bridge = makeBridge();
     window.gentle = bridge;
