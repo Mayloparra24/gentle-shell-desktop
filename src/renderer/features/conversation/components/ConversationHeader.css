@@ -7,17 +7,6 @@
   background: var(--panel);
 }
 
-.gc-conversation-header__title {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .gc-conversation-header__tabs {
   display: inline-flex;
   align-items: center;

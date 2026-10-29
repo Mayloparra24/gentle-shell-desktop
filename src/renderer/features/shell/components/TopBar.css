@@ -1,0 +1,65 @@
+.gc-topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  height: 44px;
+  padding: 0 0.5rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.gc-topbar__start {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.gc-topbar__brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  padding: 0 0.4rem;
+  color: var(--text);
+}
+
+.gc-topbar__mark {
+  color: var(--accent);
+}
+
+.gc-topbar__title {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gc-topbar__toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.gc-topbar__toggle:hover {
+  background: var(--raised);
+}
+
+.gc-topbar__toggle[aria-pressed="true"] {
+  color: var(--accent-active);
+}
+
+.gc-topbar__toggle:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: 1px;
+}

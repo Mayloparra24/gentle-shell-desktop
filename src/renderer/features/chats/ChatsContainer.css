@@ -1,5 +1,5 @@
 .gc-chats {
-  width: 250px;
+  width: 100%;
   flex-shrink: 0;
   background: var(--panel);
   border-right: 1px solid var(--line);

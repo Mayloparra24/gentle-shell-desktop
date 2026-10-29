@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { App } from "./App";
 
 // `?firstRun=0` forces mockBridge.setupStatus() to needsChoice: false (see
@@ -60,5 +60,40 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Chats" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Welcome to gentle shell" })).not.toBeInTheDocument();
+  });
+});
+
+describe("App shell layout", () => {
+  beforeEach(() => {
+    window.history.pushState({}, "", "?firstRun=0");
+    window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    window.history.pushState({}, "", "/");
+    window.localStorage.clear();
+  });
+
+  it("hides and shows the chat list from the top bar without unmounting it", async () => {
+    render(<App />);
+    const toggle = await screen.findByRole("button", { name: "Toggle chat list" });
+    expect(screen.getByTestId("left-panel")).toHaveAttribute("data-open", "true");
+
+    toggle.click();
+    await waitFor(() => expect(screen.getByTestId("left-panel")).toHaveAttribute("data-open", "false"));
+    expect(screen.getByTestId("right-panel")).toHaveAttribute("data-open", "true");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    toggle.click();
+    await waitFor(() => expect(screen.getByTestId("left-panel")).toHaveAttribute("data-open", "true"));
+  });
+
+  it("hides the side panel, leaving only the chat", async () => {
+    render(<App />);
+    (await screen.findByRole("button", { name: "Toggle side panel" })).click();
+
+    await waitFor(() => expect(screen.getByTestId("right-panel")).toHaveAttribute("data-open", "false"));
+    expect(screen.getByTestId("left-panel")).toHaveAttribute("data-open", "true");
+    expect(screen.getByPlaceholderText("Tell Gentle what you need…")).toBeInTheDocument();
   });
 });

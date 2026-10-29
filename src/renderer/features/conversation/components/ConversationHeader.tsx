@@ -10,20 +10,18 @@ export const CONVERSATION_PANE = {
 export type ConversationPane = (typeof CONVERSATION_PANE)[keyof typeof CONVERSATION_PANE];
 
 export interface ConversationHeaderProps {
-  readonly title: string;
   readonly working: boolean;
   readonly pane: ConversationPane;
   readonly runningHelpersCount: number;
   readonly onSelectPane: (pane: ConversationPane) => void;
 }
 
-// Presentational: the active chat's title, a "Working…" pill while
+// Presentational: a "Working…" pill while
 // ChatState.working is true, and a pill-style Chat/Helpers tab switch
 // (D3) with the running helper count in the Helpers tab label.
-export function ConversationHeader({ title, working, pane, runningHelpersCount, onSelectPane }: ConversationHeaderProps) {
+export function ConversationHeader({ working, pane, runningHelpersCount, onSelectPane }: ConversationHeaderProps) {
   return (
     <header className="gc-conversation-header">
-      <h2 className="gc-conversation-header__title">{title}</h2>
       {working && <Pill tone={PILL_TONE.WORKING}>Working…</Pill>}
       <div className="gc-conversation-header__tabs" role="tablist">
         <PaneTab pane={CONVERSATION_PANE.CHAT} active={pane === CONVERSATION_PANE.CHAT} label="Chat" onSelectPane={onSelectPane} />

@@ -38,7 +38,7 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
 }
 
 describe("ConversationContainer", () => {
-  it('calls bridge.newChat() for activeChat { kind: "new" } and shows "New chat" as the title', async () => {
+  it('calls bridge.newChat() for activeChat { kind: "new" }', async () => {
     const bridge = makeBridge();
     window.gentle = bridge;
 
@@ -46,10 +46,9 @@ describe("ConversationContainer", () => {
 
     await vi.waitFor(() => expect(bridge.newChat).toHaveBeenCalled());
     expect(bridge.openChat).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: "New chat" })).toBeInTheDocument();
   });
 
-  it("calls bridge.openChat(id) for an existing activeChat and shows its title", async () => {
+  it("calls bridge.openChat(id) for an existing activeChat", async () => {
     const bridge = makeBridge();
     window.gentle = bridge;
 
@@ -57,7 +56,6 @@ describe("ConversationContainer", () => {
 
     await vi.waitFor(() => expect(bridge.openChat).toHaveBeenCalledWith("chat-1"));
     expect(bridge.newChat).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: "Refactor the store" })).toBeInTheDocument();
   });
 
   it("re-opens when activeChat changes", async () => {

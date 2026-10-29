@@ -1,5 +1,44 @@
 .gc-app {
   display: flex;
+  flex-direction: column;
   height: 100%;
   font-family: var(--font-body);
+}
+
+.gc-app__body {
+  --left-width: 272px;
+  --right-width: 340px;
+  flex: 1;
+  display: grid;
+  grid-template-columns: var(--left-width) minmax(0, 1fr) var(--right-width);
+  min-height: 0;
+  transition: grid-template-columns 180ms ease;
+}
+
+.gc-app__body[data-left-open="false"] {
+  --left-width: 0px;
+}
+
+.gc-app__body[data-right-open="false"] {
+  --right-width: 0px;
+}
+
+.gc-app__left,
+.gc-app__right {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.gc-app__left[data-open="false"],
+.gc-app__right[data-open="false"] {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-app__body {
+    transition: none;
+  }
 }

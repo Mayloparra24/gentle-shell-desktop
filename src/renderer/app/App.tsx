@@ -4,6 +4,8 @@ import { useBridge } from "@renderer/shared/bridge/useBridge";
 import { ChatsContainer } from "@renderer/features/chats/ChatsContainer";
 import { ConversationContainer, type ActiveChat } from "@renderer/features/conversation/ConversationContainer";
 import { FirstRunContainer } from "@renderer/features/first-run/FirstRunContainer";
+import { TopBar } from "@renderer/features/shell/components/TopBar";
+import { useShellLayout } from "@renderer/features/shell/useShellLayout";
 import "./App.css";
 
 const NEW_CHAT: ActiveChat = { kind: "new" };
@@ -33,6 +35,7 @@ export function App() {
   const bridge = useBridge();
   const [screen, setScreen] = useState<Screen>(SCREEN.LOADING);
   const [activeChat, setActiveChat] = useState<ActiveChat>(NEW_CHAT);
+  const { leftOpen, rightOpen, toggleLeft, toggleRight } = useShellLayout();
 
   useEffect(() => {
     let cancelled = false;
@@ -62,14 +65,22 @@ export function App() {
   if (screen === SCREEN.LOADING) return <div className="gc-app-loading" />;
   if (screen === SCREEN.FIRST_RUN) return <FirstRunContainer onDone={() => setScreen(SCREEN.CHAT)} />;
 
+  const title = activeChat.kind === "existing" ? activeChat.chat.title : "New chat";
+
   return (
     <div className="gc-app">
-      <ChatsContainer
-        onSelectChat={handleSelectChat}
-        onNewChat={handleNewChat}
-        selectedChatId={activeChat.kind === "existing" ? activeChat.chat.id : undefined}
-      />
-      <ConversationContainer activeChat={activeChat} />
+      <TopBar title={title} leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight} />
+      <div className="gc-app__body" data-left-open={leftOpen} data-right-open={rightOpen}>
+        <div className="gc-app__left" data-testid="left-panel" data-open={leftOpen} inert={!leftOpen}>
+          <ChatsContainer
+            onSelectChat={handleSelectChat}
+            onNewChat={handleNewChat}
+            selectedChatId={activeChat.kind === "existing" ? activeChat.chat.id : undefined}
+          />
+        </div>
+        <ConversationContainer activeChat={activeChat} />
+        <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen} />
+      </div>
     </div>
   );
 }

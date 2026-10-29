@@ -115,13 +115,11 @@ export function ConversationContainer({ activeChat }: ConversationContainerProps
     bridge.answerDialog(id, answer).catch((cause: unknown) => setBridgeError(errorText(cause)));
   };
 
-  const title = activeChat.kind === "existing" ? activeChat.chat.title : "New chat";
   const error = bridgeError ?? chatState.lastError;
 
   return (
     <section className="gc-conversation">
       <ConversationHeader
-        title={title}
         working={chatState.working}
         pane={pane}
         runningHelpersCount={chatState.helpers.summary.running}
