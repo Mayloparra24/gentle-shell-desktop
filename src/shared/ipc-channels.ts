@@ -7,6 +7,8 @@
  */
 export const IPC_CHANNELS = {
   LIST_CHATS: "sessions.list",
+  LIST_DIRECTORY: "workspace.listDirectory",
+  GIT_SUMMARY: "workspace.gitSummary",
   OPEN_CHAT: "chat.open",
   NEW_CHAT: "chat.new",
   SEND_MESSAGE: "chat.send",

@@ -385,7 +385,30 @@ export type DiagnosticKind = (typeof DIAGNOSTIC_KIND)[keyof typeof DIAGNOSTIC_KI
  * (src/main/domain/session/ChatHost.ts, src/main/ipc/registerHandlers.ts);
  * T5 adds first-run/home.
  */
+export interface DirectoryEntry {
+  readonly name: string;
+  readonly kind: "directory" | "file" | "other";
+  readonly size?: number;
+}
+
+export type DirectoryListing =
+  | { readonly status: "ready"; readonly entries: readonly DirectoryEntry[]; readonly truncated: boolean }
+  | { readonly status: "no-chat-folder" }
+  | { readonly status: "error"; readonly message: string };
+
+export type GitSummary =
+  | { readonly status: "ready"; readonly branch: string;
+      readonly changed: readonly { readonly path: string; readonly code: string }[];
+      readonly truncatedChanges: boolean;
+      readonly commits: readonly { readonly hash: string; readonly subject: string; readonly relativeTime: string }[] }
+  | { readonly status: "not-a-repository" | "git-unavailable" | "no-chat-folder" }
+  | { readonly status: "error"; readonly message: string };
+
 export interface GentleBridge {
+  /** One level under the active chat folder; empty path means root. Read-only. */
+  listDirectory(relativePath: string): Promise<DirectoryListing>;
+  /** Read-only Git metadata for the active chat folder. No renderer-supplied cwd. */
+  gitSummary(): Promise<GitSummary>;
   listChats(): Promise<ChatSummary[]>;
   /** Opens an existing chat by id and returns its current ChatState. */
   openChat(id: string): Promise<ChatState>;

@@ -7,6 +7,8 @@ import {
   createLauncherLocator,
   createNodeProcessSpawner,
   createSetupService,
+  createWorkspaceReader,
+  createGitSummaryReader,
 } from "./adapters";
 import { boundedStop } from "./domain/lifecycle/boundedStop";
 import { homeDirFor, resolveHomeMode, withoutGentleHomeAsPiDir } from "./domain/home/home";
@@ -65,6 +67,8 @@ const chatHost = new ChatHost({
   sessionStore: createDynamicPiSessionStore(() => homeDirFor(resolveHomeMode(configStore.read()), appEnv)),
   env: appEnv,
   homeSettings,
+  workspaceReader: createWorkspaceReader(),
+  gitSummaryReader: createGitSummaryReader(),
   log: logPiLine,
 });
 

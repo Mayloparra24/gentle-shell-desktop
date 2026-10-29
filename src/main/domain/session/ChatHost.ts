@@ -1,7 +1,7 @@
-import type { ChatState, ChatSummary, DialogAnswer, DiagnosticKind, PromptResult, SettingKey, SettingState, SlashCommand } from "@shared/bridge-types";
+import type { DirectoryListing, GitSummary, ChatState, ChatSummary, DialogAnswer, DiagnosticKind, PromptResult, SettingKey, SettingState, SlashCommand } from "@shared/bridge-types";
 import { boundedStop } from "../lifecycle/boundedStop";
 import type { RpcEvent } from "../rpc/types";
-import type { HomeSettings, LauncherLocator, ProcessSpawner, SessionStore } from "../../ports";
+import type { GitSummaryReader, WorkspaceReader, HomeSettings, LauncherLocator, ProcessSpawner, SessionStore } from "../../ports";
 import { createSettingsService } from "../settings/settingsService";
 import { PiSession } from "./PiSession";
 import { toChatSummaries } from "./sessionList";
@@ -43,6 +43,8 @@ export interface ChatHostDeps {
   readonly locator: LauncherLocator;
   readonly sessionStore: SessionStore;
   readonly env: NodeJS.ProcessEnv;
+  readonly workspaceReader?: WorkspaceReader;
+  readonly gitSummaryReader?: GitSummaryReader;
   /** Resolves the launcher home flags (e.g. `["--link"]`) fresh on every
    * spawned session, from the persisted home choice (T5) instead of a
    * fixed constant, so a choice made mid-session takes effect on the very
@@ -69,6 +71,7 @@ type ErrorListener = (message: string) => void;
 export class ChatHost {
   private readonly deps: ChatHostDeps;
   private current: PiSession | undefined;
+  private currentCwd: string | undefined;
   private readonly stateListeners = new Set<StateListener>();
   private readonly errorListeners = new Set<ErrorListener>();
   /** Serializes startSession calls: a second open/new call queues behind
@@ -105,12 +108,24 @@ export class ChatHost {
     const sessions = await this.deps.sessionStore.listAll();
     const match = sessions.find((session) => session.id === id);
     if (!match) throw new Error(`ChatHost: no session found for id "${id}"`);
-    return this.startSession(match.path);
+    return this.startSession(match.path, match.cwd);
   }
 
   /** Starts a fresh chat: no sessionPath, so PiSession omits `--session`. */
   async newChat(): Promise<ChatState> {
     return this.startSession(undefined);
+  }
+
+  async listDirectory(relativePath: string): Promise<DirectoryListing> {
+    if (!this.current || !this.currentCwd) return { status: "no-chat-folder" };
+    if (!this.deps.workspaceReader) return { status: "error", message: "Workspace reader unavailable" };
+    return this.deps.workspaceReader.listDirectory(this.currentCwd, relativePath);
+  }
+
+  async gitSummary(): Promise<GitSummary> {
+    if (!this.current || !this.currentCwd) return { status: "no-chat-folder" };
+    if (!this.deps.gitSummaryReader) return { status: "error", message: "Git reader unavailable" };
+    return this.deps.gitSummaryReader.gitSummary(this.currentCwd);
   }
 
   /** Resolves the PromptResult as-is instead of throwing when the
@@ -161,8 +176,8 @@ export class ChatHost {
 
   /** Queues this start behind the previous one via `startChain` (see its
    * doc comment) instead of running `performStart` directly. */
-  private async startSession(sessionPath: string | undefined): Promise<ChatState> {
-    const run = this.startChain.then(() => this.performStart(sessionPath));
+  private async startSession(sessionPath: string | undefined, cwd?: string): Promise<ChatState> {
+    const run = this.startChain.then(() => this.performStart(sessionPath, cwd));
     // Keep the chain alive regardless of this step's outcome, so one
     // failed start (e.g. a locator error) never permanently wedges every
     // later open/new call behind a rejected promise.
@@ -173,7 +188,8 @@ export class ChatHost {
     return run;
   }
 
-  private async performStart(sessionPath: string | undefined): Promise<ChatState> {
+  private async performStart(sessionPath: string | undefined, cwd?: string): Promise<ChatState> {
+    this.currentCwd = undefined;
     await this.current?.stop();
 
     const session = new PiSession({
@@ -181,6 +197,7 @@ export class ChatHost {
       locator: this.deps.locator,
       homeArgs: (this.deps.homeSettings ?? NO_HOME_SETTINGS).homeArgs(),
       sessionPath,
+      cwd,
       env: this.deps.env,
       onLog: this.deps.log,
     });
@@ -188,6 +205,7 @@ export class ChatHost {
     session.on("error", (error) => this.emitError(error.message));
 
     this.current = session;
+    this.currentCwd = cwd;
 
     if (sessionPath) {
       // Attach the listener before start() so it can never miss a response

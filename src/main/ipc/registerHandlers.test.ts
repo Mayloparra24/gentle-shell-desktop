@@ -47,6 +47,17 @@ function fakeWebContents(): WebContents {
 }
 
 describe("registerHandlers", () => {
+  it("wires workspace reads, ignores extra cwd payloads and rejects malformed paths as data", async () => {
+    const host = fakeHost({ listDirectory: vi.fn().mockResolvedValue({ status: "ready", entries: [], truncated: false }), gitSummary: vi.fn().mockResolvedValue({ status: "not-a-repository" }) });
+    const ipc = fakeIpcMain();
+    registerHandlers(host, fakeSetup(), fakeWebContents(), ipc);
+    expect(await registeredHandler(ipc, "workspace.listDirectory")({}, "src", "/untrusted")).toEqual({ status: "ready", entries: [], truncated: false });
+    expect(host.listDirectory).toHaveBeenCalledExactlyOnceWith("src");
+    expect(await registeredHandler(ipc, "workspace.gitSummary")({}, "/untrusted")).toEqual({ status: "not-a-repository" });
+    expect(host.gitSummary).toHaveBeenCalledExactlyOnceWith();
+    expect(await registeredHandler(ipc, "workspace.listDirectory")({}, null)).toEqual({ status: "error", message: "Invalid relative directory path" });
+    expect(host.listDirectory).toHaveBeenCalledTimes(1);
+  });
   it("can be called again for a new window without throwing (window closed, then re-registered on activate)", () => {
     const ipc = fakeIpcMain();
     const host = fakeHost();

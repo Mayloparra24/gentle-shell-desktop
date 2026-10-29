@@ -6,6 +6,8 @@ import { ChatsContainer } from "./ChatsContainer";
 
 function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
   return {
+    listDirectory: vi.fn().mockResolvedValue({ status: "no-chat-folder" }),
+    gitSummary: vi.fn().mockResolvedValue({ status: "no-chat-folder" }),
     listChats: vi.fn().mockResolvedValue([]),
     openChat: vi.fn(),
     newChat: vi.fn(),

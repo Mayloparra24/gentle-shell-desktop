@@ -114,6 +114,28 @@ async function respondToHistoryRequest(
 }
 
 describe("ChatHost", () => {
+  it("workspace reads use only the active stored cwd and return no folder for a new chat", async () => {
+    const { spawner, handles } = createFakeSpawner();
+    const listDirectory = vi.fn().mockResolvedValue({ status: "ready", entries: [], truncated: false });
+    const gitSummary = vi.fn().mockResolvedValue({ status: "not-a-repository" });
+    const host = new ChatHost({ spawner, locator: fakeLocator, sessionStore: fakeSessionStore([session()]), env: {}, workspaceReader: { listDirectory }, gitSummaryReader: { gitSummary } });
+    expect(await host.listDirectory("")).toEqual({ status: "no-chat-folder" });
+    expect(await host.gitSummary()).toEqual({ status: "no-chat-folder" });
+    expect(listDirectory).not.toHaveBeenCalled();
+    const opening = host.openChat("sess-1");
+    await respondToHistoryRequest(handles, 0);
+    await opening;
+    await host.listDirectory("src");
+    await host.gitSummary();
+    expect(listDirectory).toHaveBeenCalledExactlyOnceWith("/tmp/proj", "src");
+    expect(gitSummary).toHaveBeenCalledExactlyOnceWith("/tmp/proj");
+    const fresh = host.newChat();
+    handles[0]!.resolveExited({ code: 0, signal: null });
+    await fresh;
+    expect(await host.listDirectory("")).toEqual({ status: "no-chat-folder" });
+    expect(await host.gitSummary()).toEqual({ status: "no-chat-folder" });
+    expect(listDirectory).toHaveBeenCalledTimes(1);
+  });
   it("openChat resolves the session path from the store, starts it, and pushes state", async () => {
     const { spawner, handles } = createFakeSpawner();
     const store = fakeSessionStore([session({ id: "sess-1", path: "/home/sessions/proj/sess-1.jsonl" })]);

@@ -76,6 +76,13 @@ describe("mockBridge", () => {
     expect(snapshot.profiles[0]?.orchestrator?.model).toBeDefined();
   });
 
+  it("returns realistic one-level preview files and git samples", async () => {
+    expect(await mockBridge.listDirectory("")).toEqual({ status: "ready", truncated: false, entries: [{ name: "src", kind: "directory" }, { name: "README.md", kind: "file", size: 1280 }] });
+    expect(await mockBridge.listDirectory("src")).toEqual({ status: "ready", truncated: false, entries: [{ name: "index.ts", kind: "file", size: 320 }] });
+    expect(await mockBridge.listDirectory("unknown")).toEqual({ status: "error", message: "Preview directory not found" });
+    expect(await mockBridge.gitSummary()).toEqual({ status: "ready", branch: "main", changed: [{ path: "src/index.ts", code: " M" }], truncatedChanges: false, commits: [{ hash: "a1b2c3d", subject: "Add desktop preview", relativeTime: "2 hours ago" }] });
+  });
+
   it("lists two example chats plus one already-working chat", async () => {
     const chats = await mockBridge.listChats();
 

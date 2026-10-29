@@ -470,6 +470,16 @@ function startHelpersScenario(): void {
 }
 
 export const mockBridge: GentleBridge = {
+  async listDirectory(relativePath) {
+    if (relativePath === "") return { status: "ready", truncated: false, entries: [{ name: "src", kind: "directory" }, { name: "README.md", kind: "file", size: 1280 }] };
+    if (relativePath === "src") return { status: "ready", truncated: false, entries: [{ name: "index.ts", kind: "file", size: 320 }] };
+    return { status: "error", message: "Preview directory not found" };
+  },
+
+  async gitSummary() {
+    return { status: "ready", branch: "main", changed: [{ path: "src/index.ts", code: " M" }], truncatedChanges: false, commits: [{ hash: "a1b2c3d", subject: "Add desktop preview", relativeTime: "2 hours ago" }] };
+  },
+
   async listChats(): Promise<ChatSummary[]> {
     return EXAMPLE_CHATS;
   },

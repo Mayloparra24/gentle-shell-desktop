@@ -29,6 +29,16 @@ function createFakeIpc(): { ipc: RendererIpc; invoke: ReturnType<typeof vi.fn>; 
 }
 
 describe("createBridge", () => {
+  it("workspace methods send only the relative path or no payload and preserve status results", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    const bridge = createBridge(ipc);
+    invoke.mockResolvedValue({ status: "no-chat-folder" });
+    expect(await bridge.listDirectory("src")).toEqual({ status: "no-chat-folder" });
+    expect(invoke).toHaveBeenLastCalledWith("workspace.listDirectory", "src");
+    invoke.mockResolvedValue({ status: "not-a-repository" });
+    expect(await bridge.gitSummary()).toEqual({ status: "not-a-repository" });
+    expect(invoke).toHaveBeenLastCalledWith("workspace.gitSummary");
+  });
   it("listChats invokes the sessions.list channel with no payload", async () => {
     const { ipc, invoke } = createFakeIpc();
     invoke.mockResolvedValue([{ id: "chat-1" }]);
