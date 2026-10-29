@@ -1,0 +1,119 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Models screen</title><style>
+:root{--bg:#060407;--panel:#100a0f;--raised:#180e15;--line:#2a1720;--line-strong:#563040;--text:#f6eff3;--text-2:#d2cbd0;--muted:#a78e9b;--accent:#f095c8;--accent-active:#ffb1dd;--blue:#a9c7ee;--green:#b4e7c7;--amber:#f2b86d;--red:#ff718f;--purple:#c96aa2;--champagne:#e0c27a;--font-display:"Space Grotesk","Segoe UI",system-ui,sans-serif;--font-body:"Inter","Segoe UI",system-ui,sans-serif;--font-mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;overflow:hidden}
+*{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;border-radius:6px}
+button:focus-visible,a:focus-visible,input:focus-visible,[role=tab]:focus-visible,[role=option]:focus-visible{outline:2px solid var(--accent-active);outline-offset:2px}
+.app{display:grid;grid-template-rows:44px 1fr 34px;height:100vh}
+.top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-bottom:1px solid var(--line);background:var(--panel);padding:0 8px;gap:8px}
+.brand{font-family:var(--font-display);font-weight:600;padding:0 6px}.brand i{color:var(--accent);font-style:normal}
+.ttl{text-align:center;color:var(--text-2);font-family:var(--font-display)}
+.tb{display:flex;gap:4px}.ibtn{height:32px;display:inline-flex;gap:6px;align-items:center;padding:0 10px;color:var(--text-2);font-size:13px}.ibtn:hover{background:var(--raised)}
+.body{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:0}
+.left{background:var(--panel);border-right:1px solid var(--line);overflow:hidden;padding:12px 0}
+.left .s{margin:0 12px 8px;padding:8px 10px;background:var(--raised);border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:13px}
+.left .h{padding:10px 14px 4px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.left .p{padding:6px 14px;font-weight:600;color:var(--text-2)}
+.left .c{padding:6px 14px 6px 24px;font-size:13px}.left .c.sel{background:#28121e;box-shadow:inset 2px 0 var(--accent)}.left .c small{display:block;color:var(--muted)}
+.center{min-width:0;display:flex;flex-direction:column;min-height:0;position:relative}
+.status{display:flex;background:var(--panel);border-top:1px solid var(--line-strong);font-family:var(--font-mono);font-size:12px;color:var(--text-2);white-space:nowrap;position:relative}
+.status>span,.status>button{padding:0 14px;display:flex;align-items:center;border-right:1px solid var(--line);border-radius:0;font:inherit;color:inherit}
+.status .b{color:var(--accent);font-weight:600}.status .g{color:var(--green)}.status .r{margin-left:auto;border:0;color:var(--muted)}
+.status button.chip{color:var(--blue)}.status button.chip:hover,.status button.chip[aria-expanded=true]{background:var(--raised);color:var(--text)}
+.status button.chip.ef{color:var(--text-2)}
+.pill{border:1px solid var(--line-strong);border-radius:999px;padding:2px 9px;font-size:11px;color:var(--text-2)}
+.msgs{flex:1;overflow:hidden;padding:28px 0}.col{max-width:760px;margin:0 auto;padding:0 24px}
+.bub{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:18px}.bub small{display:block;font-size:12px;color:var(--muted)}
+.comp{border-top:1px solid var(--line);padding:12px 0 14px;background:var(--bg)}
+.box{max-width:760px;margin:0 auto;border:1px solid var(--line-strong);border-radius:12px;padding:10px 10px 10px 16px;color:var(--text);background:var(--panel);display:flex;justify-content:space-between;align-items:center;font-size:15px}
+.send{background:var(--blue);color:var(--bg);font-weight:600;padding:8px 18px;border-radius:8px}
+.btn{padding:7px 14px;border:1px solid var(--line-strong);border-radius:8px;font-size:13px;color:var(--text-2)}.btn:hover{background:var(--raised);color:var(--text)}
+.btn.pri{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:600}.btn.pri:hover{background:var(--accent-active)}
+.btn.warn{background:var(--amber);color:var(--bg);border-color:var(--amber);font-weight:600}
+code,.mono{font-family:var(--font-mono);font-size:12px}
+
+.screen{flex:1;overflow:auto;padding:18px 28px 28px}.wrap{max-width:980px;margin:0 auto}
+.crumb{display:flex;align-items:center;gap:10px;margin-bottom:12px;color:var(--muted);font-size:13px}.crumb a{color:var(--blue);text-decoration:none}
+h1{font-family:var(--font-display);font-size:20px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 14px;font-size:13px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);align-items:flex-end}
+.tab{padding:9px 14px;border-radius:8px 8px 0 0;color:var(--text-2);border:1px solid transparent;border-bottom:0;display:flex;gap:8px;align-items:center;font-size:13px}
+.tab[aria-selected=true]{background:var(--panel);border-color:var(--line);color:var(--text);box-shadow:inset 0 -2px var(--accent)}
+.tab .sy{color:var(--accent-active);font-size:12px}.tab.new{margin-left:auto;color:var(--accent-active)}
+.card{background:var(--panel);border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;padding:16px 18px}
+.pn{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:4px}.pn h2{margin:0;font-family:var(--font-display);font-size:16px;display:flex;gap:8px;align-items:center}
+.pn .note{color:var(--muted);font-size:13px}
+.warnline{margin:10px 0 0;color:var(--amber);font-size:13px}
+.menuwrap{position:relative}
+.dd{position:absolute;right:0;top:34px;min-width:230px;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;z-index:8;padding:4px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.dd[hidden]{display:none}.dd button{display:block;width:100%;text-align:left;padding:8px 10px;font-size:13px;color:var(--text-2);border-radius:6px}.dd button:hover{background:var(--raised);color:var(--text)}.dd .sep{height:1px;background:var(--line);margin:4px 0}.dd .dng{color:var(--red)}
+table{width:100%;border-collapse:collapse;margin-top:14px}
+th{text-align:left;font-size:12px;font-weight:500;color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--line)}
+td{padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.orch td{background:#1c0f18;font-weight:500}
+.ag{font-family:var(--font-mono);font-size:12px}
+.cell{display:inline-flex;gap:8px;align-items:center;padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-family:var(--font-mono);font-size:12px;min-width:0;max-width:100%}
+.cell:hover{border-color:var(--line-strong)}.cell::after{content:"▾";color:var(--muted)}
+.cell.dirty{border-color:var(--amber);color:var(--amber)}.cell.dirty::before{content:"●";font-size:9px}
+.cell.inh{color:var(--muted)}
+.adj{color:var(--muted);font-size:11px;margin-left:6px}
+.foot{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap}.foot .sp{flex:1}
+.cnt{font-size:13px;color:var(--amber)}.cnt.clean{color:var(--green)}
+.report{margin-top:10px;font-size:13px;color:var(--text-2);min-height:20px}
+.pk{position:absolute;z-index:9;width:380px;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.55);overflow:hidden}
+.pk[hidden]{display:none}
+.pk .in{display:block;width:100%;padding:11px 14px;background:var(--raised);border:0;border-bottom:1px solid var(--line);color:var(--text);font:inherit}
+.pk ul{list-style:none;margin:0;padding:4px;max-height:230px;overflow:auto}
+.pk li{padding:8px 10px;border-radius:6px;font-family:var(--font-mono);font-size:12px;display:flex;justify-content:space-between;cursor:pointer}.pk li:hover,.pk li[aria-selected=true]{background:#28121e}
+.pk li .ck{color:var(--green)}.pk li.cu{color:var(--blue)}
+.efr{display:flex;gap:4px;padding:10px}.efr button{flex:1;padding:7px 0;border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--text-2)}.efr button[aria-pressed=true]{background:var(--accent);color:var(--bg);font-weight:600;border-color:var(--accent)}.efr button[disabled]{opacity:.35;cursor:not-allowed}
+.efr+.cap{padding:0 12px 10px;color:var(--muted);font-size:12px}
+</style></head><body><div class="app"><header class="top"><div class="tb"><span class="brand"><i>✿</i> gentle web</span></div><div class="ttl">Models</div><div class="tb"><button class="ibtn" >⚙ Settings</button></div></header><div class="body"><aside class="left" aria-label="Projects and chats"><div class="s">Search chats</div><div class="h">Projects</div><div class="p">shop-web</div><div class="c sel">Add login with magic link<small>working</small></div><div class="c">Fix cart rounding<small>needs you</small></div><div class="p">shop-api</div><div class="c">Rate limit login endpoint<small>idle</small></div></aside><main class="center"><div class="screen"><div class="wrap">
+<div class="crumb"><a href="#">← Back to chat</a><span>/</span><span>Models</span></div>
+<h1>Models</h1><p class="lead">Profiles decide which model and effort each agent uses. Same screen as <code>/gentle:profiles</code> in gentle-shell.</p>
+<div class="menuwrap"><div class="tabs" role="tablist" aria-label="Profiles"><button class="tab" role="tab" id="tab-0" aria-selected="true" aria-controls="panel" data-i="0">current<span class="sy" title="◉★">◉★</span></button><button class="tab" role="tab" id="tab-1" aria-selected="false" aria-controls="panel" data-i="1">before-nan-202609…</button><button class="tab" role="tab" id="tab-2" aria-selected="false" aria-controls="panel" data-i="2">deep-work<span class="sy" title="⌂">⌂</span></button><button class="tab" role="tab" id="tab-3" aria-selected="false" aria-controls="panel" data-i="3">GPT-Max</button><button class="tab new" id="newbtn" aria-haspopup="menu">+ New</button></div>
+<div class="dd" id="newmenu" role="menu" hidden style="top:40px;right:0"><button role="menuitem">Copy of the current profile</button><button role="menuitem">From what's running now</button><button role="menuitem">Empty</button><div class="sep"></div><button role="menuitem">Import profile…</button></div></div>
+<div class="card" role="tabpanel" id="panel" aria-labelledby="tab-0">
+<div class="pn"><div><h2 id="pname">current <span class="pill" id="psym">◉ this session · ★ default</span></h2><div class="note" id="pnote">Used in this session. Default for new sessions.</div></div>
+<div class="menuwrap"><button class="btn" id="pmenu" aria-haspopup="menu" aria-expanded="false">Profile ▾</button><div class="dd" id="pm" role="menu" hidden><button role="menuitem">Rename</button><button role="menuitem">Duplicate</button><button role="menuitem">Use in this repo</button><div class="sep"></div><button role="menuitem">Export…</button><button role="menuitem">Publish to repository</button><div class="sep"></div><button role="menuitem" class="dng">Delete</button></div></div></div>
+<div class="warnline" id="warn" role="status" hidden></div>
+<table><thead><tr><th scope="col" style="width:32%">Agent</th><th scope="col">Model <span title="Change every agent at once">▾</span></th><th scope="col" style="width:20%">Effort <span title="Change every agent at once">▾</span></th></tr></thead><tbody id="rows"><tr class="orch"><td class="ag">▸ Orchestrator</td><td><button class="cell" data-cell="m" data-r="0">openai-codex/gpt-6.1-sol</button></td><td><button class="cell" data-cell="e" data-r="0">max</button></td></tr><tr><td class="ag">gentle-ai-explore</td><td><button class="cell" data-cell="m" data-r="1">anthropic/claude-haiku-5-5</button></td><td><button class="cell" data-cell="e" data-r="1">low</button></td></tr><tr><td class="ag">gentle-ai-worker</td><td><button class="cell" data-cell="m" data-r="2">anthropic/claude-sonnet-5</button></td><td><button class="cell" data-cell="e" data-r="2">high</button></td></tr><tr><td class="ag">gentle-ai-verify</td><td><button class="cell" data-cell="m" data-r="3">anthropic/claude-opus-5-5</button></td><td><button class="cell" data-cell="e" data-r="3">high</button></td></tr><tr><td class="ag">review-risk</td><td><button class="cell" data-cell="m" data-r="4">anthropic/claude-opus-5-5</button></td><td><button class="cell" data-cell="e" data-r="4">max</button><span class="adj">max → high</span></td></tr><tr><td class="ag">review-reliability</td><td><button class="cell" data-cell="m" data-r="5">anthropic/claude-sonnet-5</button></td><td><button class="cell" data-cell="e" data-r="5">high</button></td></tr><tr><td class="ag">review-readability</td><td><button class="cell inh" data-cell="m" data-r="6">inherit</button></td><td><button class="cell inh" data-cell="e" data-r="6">inherit</button></td></tr><tr><td class="ag">review-resilience</td><td><button class="cell inh" data-cell="m" data-r="7">inherit</button></td><td><button class="cell inh" data-cell="e" data-r="7">inherit</button></td></tr></tbody></table>
+<div class="foot"><button class="btn" id="use">Use in this session</button><button class="btn" id="def">Make default</button><button class="btn pri" id="save">Save</button><span class="sp"></span><span class="cnt clean" id="cnt" role="status">Saved</span></div>
+<div class="report" id="report" role="status" aria-live="polite">Legend: ◉ this session · ★ default for new sessions · ⌂ this repository. Effort levels a model does not support land on the nearest one, shown as “max → high”.</div>
+</div></div>
+<div class="pk" id="mpk" role="dialog" aria-label="Choose a model" hidden><input class="in" id="mq" placeholder="Search models" aria-label="Search models"><ul role="listbox" id="mlist"></ul></div>
+<div class="pk" id="epk" role="dialog" aria-label="Choose an effort" hidden style="width:340px"><div class="efr" id="elist"></div><div class="cap" id="ecap"></div></div>
+</div></main></div><footer class="status" aria-label="Status bar"><span class="b">✿ gentle shell</span><span>~/work/shop-web</span><span class="g">feat/magic-link-login *</span><button class="chip" aria-haspopup="dialog" aria-expanded="false" id="m-chip" title="Model, effort and profile">claude-sonnet-5</button><button class="chip ef" aria-haspopup="dialog" aria-expanded="false" title="Model, effort and profile">effort medium</button><button class="chip ef" aria-haspopup="dialog" aria-expanded="false" title="Model, effort and profile">profile balanced</button><span style="color:var(--amber)">ctx 38%</span><span>$0.84</span><span class="r">ODD · RDD on</span></footer></div><script>
+(function(){
+var P=[{"name":"current","sym":"◉★","note":"Used in this session. Default for new sessions.","orch":["openai-codex/gpt-6.1-sol","max"],"warn":""},{"name":"before-nan-202609…","sym":"","note":"Saved profile. Not in use.","orch":["anthropic/claude-sonnet-5","high"],"warn":""},{"name":"deep-work","sym":"⌂","note":"Pinned to this repository.","orch":["anthropic/claude-opus-5-5","high"],"warn":"⚠ Routing key “gentle-ai-explor” matches no agent. Did you mean gentle-ai-explore? It is ignored at launch."},{"name":"GPT-Max","sym":"","note":"Saved profile. Not in use.","orch":["openai-codex/gpt-6.1-sol","max"],"warn":""}];var MODELS=["anthropic/claude-opus-5-5","anthropic/claude-sonnet-5","anthropic/claude-haiku-5-5","openai-codex/gpt-6.1-sol","llama/qwen3-coder (local)"];var EFF=["off","low","medium","high","max"];
+var tabs=document.querySelectorAll('[role=tab]'),dirty=new Set(),cur=0,target=null;
+function count(){var c=document.getElementById('cnt');var n=dirty.size;c.textContent=n?('● '+n+' unsaved'):'Saved';c.className='cnt'+(n?'':' clean')}
+function report(t){document.getElementById('report').textContent=t}
+function show(i){cur=i;tabs.forEach(function(t,k){t.setAttribute('aria-selected',String(k===i))});var p=P[i];
+document.getElementById('pname').firstChild.textContent=p.name+' ';
+var s=document.getElementById('psym');s.textContent=p.sym?p.sym:'saved';document.getElementById('pnote').textContent=p.note;
+var w=document.getElementById('warn');w.hidden=!p.warn;w.textContent=p.warn;
+document.querySelector('[data-r="0"][data-cell="m"]').textContent=p.orch[0];document.querySelector('[data-r="0"][data-cell="e"]').textContent=p.orch[1];
+document.getElementById('panel').setAttribute('aria-labelledby','tab-'+i);dirty.clear();document.querySelectorAll('.cell').forEach(function(c){c.classList.remove('dirty')});count()}
+tabs.forEach(function(t){if(t.dataset.i===undefined)return;t.addEventListener('click',function(){var i=+t.dataset.i;if(i===cur)return;
+if(dirty.size&&!confirm('Unsaved changes. OK = Discard, Cancel = Stay')){return}show(i);report('Showing '+P[i].name+'.')})});
+function place(pk,btn){var r=btn.getBoundingClientRect(),c=document.querySelector('.screen').getBoundingClientRect();pk.style.left=Math.min(r.left-c.left,c.width-400)+'px';pk.style.top=(r.bottom-c.top+6+document.querySelector('.screen').scrollTop)+'px'}
+function closeAll(){document.getElementById('mpk').hidden=true;document.getElementById('epk').hidden=true;document.getElementById('pm').hidden=true;document.getElementById('newmenu').hidden=true}
+function fill(q){var l=document.getElementById('mlist');l.innerHTML='';var cu=target.textContent.trim();
+[['inherit']].concat(MODELS.map(function(m){return [m]})).concat([['Custom model id…']]).filter(function(m){return !q||m[0].toLowerCase().indexOf(q.toLowerCase())>-1||m[0]==='Custom model id…'}).forEach(function(m){var li=document.createElement('li');li.setAttribute('role','option');li.setAttribute('aria-selected',String(m[0]===cu));li.innerHTML='<span>'+m[0]+'</span>'+(m[0]===cu?'<span class="ck">✓</span>':'');
+li.addEventListener('click',function(){if(m[0]==='Custom model id…'){report('Type any provider/model id (not wired in this mock).');closeAll();return}target.textContent=m[0];target.classList.add('dirty');target.classList.toggle('inh',m[0]==='inherit');dirty.add(target.dataset.r+'m');count();closeAll();report('Model changed. Not saved yet.')});l.appendChild(li)})}
+document.addEventListener('click',function(e){var b=e.target.closest('.cell');
+if(b&&b.dataset.cell==='m'){closeAll();target=b;var pk=document.getElementById('mpk');place(pk,b);pk.hidden=false;fill('');var q=document.getElementById('mq');q.value='';q.focus();return}
+if(b&&b.dataset.cell==='e'){closeAll();target=b;var pk2=document.getElementById('epk');place(pk2,b);pk2.hidden=false;var l=document.getElementById('elist');l.innerHTML='';
+var cu=b.textContent.trim();EFF.forEach(function(x){var bt=document.createElement('button');bt.type='button';bt.textContent=x;bt.setAttribute('aria-pressed',String(x===cu));
+if(b.dataset.r==='3'&&x==='max'){bt.disabled=true}
+bt.addEventListener('click',function(){b.textContent=x;b.classList.add('dirty');b.classList.remove('inh');dirty.add(b.dataset.r+'e');count();closeAll();report('Effort changed. Not saved yet.')});l.appendChild(bt)});
+document.getElementById('ecap').textContent=b.dataset.r==='3'?'This model supports up to high. Max would land on high.':'Only the levels this model supports are enabled.';return}
+if(!e.target.closest('.pk')&&!e.target.closest('#pmenu')&&!e.target.closest('#newbtn')){closeAll()}});
+document.getElementById('mq').addEventListener('input',function(e){fill(e.target.value)});
+document.getElementById('pmenu').addEventListener('click',function(e){e.stopPropagation();var m=document.getElementById('pm');var open=m.hidden;closeAll();m.hidden=!open;this.setAttribute('aria-expanded',String(open))});
+document.getElementById('newbtn').addEventListener('click',function(e){e.stopPropagation();var m=document.getElementById('newmenu');var open=m.hidden;closeAll();m.hidden=!open});
+document.getElementById('save').addEventListener('click',function(){dirty.clear();document.querySelectorAll('.cell.dirty').forEach(function(c){c.classList.remove('dirty')});count();report('Saved to profile '+P[cur].name+'.')});
+document.getElementById('use').addEventListener('click',function(){var n=dirty.size;dirty.clear();document.querySelectorAll('.cell.dirty').forEach(function(c){c.classList.remove('dirty')});count();report((n?'Saved pending edits first. ':'')+'Using '+P[cur].name+' in this session only. Nothing shared was written.')});
+document.getElementById('def').addEventListener('click',function(){report('Make default asks first: it shows a diff of what will change (see the states artboard).')});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAll()});
+})();</script></body></html>

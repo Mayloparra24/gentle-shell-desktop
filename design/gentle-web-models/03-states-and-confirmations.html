@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Models: states</title><style>
+:root{--bg:#060407;--panel:#100a0f;--raised:#180e15;--line:#2a1720;--line-strong:#563040;--text:#f6eff3;--text-2:#d2cbd0;--muted:#a78e9b;--accent:#f095c8;--accent-active:#ffb1dd;--blue:#a9c7ee;--green:#b4e7c7;--amber:#f2b86d;--red:#ff718f;--purple:#c96aa2;--champagne:#e0c27a;--font-display:"Space Grotesk","Segoe UI",system-ui,sans-serif;--font-body:"Inter","Segoe UI",system-ui,sans-serif;--font-mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;overflow:hidden}
+*{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;border-radius:6px}
+button:focus-visible,a:focus-visible,input:focus-visible,[role=tab]:focus-visible,[role=option]:focus-visible{outline:2px solid var(--accent-active);outline-offset:2px}
+.app{display:grid;grid-template-rows:44px 1fr 34px;height:100vh}
+.top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-bottom:1px solid var(--line);background:var(--panel);padding:0 8px;gap:8px}
+.brand{font-family:var(--font-display);font-weight:600;padding:0 6px}.brand i{color:var(--accent);font-style:normal}
+.ttl{text-align:center;color:var(--text-2);font-family:var(--font-display)}
+.tb{display:flex;gap:4px}.ibtn{height:32px;display:inline-flex;gap:6px;align-items:center;padding:0 10px;color:var(--text-2);font-size:13px}.ibtn:hover{background:var(--raised)}
+.body{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:0}
+.left{background:var(--panel);border-right:1px solid var(--line);overflow:hidden;padding:12px 0}
+.left .s{margin:0 12px 8px;padding:8px 10px;background:var(--raised);border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:13px}
+.left .h{padding:10px 14px 4px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.left .p{padding:6px 14px;font-weight:600;color:var(--text-2)}
+.left .c{padding:6px 14px 6px 24px;font-size:13px}.left .c.sel{background:#28121e;box-shadow:inset 2px 0 var(--accent)}.left .c small{display:block;color:var(--muted)}
+.center{min-width:0;display:flex;flex-direction:column;min-height:0;position:relative}
+.status{display:flex;background:var(--panel);border-top:1px solid var(--line-strong);font-family:var(--font-mono);font-size:12px;color:var(--text-2);white-space:nowrap;position:relative}
+.status>span,.status>button{padding:0 14px;display:flex;align-items:center;border-right:1px solid var(--line);border-radius:0;font:inherit;color:inherit}
+.status .b{color:var(--accent);font-weight:600}.status .g{color:var(--green)}.status .r{margin-left:auto;border:0;color:var(--muted)}
+.status button.chip{color:var(--blue)}.status button.chip:hover,.status button.chip[aria-expanded=true]{background:var(--raised);color:var(--text)}
+.status button.chip.ef{color:var(--text-2)}
+.pill{border:1px solid var(--line-strong);border-radius:999px;padding:2px 9px;font-size:11px;color:var(--text-2)}
+.msgs{flex:1;overflow:hidden;padding:28px 0}.col{max-width:760px;margin:0 auto;padding:0 24px}
+.bub{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:18px}.bub small{display:block;font-size:12px;color:var(--muted)}
+.comp{border-top:1px solid var(--line);padding:12px 0 14px;background:var(--bg)}
+.box{max-width:760px;margin:0 auto;border:1px solid var(--line-strong);border-radius:12px;padding:10px 10px 10px 16px;color:var(--text);background:var(--panel);display:flex;justify-content:space-between;align-items:center;font-size:15px}
+.send{background:var(--blue);color:var(--bg);font-weight:600;padding:8px 18px;border-radius:8px}
+.btn{padding:7px 14px;border:1px solid var(--line-strong);border-radius:8px;font-size:13px;color:var(--text-2)}.btn:hover{background:var(--raised);color:var(--text)}
+.btn.pri{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:600}.btn.pri:hover{background:var(--accent-active)}
+.btn.warn{background:var(--amber);color:var(--bg);border-color:var(--amber);font-weight:600}
+code,.mono{font-family:var(--font-mono);font-size:12px}
+
+.stage{flex:1;overflow:auto;padding:24px 28px}.grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.dlg{background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;padding:16px 18px}.dlg h3{margin:0 0 6px;font-family:var(--font-display);font-size:15px}.dlg p{margin:0 0 12px;color:var(--text-2);line-height:1.5;font-size:13px}
+.dlg.w{border-color:var(--amber)}.dlg .bar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.cap{font-size:12px;color:var(--muted);margin:0 0 6px;text-transform:uppercase;letter-spacing:.08em}
+.diff{font-family:var(--font-mono);font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;line-height:1.6;margin:8px 0}
+.diff .a{color:var(--green)}.diff .d{color:var(--red)}
+.list{margin:0 0 6px;padding-left:18px;color:var(--text-2);font-size:13px;line-height:1.6}
+.emp{border:1px dashed var(--line-strong);border-radius:12px;padding:18px;text-align:center;color:var(--text-2)}.emp b{display:block;color:var(--text);margin-bottom:4px}
+.skl{display:grid;gap:8px}.skl i{display:block;height:34px;border-radius:8px;background:linear-gradient(90deg,var(--raised),var(--line),var(--raised))}
+</style></head><body><div class="app"><header class="top"><div class="tb"><span class="brand"><i>✿</i> gentle web</span></div><div class="ttl">Models</div><div class="tb"><button class="ibtn" >⚙ Settings</button></div></header><div class="body"><aside class="left" aria-label="Projects and chats"><div class="s">Search chats</div><div class="h">Projects</div><div class="p">shop-web</div><div class="c sel">Add login with magic link<small>working</small></div><div class="c">Fix cart rounding<small>needs you</small></div><div class="p">shop-api</div><div class="c">Rate limit login endpoint<small>idle</small></div></aside><main class="center"><div class="stage"><div class="grid">
+<div><div class="cap">Make default · confirm the change</div><div class="dlg w" role="alertdialog" aria-labelledby="d1"><h3 id="d1">Make “deep-work” the default?</h3><p>New chats will use this routing. This chat keeps what it has. gentle-shell writes <code>~/.pi/gentle-ai/models.json</code> and updates agent settings.</p><div class="diff"><div class="d">- orchestrator   openai-codex/gpt-6.1-sol  max</div><div class="a">+ orchestrator   anthropic/claude-opus-5-5  high</div><div class="d">- gentle-ai-verify  claude-sonnet-5  high</div><div class="a">+ gentle-ai-verify  claude-opus-5-5  high</div></div><p style="margin:0;color:var(--muted);font-size:12px">This repository is pinned to “deep-work”, so only its pin is updated here. If applying fails, the previous routing is restored.</p><div class="bar"><button class="btn">Cancel</button><button class="btn warn">Make default</button></div></div></div>
+<div><div class="cap">Leaving with unsaved changes</div><div class="dlg w" role="alertdialog" aria-labelledby="d2"><h3 id="d2">Unsaved changes in “current”</h3><p>You edited 2 values. Switching profiles would lose them.</p><div class="bar"><button class="btn">Stay</button><button class="btn">Discard</button><button class="btn pri">Save and switch</button></div></div>
+<div class="cap" style="margin-top:18px">Delete a profile</div><div class="dlg" role="alertdialog" aria-labelledby="d3"><h3 id="d3">Delete “GPT-Max”?</h3><p>This removes the profile from <code>profiles.json</code>. The profile in use cannot be deleted; switch to another one first.</p><div class="bar"><button class="btn">Cancel</button><button class="btn" style="border-color:var(--red);color:var(--red)">Delete</button></div></div></div>
+<div><div class="cap">Loading profiles</div><div class="dlg"><div class="skl" aria-label="Loading profiles" role="status"><i></i><i></i><i></i></div></div>
+<div class="cap" style="margin-top:18px">Empty · no profiles yet</div><div class="emp"><b>No profiles yet</b>Create one from what is running now. gentle-shell seeds a profile named “current” the first time.<div style="margin-top:12px"><button class="btn pri">Create “current” from what's running</button></div></div></div>
+<div><div class="cap">Could not read or save</div><div class="dlg w" role="alert"><h3>Could not save “current”</h3><p>gentle-shell could not write <code>profiles.json</code>: permission denied. Nothing was changed.</p><div class="bar"><button class="btn">Dismiss</button><button class="btn pri">Retry</button></div></div>
+<div class="cap" style="margin-top:18px">Model unavailable</div><div class="dlg w" role="status"><h3>Provider not signed in</h3><p>“openai-codex/gpt-6.1-sol” has no sign-in. <b>Make default</b> still saves it for new chats, and this chat keeps its current model. <b>Use in this session</b> refuses.</p><ul class="list"><li>Sign-in is managed by gentle-shell and is read-only here.</li></ul></div></div>
+</div></div></main></div><footer class="status" aria-label="Status bar"><span class="b">✿ gentle shell</span><span>~/work/shop-web</span><span class="g">feat/magic-link-login *</span><button class="chip" aria-haspopup="dialog" aria-expanded="false" id="m-chip" title="Model, effort and profile">claude-sonnet-5</button><button class="chip ef" aria-haspopup="dialog" aria-expanded="false" title="Model, effort and profile">effort medium</button><button class="chip ef" aria-haspopup="dialog" aria-expanded="false" title="Model, effort and profile">profile balanced</button><span style="color:var(--amber)">ctx 38%</span><span>$0.84</span><span class="r">ODD · RDD on</span></footer></div></body></html>

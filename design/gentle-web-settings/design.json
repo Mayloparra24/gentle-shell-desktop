@@ -1,0 +1,9 @@
+{
+  "title": "Gentle web settings",
+  "brief": "Settings screen that replaces the terminal-only /gentle:customize. Groups: Appearance, Editing, Permissions, Workflow, Privacy. Each setting runs its gentle-shell command silently, shows the current value from its status, and never adds messages to the chat.",
+  "artboards": [
+    { "file": "01-modal-sections.html", "title": "Modal with section nav", "tradeoff": "Familiar and focused, with a left section list; hides the chat while open", "width": 1440, "height": 900 },
+    { "file": "02-full-page.html", "title": "Full page", "tradeoff": "Roomy and easy to scan with room for explanations; leaves the chat and needs a back button", "width": 1440, "height": 900 },
+    { "file": "03-side-drawer.html", "title": "Side drawer", "tradeoff": "Chat stays visible so changes can be seen live; narrow, controls stack and long labels wrap", "width": 1440, "height": 900 }
+  ]
+}

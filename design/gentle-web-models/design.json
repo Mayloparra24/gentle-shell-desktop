@@ -1,0 +1,9 @@
+{
+  "title": "Gentle web models screen",
+  "brief": "Model, effort and profile open from the chat (status bar chips and /gentle:profiles) into their own models screen that mirrors gentle-shell's: profiles as tabs, a table with the orchestrator and agents, and Use in this session, Make default and Save.",
+  "artboards": [
+    { "file": "01-from-the-chat.html", "title": "From the chat", "tradeoff": "Status bar chips open a small summary with one action; the slash menu offers /gentle:profiles. Keeps the chat clean, adds one click before editing", "width": 1440, "height": 900 },
+    { "file": "02-models-screen.html", "title": "Models screen", "tradeoff": "Faithful to gentle-shell: profile tabs, one table, three buttons that say where a change applies. Dense, with more concepts to learn than a single model picker", "width": 1440, "height": 900 },
+    { "file": "03-states-and-confirmations.html", "title": "States and confirmations", "tradeoff": "Everything that can go wrong or needs a yes: Make default diff, unsaved changes, delete, loading, empty, save error and unavailable provider", "width": 1440, "height": 900 }
+  ]
+}

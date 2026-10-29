@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "comments": [
+    {
+      "id": "kdpslons",
+      "file": "01-modal-sections.html",
+      "selector": "body > div > header > div:nth-of-type(3) > button > svg",
+      "excerpt": "",
+      "comment": "esto que es?",
+      "createdAt": "2026-10-29T03:43:44.725Z",
+      "status": "resolved",
+      "sentAt": "2026-10-29T03:43:44.777Z",
+      "resolvedAt": "2026-10-29T03:43:56.295Z"
+    },
+    {
+      "id": "43co41n0",
+      "file": "01-modal-sections.html",
+      "selector": "body > div > header > div:nth-of-type(3) > button > svg",
+      "excerpt": "",
+      "comment": "esto es como un sol o una luz, la idea es que sea una tuerca",
+      "createdAt": "2026-10-29T03:44:52.298Z",
+      "status": "resolved",
+      "sentAt": "2026-10-29T03:44:52.348Z",
+      "resolvedAt": "2026-10-29T03:45:08.496Z"
+    },
+    {
+      "id": "wo54auss",
+      "file": "01-modal-sections.html",
+      "selector": "body > div > div > main > div:nth-of-type(3) > div > nav",
+      "excerpt": "Appearance Editing Permissions Workflow Privacy",
+      "comment": "estaría bien agregar aquí el poder cambiar si usar .pi o gentle-shell si fuese el caso que el usuario lo quisiera",
+      "createdAt": "2026-10-29T03:47:03.059Z",
+      "status": "resolved",
+      "sentAt": "2026-10-29T03:47:03.104Z",
+      "resolvedAt": "2026-10-29T03:47:37.142Z"
+    }
+  ]
+}

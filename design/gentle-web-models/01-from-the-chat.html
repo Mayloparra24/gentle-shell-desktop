@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>From the chat</title><style>
+:root{--bg:#060407;--panel:#100a0f;--raised:#180e15;--line:#2a1720;--line-strong:#563040;--text:#f6eff3;--text-2:#d2cbd0;--muted:#a78e9b;--accent:#f095c8;--accent-active:#ffb1dd;--blue:#a9c7ee;--green:#b4e7c7;--amber:#f2b86d;--red:#ff718f;--purple:#c96aa2;--champagne:#e0c27a;--font-display:"Space Grotesk","Segoe UI",system-ui,sans-serif;--font-body:"Inter","Segoe UI",system-ui,sans-serif;--font-mono:"JetBrains Mono","SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}html,body{height:100%;margin:0}body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;overflow:hidden}
+*{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;border-radius:6px}
+button:focus-visible,a:focus-visible,input:focus-visible,[role=tab]:focus-visible,[role=option]:focus-visible{outline:2px solid var(--accent-active);outline-offset:2px}
+.app{display:grid;grid-template-rows:44px 1fr 34px;height:100vh}
+.top{display:grid;grid-template-columns:auto 1fr auto;align-items:center;border-bottom:1px solid var(--line);background:var(--panel);padding:0 8px;gap:8px}
+.brand{font-family:var(--font-display);font-weight:600;padding:0 6px}.brand i{color:var(--accent);font-style:normal}
+.ttl{text-align:center;color:var(--text-2);font-family:var(--font-display)}
+.tb{display:flex;gap:4px}.ibtn{height:32px;display:inline-flex;gap:6px;align-items:center;padding:0 10px;color:var(--text-2);font-size:13px}.ibtn:hover{background:var(--raised)}
+.body{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:0}
+.left{background:var(--panel);border-right:1px solid var(--line);overflow:hidden;padding:12px 0}
+.left .s{margin:0 12px 8px;padding:8px 10px;background:var(--raised);border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:13px}
+.left .h{padding:10px 14px 4px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.left .p{padding:6px 14px;font-weight:600;color:var(--text-2)}
+.left .c{padding:6px 14px 6px 24px;font-size:13px}.left .c.sel{background:#28121e;box-shadow:inset 2px 0 var(--accent)}.left .c small{display:block;color:var(--muted)}
+.center{min-width:0;display:flex;flex-direction:column;min-height:0;position:relative}
+.status{display:flex;background:var(--panel);border-top:1px solid var(--line-strong);font-family:var(--font-mono);font-size:12px;color:var(--text-2);white-space:nowrap;position:relative}
+.status>span,.status>button{padding:0 14px;display:flex;align-items:center;border-right:1px solid var(--line);border-radius:0;font:inherit;color:inherit}
+.status .b{color:var(--accent);font-weight:600}.status .g{color:var(--green)}.status .r{margin-left:auto;border:0;color:var(--muted)}
+.status button.chip{color:var(--blue)}.status button.chip:hover,.status button.chip[aria-expanded=true]{background:var(--raised);color:var(--text)}
+.status button.chip.ef{color:var(--text-2)}
+.pill{border:1px solid var(--line-strong);border-radius:999px;padding:2px 9px;font-size:11px;color:var(--text-2)}
+.msgs{flex:1;overflow:hidden;padding:28px 0}.col{max-width:760px;margin:0 auto;padding:0 24px}
+.bub{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:18px}.bub small{display:block;font-size:12px;color:var(--muted)}
+.comp{border-top:1px solid var(--line);padding:12px 0 14px;background:var(--bg)}
+.box{max-width:760px;margin:0 auto;border:1px solid var(--line-strong);border-radius:12px;padding:10px 10px 10px 16px;color:var(--text);background:var(--panel);display:flex;justify-content:space-between;align-items:center;font-size:15px}
+.send{background:var(--blue);color:var(--bg);font-weight:600;padding:8px 18px;border-radius:8px}
+.btn{padding:7px 14px;border:1px solid var(--line-strong);border-radius:8px;font-size:13px;color:var(--text-2)}.btn:hover{background:var(--raised);color:var(--text)}
+.btn.pri{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:600}.btn.pri:hover{background:var(--accent-active)}
+.btn.warn{background:var(--amber);color:var(--bg);border-color:var(--amber);font-weight:600}
+code,.mono{font-family:var(--font-mono);font-size:12px}
+
+.pop{position:absolute;left:432px;bottom:38px;width:360px;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;padding:14px;z-index:6;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.pop h2{margin:0 0 2px;font-family:var(--font-display);font-size:14px}.pop .sub{color:var(--muted);font-size:12px;margin:0 0 12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px;margin-bottom:12px}.kv dt{color:var(--muted)}.kv dd{margin:0;text-align:right;font-family:var(--font-mono);font-size:12px}
+.pop .bar{display:flex;gap:8px;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:12px}
+.pop .hint{font-size:11px;color:var(--muted)}
+.menu{position:absolute;left:24px;right:24px;bottom:84px;max-width:760px;margin:0 auto;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;overflow:hidden;z-index:4}
+.menu .it{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:9px 14px;align-items:center;border-bottom:1px solid var(--line)}.menu .it.on{background:#28121e;box-shadow:inset 2px 0 var(--accent)}
+.menu .it b{font-family:var(--font-mono);font-weight:500}.menu .it span{color:var(--muted);font-size:13px}.menu .it em{font-style:normal;font-size:11px;color:var(--blue);border:1px solid var(--line-strong);border-radius:999px;padding:1px 8px}
+.menu .ft{padding:8px 14px;color:var(--muted);font-size:12px}
+</style></head><body><div class="app"><header class="top"><div class="tb"><span class="brand"><i>✿</i> gentle web</span></div><div class="ttl">Add login with magic link</div><div class="tb"><button class="ibtn" >⚙ Settings</button></div></header><div class="body"><aside class="left" aria-label="Projects and chats"><div class="s">Search chats</div><div class="h">Projects</div><div class="p">shop-web</div><div class="c sel">Add login with magic link<small>working</small></div><div class="c">Fix cart rounding<small>needs you</small></div><div class="p">shop-api</div><div class="c">Rate limit login endpoint<small>idle</small></div></aside><main class="center"><div class="msgs"><div class="col"><div class="bub"><small>You · 14:02</small>I want users to log in with a magic link by email instead of a password.</div><p style="color:var(--text-2);line-height:1.55">Got it. Google sign-in goes through the auth service and sessions live in cookies. Magic links fit there without touching Google.</p></div></div>
+<div class="comp"><div class="box"><span style="color:var(--muted)">Tell Gentle what you need…</span><button class="send">Send</button></div></div><div class="pop" role="dialog" aria-labelledby="pt" aria-label="Model, effort and profile"><h2 id="pt">This chat</h2><p class="sub">What the main agent is using right now.</p><dl class="kv"><dt>Model</dt><dd>claude-sonnet-5</dd><dt>Effort</dt><dd>medium</dd><dt>Profile</dt><dd>balanced · default for new chats</dd><dt>Helpers</dt><dd>explore: haiku-5-5 · worker: sonnet-5</dd></dl><div class="bar"><span class="hint">In the chat: <code>/gentle:profiles</code></span><button class="btn pri" id="open-models">Open models screen</button></div></div></main></div><footer class="status" aria-label="Status bar"><span class="b">✿ gentle shell</span><span>~/work/shop-web</span><span class="g">feat/magic-link-login *</span><button class="chip" aria-haspopup="dialog" aria-expanded="true" id="m-chip" title="Model, effort and profile">claude-sonnet-5</button><button class="chip ef" aria-haspopup="dialog" aria-expanded="true" title="Model, effort and profile">effort medium</button><button class="chip ef" aria-haspopup="dialog" aria-expanded="true" title="Model, effort and profile">profile balanced</button><span style="color:var(--amber)">ctx 38%</span><span>$0.84</span><span class="r">ODD · RDD on</span></footer></div><script>document.getElementById('open-models').addEventListener('click',function(){this.textContent='Opens the models screen →'})</script></body></html>
