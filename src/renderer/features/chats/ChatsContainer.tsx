@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ChatSummary } from "@shared/bridge-types";
 import { useBridge } from "@renderer/shared/bridge/useBridge";
-import { Button } from "@renderer/shared/ui/atoms/Button";
 import { ChatList } from "./components/ChatList";
 import "./ChatsContainer.css";
 
@@ -15,16 +14,18 @@ export interface ChatsContainerProps {
 }
 
 /**
- * Sidebar container: owns the bridge listChats() call and hands plain
- * ChatSummary props to the presentational ChatList (container/presentational
- * split). Does not call chat.open/chat.new itself — ConversationContainer
- * owns "the currently open chat" per GentleBridge's single-current-chat
- * shape, so this only reports selection intent up to App.
+ * Sidebar container: owns the bridge listChats() call and the search
+ * filter, and hands plain ChatSummary props to the presentational ChatList
+ * (container/presentational split). Does not call chat.open/chat.new
+ * itself — ConversationContainer owns "the currently open chat" per
+ * GentleBridge's single-current-chat shape, so this only reports selection
+ * intent up to App.
  */
 export function ChatsContainer({ onSelectChat, onNewChat, selectedChatId }: ChatsContainerProps) {
   const bridge = useBridge();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -43,18 +44,28 @@ export function ChatsContainer({ onSelectChat, onNewChat, selectedChatId }: Chat
     };
   }, [bridge]);
 
+  const needle = query.trim().toLowerCase();
+  const visibleChats = needle === "" ? chats : chats.filter((chat) => chat.title.toLowerCase().includes(needle));
+
   return (
-    <aside className="gc-chats">
-      <div className="gc-chats__header">
-        <h2 className="gc-chats__heading">Chats</h2>
-        <Button variant="ghost" type="button" onClick={onNewChat}>
-          New chat
-        </Button>
-      </div>
-      {error && (
-        <p style={{ color: "var(--muted)" }}>Chats are not available yet: {error}</p>
-      )}
-      <ChatList chats={chats} selectedId={selectedChatId} onSelect={onSelectChat} />
+    <aside className="gc-chats" aria-label="Projects and chats">
+      <input
+        type="search"
+        className="gc-chats__search"
+        aria-label="Search chats"
+        placeholder="Search chats"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+      />
+      <button type="button" className="gc-chats__new" onClick={onNewChat}>
+        <span aria-hidden="true">+ </span>New chat
+      </button>
+      <button type="button" className="gc-chats__other-folder" disabled title="Not connected yet">
+        Chat in another folder…
+      </button>
+      <h2 className="gc-chats__heading">Projects</h2>
+      {error && <p className="gc-chats__error">Chats are not available yet: {error}</p>}
+      <ChatList chats={visibleChats} selectedId={selectedChatId} onSelect={onSelectChat} />
     </aside>
   );
 }

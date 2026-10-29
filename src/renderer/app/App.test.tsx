@@ -19,7 +19,7 @@ describe("App", () => {
   it("renders the sidebar heading and the composer placeholder", async () => {
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "Chats" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("Tell Gentle what you need…"),
     ).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe("App", () => {
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: "Welcome to gentle shell" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Chats" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Projects" })).not.toBeInTheDocument();
   });
 
   it("choosing a home in first-run switches to the normal chat layout", async () => {
@@ -58,7 +58,7 @@ describe("App", () => {
     const button = await screen.findByRole("button", { name: "Use my pi setup" });
     button.click();
 
-    expect(await screen.findByRole("heading", { name: "Chats" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Welcome to gentle shell" })).not.toBeInTheDocument();
   });
 });

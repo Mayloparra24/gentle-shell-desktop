@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CHAT_STATE, type ChatSummary } from "./bridge-types";
-import { groupChatsByDay } from "./chatGrouping";
+import { groupChatsByDay, groupChatsByProject } from "./chatGrouping";
 
 function makeChat(overrides: Partial<ChatSummary> = {}): ChatSummary {
   return {
@@ -58,5 +58,35 @@ describe("groupChatsByDay", () => {
   it("defaults `now` to the current time when omitted", () => {
     const chats = [makeChat({ id: "a", updatedAt: new Date().toISOString() })];
     expect(groupChatsByDay(chats)).toEqual([{ label: "Today", chats }]);
+  });
+});
+
+describe("groupChatsByProject", () => {
+  const chat = (id: string, cwd: string): ChatSummary => ({
+    id,
+    title: id,
+    cwd,
+    updatedAt: "2026-09-21T09:00:00.000Z",
+    messageCount: 1,
+    state: "idle",
+  });
+
+  it("groups chats by the last folder of their cwd, in first-seen order", () => {
+    const groups = groupChatsByProject([chat("a", "/work/shop-web"), chat("b", "/work/shop-api"), chat("c", "/work/shop-web")]);
+
+    expect(groups.map((group) => group.label)).toEqual(["shop-web", "shop-api"]);
+    expect(groups[0]?.chats.map((item) => item.id)).toEqual(["a", "c"]);
+  });
+
+  it("understands Windows paths and trailing separators", () => {
+    const windowsCwd = ["C:", "work", "shop-web", ""].join(String.fromCharCode(92));
+    const groups = groupChatsByProject([chat("a", windowsCwd), chat("b", "/work/shop-web/")]);
+
+    expect(groups.map((group) => group.label)).toEqual(["shop-web", "shop-web"]);
+    expect(groups).toHaveLength(2);
+  });
+
+  it("labels chats without a cwd as 'No folder'", () => {
+    expect(groupChatsByProject([chat("a", "")]).map((group) => group.label)).toEqual(["No folder"]);
   });
 });

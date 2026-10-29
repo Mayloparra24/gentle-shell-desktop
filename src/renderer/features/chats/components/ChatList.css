@@ -11,13 +11,13 @@
   gap: 0.25rem;
 }
 
-.gc-chat-list__day {
+.gc-chat-list__project {
   font-family: var(--font-body);
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-2);
   margin: 0;
   padding: 0 0.25rem;
 }

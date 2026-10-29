@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { CHAT_STATE, type ChatSummary, type GentleBridge } from "@shared/bridge-types";
 import { ChatsContainer } from "./ChatsContainer";
 
@@ -52,4 +52,39 @@ it("calls onSelectChat with the chat when a list item is clicked", async () => {
   (await screen.findByRole("button", { name: /Refactor the store/ })).click();
 
   expect(onSelectChat).toHaveBeenCalledWith(chat);
+});
+
+it("filters the chat list by title from the search field", async () => {
+  const make = (id: string, title: string): ChatSummary => ({
+    id,
+    title,
+    cwd: "/work/shop-web",
+    updatedAt: "2026-09-21T09:00:00.000Z",
+    messageCount: 1,
+    state: CHAT_STATE.IDLE,
+  });
+  window.gentle = makeBridge({ listChats: vi.fn().mockResolvedValue([make("1", "Add login"), make("2", "Fix cart rounding")]) });
+
+  render(<ChatsContainer onSelectChat={vi.fn()} onNewChat={vi.fn()} />);
+  await screen.findByRole("button", { name: /Add login/ });
+
+  fireEvent.change(screen.getByRole("searchbox", { name: "Search chats" }), { target: { value: "cart" } });
+
+  expect(screen.queryByRole("button", { name: /Add login/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Fix cart rounding/ })).toBeInTheDocument();
+});
+
+it("offers Chat in another folder, disabled until it is connected", () => {
+  window.gentle = makeBridge();
+  render(<ChatsContainer onSelectChat={vi.fn()} onNewChat={vi.fn()} />);
+
+  const button = screen.getByRole("button", { name: "Chat in another folder…" });
+  expect(button).toBeDisabled();
+  expect(button).toHaveAttribute("title", "Not connected yet");
+});
+
+it("labels the list as Projects", () => {
+  window.gentle = makeBridge();
+  render(<ChatsContainer onSelectChat={vi.fn()} onNewChat={vi.fn()} />);
+  expect(screen.getByRole("heading", { name: "Projects" })).toBeInTheDocument();
 });

@@ -62,3 +62,39 @@ function startOfUtcDay(date: Date): number {
 function isoCalendarDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+
+export interface ChatProjectGroup {
+  readonly label: string;
+  readonly chats: readonly ChatSummary[];
+}
+
+const NO_FOLDER_LABEL = "No folder";
+
+/**
+ * Groups chats by the folder they were started in, labeled with the last
+ * path segment (Windows and POSIX separators, trailing separators ignored).
+ * Groups keep first-seen order, so pass chats sorted by updatedAt descending
+ * to get the most recently used project first. Two different folders with the
+ * same name stay separate groups.
+ */
+export function groupChatsByProject(chats: readonly ChatSummary[]): ChatProjectGroup[] {
+  const order: string[] = [];
+  const byCwd = new Map<string, ChatSummary[]>();
+
+  for (const chat of chats) {
+    const existing = byCwd.get(chat.cwd);
+    if (existing) {
+      existing.push(chat);
+      continue;
+    }
+    byCwd.set(chat.cwd, [chat]);
+    order.push(chat.cwd);
+  }
+
+  return order.map((cwd) => ({ label: projectLabel(cwd), chats: byCwd.get(cwd) ?? [] }));
+}
+
+function projectLabel(cwd: string): string {
+  const segments = cwd.split(/[\\/]+/).filter((segment) => segment.length > 0);
+  return segments[segments.length - 1] ?? NO_FOLDER_LABEL;
+}

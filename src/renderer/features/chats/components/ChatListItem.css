@@ -1,16 +1,15 @@
 .gc-chat-list-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 0.5rem;
   width: 100%;
-  padding: 0.6rem 0.75rem;
-  border-radius: 8px;
-  color: var(--text-2);
+  padding: 0.45rem 0.75rem 0.45rem 1rem;
+  border-radius: 0;
+  color: var(--text);
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   text-align: left;
   cursor: pointer;
 }
@@ -19,20 +18,50 @@
   background: var(--raised);
 }
 
+.gc-chat-list-item:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: -2px;
+}
+
 .gc-chat-list-item--selected {
   background: var(--raised);
-  border-color: var(--line-strong);
-  color: var(--text);
+  box-shadow: inset 2px 0 var(--accent);
+}
+
+.gc-chat-list-item__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 0.35rem;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.gc-chat-list-item__dot--working {
+  background: var(--green);
+}
+
+.gc-chat-list-item__dot--needs-you {
+  background: var(--amber);
+}
+
+.gc-chat-list-item__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .gc-chat-list-item__title {
-  flex: 1 1 auto;
-  /* Without min-width: 0, a flex child can never shrink below its content's
-     intrinsic width, so a long title pushes the state pill onto its own
-     line instead of the title itself truncating — this is what let
-     "needs you" wrap at 250px sidebar width. */
-  min-width: 0;
+  /* min-width: 0 on the flex column lets a long title truncate instead of
+     widening the sidebar. */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
+}
+
+.gc-chat-list-item__state {
+  color: var(--muted);
+  font-size: 0.75rem;
 }
