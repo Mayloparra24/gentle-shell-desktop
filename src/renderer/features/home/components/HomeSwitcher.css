@@ -1,0 +1,19 @@
+.gc-home-switcher {
+  height: 28px;
+  padding: 0 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--text-2);
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.gc-home-switcher:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: 1px;
+}
+
+.gc-home-switcher:disabled {
+  color: var(--muted);
+}
