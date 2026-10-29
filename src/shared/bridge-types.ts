@@ -33,9 +33,19 @@ export interface ChatSummary {
 export const MESSAGE_ROLE = {
   USER: "user",
   ASSISTANT: "assistant",
+  /** A note from a command or extension (pi `notify`), shown inline but never sent to the model. */
+  NOTICE: "notice",
 } as const;
 
 export type MessageRole = (typeof MESSAGE_ROLE)[keyof typeof MESSAGE_ROLE];
+
+export const NOTICE_LEVEL = {
+  INFO: "info",
+  WARNING: "warning",
+  ERROR: "error",
+} as const;
+
+export type NoticeLevel = (typeof NOTICE_LEVEL)[keyof typeof NOTICE_LEVEL];
 
 export interface ChatMessage {
   readonly id: string;
@@ -48,6 +58,8 @@ export interface ChatMessage {
    * compiling; the chat reducer added in T2 always sets it explicitly.
    */
   readonly streaming?: boolean;
+  /** Only set on `notice` messages. */
+  readonly level?: NoticeLevel;
 }
 
 export const DIALOG_METHOD = {

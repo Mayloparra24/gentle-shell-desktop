@@ -24,3 +24,23 @@
   margin: 0;
   white-space: pre-wrap;
 }
+
+/* A note printed by a command or extension: inline, quieter than a chat bubble. */
+.gc-message--notice {
+  align-self: flex-start;
+  background: var(--panel);
+  color: var(--text-2);
+  border: 1px dashed var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.gc-message--notice-warning {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.gc-message--notice-error {
+  color: var(--red);
+  border-color: var(--red);
+}

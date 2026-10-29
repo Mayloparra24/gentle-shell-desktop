@@ -669,3 +669,63 @@ describe("reduceChat: helpers retention (gentle-pi drops finished tasks from its
     ]);
   });
 });
+
+describe("reduceChat: command notices", () => {
+  const userCommand = (text: string): ChatState => ({
+    ...INITIAL_CHAT_STATE,
+    messages: [{ id: "u-1", role: "user", text }],
+  });
+
+  const notify = (message: string, notifyType?: string, id = "n-1"): RpcEvent => ({
+    type: "extension_ui_request",
+    id,
+    method: "notify",
+    message,
+    ...(notifyType ? { notifyType } : {}),
+  });
+
+  it("shows a notify that arrives right after a slash command as a notice message", () => {
+    const state = reduceChat(userCommand("/gentle:status"), notify("el Gentleman package is active."), "2026-10-28T00:00:00.000Z");
+
+    expect(state.messages).toHaveLength(2);
+    expect(state.messages[1]).toMatchObject({ role: "notice", text: "el Gentleman package is active.", level: "info" });
+  });
+
+  it("keeps appending notices while the last real message is still that command", () => {
+    const first = reduceChat(userCommand("/gentle:doctor"), notify("check one"));
+    const second = reduceChat(first, notify("check two", undefined, "n-2"));
+
+    expect(second.messages.map((message) => message.text)).toEqual(["/gentle:doctor", "check one", "check two"]);
+  });
+
+  it("maps notifyType to the notice level and falls back to info", () => {
+    const warning = reduceChat(userCommand("/gentle:doctor"), notify("careful", "warning"));
+    const error = reduceChat(userCommand("/gentle:doctor"), notify("broken", "error"));
+    const unknown = reduceChat(userCommand("/gentle:doctor"), notify("odd", "debug"));
+
+    expect(warning.messages[1]?.level).toBe("warning");
+    expect(error.messages[1]?.level).toBe("error");
+    expect(unknown.messages[1]?.level).toBe("info");
+  });
+
+  it("ignores notifications that are not an answer to a slash command", () => {
+    const afterPlainMessage = reduceChat(userCommand("hello there"), notify("startup chatter"));
+    expect(afterPlainMessage.messages).toHaveLength(1);
+
+    const noMessages = reduceChat(INITIAL_CHAT_STATE, notify("startup chatter"));
+    expect(noMessages).toBe(INITIAL_CHAT_STATE);
+  });
+
+  it("ignores blank notifications and notifications once the assistant answered after the command", () => {
+    expect(reduceChat(userCommand("/gentle:status"), notify("   ")).messages).toHaveLength(1);
+
+    const answered: ChatState = {
+      ...INITIAL_CHAT_STATE,
+      messages: [
+        { id: "u-1", role: "user", text: "/skill:review" },
+        { id: "a-1", role: "assistant", text: "Reviewing", streaming: false },
+      ],
+    };
+    expect(reduceChat(answered, notify("late chatter")).messages).toHaveLength(2);
+  });
+});

@@ -1,11 +1,13 @@
 import {
   HELPER_STATUS,
   MESSAGE_ROLE,
+  NOTICE_LEVEL,
   type ChatMessage,
   type ChatState,
   type Dialog,
   type HelperTask,
   type HelpersActivity,
+  type NoticeLevel,
 } from "@shared/bridge-types";
 import { emptyHelpersActivity, parseHelpersActivity } from "./helpersActivity";
 import type { AssistantMessageEvent, FireAndForgetMethod, RpcEvent, RpcExtensionUIRequest, RpcMessage } from "./types";
@@ -179,10 +181,39 @@ function applyExtensionUIRequest(state: ChatState, event: RpcExtensionUIRequest,
       return pushDialog(state, { id: event.id, method: "editor", title: event.title, prefill: event.prefill });
     case "setWidget":
       return applySetWidget(state, event, now);
+    case "notify":
+      return applyNotify(state, event);
     default:
-      // Other fire-and-forget methods: notify, setStatus, setTitle, set_editor_text.
+      // Other fire-and-forget methods: setStatus, setTitle, set_editor_text.
       return state;
   }
+}
+
+const NOTICE_LEVELS: readonly string[] = Object.values(NOTICE_LEVEL);
+
+/**
+ * `notify` is how an extension command reports its result under RPC (for
+ * example `/gentle:status` answers "handled" and prints through notify).
+ * Pi also notifies about unrelated things at startup and during turns, so a
+ * notification is shown only while the last real message is a slash command
+ * the user just sent; anything else stays ignored as before.
+ */
+function applyNotify(state: ChatState, event: FireAndForgetUIRequest): ChatState {
+  const text = typeof event.message === "string" ? event.message.trim() : "";
+  if (text === "" || !lastRealMessageIsSlashCommand(state.messages)) return state;
+
+  const level = typeof event.notifyType === "string" && NOTICE_LEVELS.includes(event.notifyType) ? (event.notifyType as NoticeLevel) : NOTICE_LEVEL.INFO;
+  const notice: ChatMessage = { id: `notice-${event.id}`, role: MESSAGE_ROLE.NOTICE, text, level };
+  return { ...state, messages: [...state.messages, notice] };
+}
+
+function lastRealMessageIsSlashCommand(messages: readonly ChatMessage[]): boolean {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (message === undefined || message.role === MESSAGE_ROLE.NOTICE) continue;
+    return message.role === MESSAGE_ROLE.USER && message.text.trimStart().startsWith("/");
+  }
+  return false;
 }
 
 /**
