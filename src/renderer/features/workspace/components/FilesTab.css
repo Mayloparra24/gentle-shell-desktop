@@ -1,0 +1,44 @@
+.gc-files > .gc-text-field {
+  margin-bottom: 12px;
+  border-color: var(--line-strong);
+}
+
+.gc-files .gc-text-field:focus-visible,
+.gc-files__row:focus-visible {
+  outline: 2px solid var(--accent-active);
+  outline-offset: -2px;
+}
+
+.gc-files__list {
+  list-style: none;
+  margin: 0 -14px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.gc-files__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: 14px var(--font-body);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.gc-files__row:hover { background: var(--raised); }
+.gc-files__row[aria-pressed="true"] {
+  background: var(--raised);
+  box-shadow: inset 2px 0 var(--accent);
+}
+.gc-files__row--ignored { color: var(--muted); font-style: italic; }
+.gc-files__chevron { width: 12px; flex-shrink: 0; color: var(--muted); text-align: center; }
+.gc-files__icon { display: inline-flex; color: var(--muted); }
+.gc-files__icon--folder { color: var(--accent); }
+.gc-files__row--ignored .gc-files__icon { color: var(--muted); }
+.gc-files__ignored { margin-left: auto; font-style: normal; }

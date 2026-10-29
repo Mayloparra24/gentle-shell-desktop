@@ -1,0 +1,30 @@
+.gc-odd { color: var(--text-2); font-size: 13px; }
+.gc-odd__phases { display: flex; gap: 4px; list-style: none; margin: 0 0 14px; padding: 0; }
+.gc-odd__phase {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 2px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.gc-odd__phase--done { color: var(--green); border-color: var(--green); }
+.gc-odd__phase--current { color: var(--bg); background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.gc-odd__heading { margin: 0 0 8px; color: var(--text); font: 600 13px var(--font-display); }
+.gc-odd__document { margin: 0 0 10px; color: var(--muted); font: 12px var(--font-mono); overflow-wrap: anywhere; }
+.gc-odd__tasks { list-style: none; margin: 0; padding: 0; }
+.gc-odd__task { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.gc-odd__marker { width: 16px; flex-shrink: 0; color: var(--muted); }
+.gc-odd__task--done .gc-odd__marker { color: var(--green); }
+.gc-odd__task--current .gc-odd__marker { color: var(--accent-active); }
+.gc-odd__task small { display: block; color: var(--muted); font: 11px var(--font-mono); margin-top: 2px; }
+.gc-odd__heading--checks { margin-top: 16px; }
+.gc-odd__checks { margin: 0; }
+.gc-odd__check { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; }
+.gc-odd__value { margin: 0; text-align: right; }
+.gc-odd__value--green { color: var(--green); }
+.gc-odd__value--amber { color: var(--amber); }
+.gc-odd__value--red { color: var(--red); }
