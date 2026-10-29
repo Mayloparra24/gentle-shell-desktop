@@ -65,8 +65,11 @@ class TypedEmitter<Events> {
 
 const STOP_GRACE_PERIOD_MS = 3000;
 
-/** How long `listCommands` waits for pi's `get_commands` response. */
-const COMMANDS_TIMEOUT_MS = 3000;
+/**
+ * How long `listCommands` waits for pi's `get_commands` response. pi only answers once its
+ * extensions have loaded: 4.3s on a real home with five packages, so 3s was too short.
+ */
+const COMMANDS_TIMEOUT_MS = 15_000;
 
 /** How long `runSilent` waits for a command's response. */
 const SILENT_TIMEOUT_MS = 8000;

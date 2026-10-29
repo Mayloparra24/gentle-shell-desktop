@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createNodeProcessSpawner } from "../../adapters/nodeProcessSpawner";
 import { createLauncherLocator } from "../../adapters/launcherLocator";
 import { PiSession } from "./PiSession";
@@ -486,6 +486,25 @@ async function flushMicrotasks(): Promise<void> {
 }
 
 describe("PiSession: Electron host follow-ups", () => {
+  it("listCommands waits for a real home to load its extensions (pi answered after 4.3s there)", async () => {
+    vi.useFakeTimers();
+    try {
+      const { spawner, handles } = createFakeSpawner();
+      const session = new PiSession({ spawner, locator: fakeLocator, env: {} });
+      session.start();
+
+      const commands = session.listCommands();
+      await vi.advanceTimersByTimeAsync(4400);
+      handles[0]?.emitStdout(
+        JSON.stringify({ type: "response", id: "commands-0", command: "get_commands", success: true, data: { commands: [] } }),
+      );
+
+      await expect(commands).resolves.toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("routes stderr lines to the injectable onLog callback instead of surfacing them as lastError", () => {
     const { spawner, handles } = createFakeSpawner();
     const logLines: string[] = [];
