@@ -70,6 +70,23 @@
   gap: 0.35rem;
 }
 
+.gc-topbar__settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.gc-topbar__settings:hover { background: var(--raised); }
+.gc-topbar__settings:focus-visible { outline: 2px solid var(--accent-active); outline-offset: 2px; }
+
 .gc-topbar__theme {
   height: 28px;
   padding: 0 0.5rem;

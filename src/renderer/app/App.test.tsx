@@ -1,12 +1,60 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { App } from "./App";
+import { mockBridge } from "@renderer/shared/bridge/mockBridge";
+
+afterEach(() => vi.restoreAllMocks());
+
+it("opens settings, restores focus on Escape and resets an existing chat after switching home", async () => {
+  window.history.pushState({}, "", "?firstRun=0");
+  const listChats = vi.spyOn(mockBridge, "listChats");
+  const newChat = vi.spyOn(mockBridge, "newChat");
+  const readSettings = vi.spyOn(mockBridge, "readSettings");
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+  expect(await screen.findByRole("heading", { name: "Write the README intro" })).toBeInTheDocument();
+  const settings = screen.getByRole("button", { name: "Settings" });
+  const composer = screen.getByRole("textbox", { name: "Message" });
+  composer.focus();
+  fireEvent.change(composer, { target: { value: "A draft from the old home" } });
+  fireEvent.click(settings);
+  const dialog = screen.getByRole("dialog", { name: "Settings" });
+  expect(dialog).toContainElement(document.activeElement as HTMLElement);
+  const selectedHome = await screen.findByRole("radio", { checked: true });
+  const otherHome = screen.getAllByRole("radio").find((radio) => radio !== selectedHome)!;
+  const listsBefore = listChats.mock.calls.length;
+  const chatsBefore = newChat.mock.calls.length;
+  const readsBefore = readSettings.mock.calls.length;
+  fireEvent.click(otherHome);
+  expect(await screen.findByRole("heading", { name: "New chat" })).toBeInTheDocument();
+  await waitFor(() => expect(listChats).toHaveBeenCalledTimes(listsBefore + 1));
+  expect(newChat).toHaveBeenCalledTimes(chatsBefore + 1);
+  await waitFor(() => expect(readSettings).toHaveBeenCalledTimes(readsBefore + 1));
+  expect(screen.getByRole("textbox", { name: "Message" })).toHaveValue("");
+  expect(screen.queryByRole("heading", { name: "Write the README intro" })).not.toBeInTheDocument();
+  fireEvent.keyDown(dialog, { key: "Escape" });
+  expect(screen.queryByRole("dialog", { name: "Settings" })).not.toBeInTheDocument();
+  expect(settings).toHaveFocus();
+  window.history.pushState({}, "", "/");
+});
 
 // `?firstRun=0` forces mockBridge.setupStatus() to needsChoice: false (see
 // mockBridge's firstRunOverride), so these tests exercise the normal chat
 // layout without going through the first-run screen mockBridge shows by
 // default for the browser preview.
+it("returns focus to Settings when opened with the composer focused and closed with the close button", async () => {
+  window.history.pushState({}, "", "?firstRun=0");
+  render(<App />);
+  const composer = await screen.findByRole("textbox", { name: "Message" });
+  composer.focus();
+  const settings = screen.getByRole("button", { name: "Settings" });
+  fireEvent.click(settings);
+  fireEvent.click(screen.getByRole("button", { name: "Close settings" }));
+  expect(settings).toHaveFocus();
+  window.history.pushState({}, "", "/");
+});
+
 describe("App", () => {
   beforeEach(() => {
     window.history.pushState({}, "", "?firstRun=0");

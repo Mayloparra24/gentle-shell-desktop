@@ -1,0 +1,7 @@
+.gc-settings-confirm { position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 80%, transparent); display: grid; place-items: center; z-index: 1; }
+.gc-settings-confirm__box { width: min(440px, calc(100% - 40px)); padding: 18px; border: 1px solid var(--amber); border-radius: 12px; background: var(--panel); }
+.gc-settings-confirm h3 { margin: 0 0 8px; font-family: var(--font-display); }
+.gc-settings-confirm p { color: var(--text-2); line-height: 1.5; }
+.gc-settings-confirm__actions { display: flex; justify-content: flex-end; gap: 8px; }
+.gc-settings-confirm__actions button { border: 1px solid var(--line-strong); padding: 6px 14px; }
+.gc-settings-confirm__turn-on { background: var(--amber) !important; color: var(--bg) !important; }

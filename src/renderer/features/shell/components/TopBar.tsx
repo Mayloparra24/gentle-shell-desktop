@@ -9,6 +9,8 @@ export interface TopBarProps {
   readonly onToggleRight: () => void;
   readonly themeId: ThemeId;
   readonly onChangeTheme: (themeId: ThemeId) => void;
+  readonly onOpenSettings?: () => void;
+  readonly settingsButtonRef?: React.Ref<HTMLButtonElement>;
 }
 
 type PanelSide = "left" | "right";
@@ -24,7 +26,7 @@ function PanelIcon({ side }: { readonly side: PanelSide }) {
 
 // Presentational: brand, the two panel toggles and the open chat's title.
 // The toggles expose their state with aria-pressed (pressed = panel visible).
-export function TopBar({ title, leftOpen, rightOpen, onToggleLeft, onToggleRight, themeId, onChangeTheme }: TopBarProps) {
+export function TopBar({ title, leftOpen, rightOpen, onToggleLeft, onToggleRight, themeId, onChangeTheme, onOpenSettings, settingsButtonRef }: TopBarProps) {
   return (
     <header className="gc-topbar">
       <div className="gc-topbar__start">
@@ -40,6 +42,13 @@ export function TopBar({ title, leftOpen, rightOpen, onToggleLeft, onToggleRight
       </div>
       <h2 className="gc-topbar__title">{title}</h2>
       <div className="gc-topbar__end">
+        <button type="button" className="gc-topbar__settings" aria-haspopup="dialog" onClick={(event) => { event.currentTarget.focus(); onOpenSettings?.(); }} ref={settingsButtonRef}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+            <path d="m9 3-1 3-3 1-2 3 2 2-1 3 3 2 2-1 3 2 3-2 2 1 3-2-1-3 2-2-2-3-3-1-1-3z" />
+            <circle cx="12" cy="11" r="3" />
+          </svg>
+          Settings
+        </button>
         <select
           className="gc-topbar__theme"
           aria-label="Theme"

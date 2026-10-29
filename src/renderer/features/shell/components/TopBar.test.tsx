@@ -19,6 +19,16 @@ function renderBar(overrides: Partial<Parameters<typeof TopBar>[0]> = {}) {
 }
 
 describe("TopBar", () => {
+  it("opens settings from the labelled gear before the theme picker", () => {
+    const onOpenSettings = vi.fn();
+    renderBar({ onOpenSettings });
+    const button = screen.getByRole("button", { name: "Settings" });
+    expect(button).toHaveAttribute("aria-haspopup", "dialog");
+    expect(button.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(button.nextElementSibling).toBe(screen.getByRole("combobox", { name: "Theme" }));
+    fireEvent.click(button);
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  });
   it("shows the brand and the chat title", () => {
     renderBar();
     expect(screen.getByText("gentle web")).toBeInTheDocument();

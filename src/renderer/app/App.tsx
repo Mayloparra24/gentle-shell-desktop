@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChatSummary } from "@shared/bridge-types";
 import { useBridge } from "@renderer/shared/bridge/useBridge";
 import { ChatsContainer } from "@renderer/features/chats/ChatsContainer";
@@ -11,6 +11,7 @@ import { PREVIEW_STATUS } from "@renderer/features/shell/previewStatus";
 import { useTheme } from "@renderer/shared/theme/useTheme";
 import { TopBar } from "@renderer/features/shell/components/TopBar";
 import { useShellLayout } from "@renderer/features/shell/useShellLayout";
+import { SettingsContainer } from "@renderer/features/settings/SettingsContainer";
 import "./App.css";
 
 const NEW_CHAT: ActiveChat = { kind: "new" };
@@ -40,6 +41,9 @@ export function App() {
   const bridge = useBridge();
   const [screen, setScreen] = useState<Screen>(SCREEN.LOADING);
   const [activeChat, setActiveChat] = useState<ActiveChat>(NEW_CHAT);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [homeVersion, setHomeVersion] = useState(0);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const { leftOpen, rightOpen, toggleLeft, toggleRight } = useShellLayout();
   const { themeId, setTheme } = useTheme();
 
@@ -80,21 +84,31 @@ export function App() {
       <TopBar title={title} leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight}
         themeId={themeId}
         onChangeTheme={setTheme}
+        onOpenSettings={() => setSettingsOpen(true)}
+        settingsButtonRef={settingsButtonRef}
       />
       <div className="gc-app__body" data-left-open={leftOpen} data-right-open={rightOpen}>
         <div className="gc-app__left" data-testid="left-panel" data-open={leftOpen} inert={!leftOpen}>
           <ChatsContainer
+            key={homeVersion}
             onSelectChat={handleSelectChat}
             onNewChat={handleNewChat}
             selectedChatId={activeChat.kind === "existing" ? activeChat.chat.id : undefined}
           />
         </div>
-        <ConversationContainer activeChat={activeChat} />
+        <ConversationContainer key={homeVersion} activeChat={activeChat} />
         <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen}>
           <WorkspacePanel snapshot={PREVIEW_WORKSPACE} />
         </div>
       </div>
       <StatusBar info={statusInfo} sample />
+      {settingsOpen && <SettingsContainer
+        homeVersion={homeVersion}
+        themeId={themeId}
+        onChangeTheme={setTheme}
+        onClose={() => { setSettingsOpen(false); settingsButtonRef.current?.focus(); }}
+        onHomeChanged={() => { handleNewChat(); setHomeVersion((version) => version + 1); }}
+      />}
     </div>
   );
 }
