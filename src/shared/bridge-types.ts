@@ -338,6 +338,39 @@ export interface SettingState {
   readonly unavailable?: true;
 }
 
+/** One agent's route in a profile; a missing field means it inherits. */
+export interface ProfileRoute {
+  readonly agent: string;
+  readonly model?: string;
+  readonly thinking?: string;
+}
+
+/** A named snapshot of the agent-model routing, as gentle-shell stores it. */
+export interface ProfileInfo {
+  readonly name: string;
+  readonly orchestrator?: { readonly model?: string; readonly thinking?: string };
+  readonly agents: readonly ProfileRoute[];
+}
+
+export const PROFILES_STATUS = {
+  READY: "ready",
+  /** No profiles file yet. */
+  NONE: "none",
+  /** A file this version of gentle-web does not know how to read. */
+  UNSUPPORTED: "unsupported",
+  ERROR: "error",
+} as const;
+
+export type ProfilesStatus = (typeof PROFILES_STATUS)[keyof typeof PROFILES_STATUS];
+
+export interface ProfilesSnapshot {
+  readonly status: ProfilesStatus;
+  readonly message?: string;
+  /** The profile gentle-shell uses by default for new sessions. */
+  readonly active?: string;
+  readonly profiles: readonly ProfileInfo[];
+}
+
 export const DIAGNOSTIC_KIND = {
   DOCTOR: "doctor",
   STATUS: "status",
@@ -382,6 +415,8 @@ export interface GentleBridge {
   readSettings(): Promise<SettingState[]>;
   /** Sets one setting to one allowed value and resolves with the value gentle-shell confirms; rejects otherwise. */
   setSetting(key: SettingKey, value: string): Promise<SettingState>;
+  /** The profiles gentle-shell keeps for the chosen home. Read-only; never creates or changes a file. */
+  readProfiles(): Promise<ProfilesSnapshot>;
   /** Runs one read-only diagnostic and resolves with what gentle-shell printed. */
   runDiagnostic(kind: DiagnosticKind): Promise<string>;
 }

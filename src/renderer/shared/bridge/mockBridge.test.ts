@@ -68,6 +68,14 @@ describe("mockBridge", () => {
     expect(await mockBridge.runDiagnostic("doctor")).toContain("checks");
   });
 
+  it("readProfiles() returns sample profiles with an active one", async () => {
+    const snapshot = await mockBridge.readProfiles();
+
+    expect(snapshot.status).toBe("ready");
+    expect(snapshot.profiles.map((profile) => profile.name)).toContain(snapshot.active);
+    expect(snapshot.profiles[0]?.orchestrator?.model).toBeDefined();
+  });
+
   it("lists two example chats plus one already-working chat", async () => {
     const chats = await mockBridge.listChats();
 

@@ -37,6 +37,7 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
     listCommands: vi.fn(),
     readSettings: vi.fn(),
     setSetting: vi.fn(),
+    readProfiles: vi.fn(),
     runDiagnostic: vi.fn(),
     ...overrides,
   };

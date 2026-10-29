@@ -19,6 +19,7 @@ import {
   type HomeMode,
   type HomeStatus,
   type PiDetection,
+  type ProfilesSnapshot,
   type PromptResult,
   type SettingKey,
   type SettingState,
@@ -144,6 +145,31 @@ const MOCK_SETTING_ALLOWED: Partial<Record<SettingKey, readonly string[]>> = {
   telemetry: ["on", "off"],
 };
 let mockSettings: Record<SettingKey, string> = { ...MOCK_SETTING_DEFAULTS };
+
+/** Sample profiles (the same example the design uses) so the browser preview can show the models screen. */
+const MOCK_PROFILES: ProfilesSnapshot = {
+  status: "ready",
+  active: "current",
+  profiles: [
+    {
+      name: "current",
+      orchestrator: { model: "openai-codex/gpt-6.1-sol", thinking: "max" },
+      agents: [
+        { agent: "gentle-ai-explore", model: "anthropic/claude-haiku-5-5", thinking: "low" },
+        { agent: "gentle-ai-worker", model: "anthropic/claude-sonnet-5", thinking: "high" },
+        { agent: "gentle-ai-verify", model: "anthropic/claude-opus-5-5", thinking: "high" },
+        { agent: "review-risk", model: "anthropic/claude-opus-5-5", thinking: "max" },
+        { agent: "review-readability" },
+      ],
+    },
+    {
+      name: "deep-work",
+      orchestrator: { model: "anthropic/claude-opus-5-5", thinking: "high" },
+      agents: [{ agent: "gentle-ai-worker", model: "anthropic/claude-sonnet-5", thinking: "high" }],
+    },
+    { name: "GPT-Max", orchestrator: { model: "openai-codex/gpt-6.1-sol", thinking: "max" }, agents: [] },
+  ],
+};
 
 let currentState: ChatState = emptyState();
 let nextMessageId = 0;
@@ -551,6 +577,10 @@ export const mockBridge: GentleBridge = {
     if (!allowed.includes(value)) throw new Error(`"${value}" is not allowed for "${key}"`);
     mockSettings = { ...mockSettings, [key]: value };
     return { key, value };
+  },
+
+  async readProfiles(): Promise<ProfilesSnapshot> {
+    return MOCK_PROFILES;
   },
 
   async runDiagnostic(kind: DiagnosticKind): Promise<string> {

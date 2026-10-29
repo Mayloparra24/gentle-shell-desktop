@@ -1,3 +1,4 @@
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { HomeConfig } from "../domain/home/home";
 import type { AppConfigStore } from "./appConfigStore";
@@ -94,5 +95,63 @@ describe("createSetupService", () => {
     await expect(service.chooseHome("link")).rejects.toThrow(
       /could not save.*home choice.*EACCES: permission denied, mkdir '\/root\/\.config'/i,
     );
+  });
+});
+
+describe("createSetupService: profiles", () => {
+  const VALID = JSON.stringify({ kind: "gentle-pi.agent_model_profiles", version: 1, active: "current", profiles: { current: {} } });
+  const notFound = () => Object.assign(new Error("no such file"), { code: "ENOENT" });
+
+  it("reads the profiles of the .pi home from <pi folder>/gentle-ai/profiles.json", async () => {
+    const reads: string[] = [];
+    const service = createSetupService(fakeConfigStore({ home: "link" }), { PI_CODING_AGENT_DIR: path.join("/pi", "agent") }, () => true, async (file) => {
+      reads.push(file);
+      return VALID;
+    });
+
+    const snapshot = await service.profiles();
+
+    expect(reads).toEqual([path.join("/pi", "gentle-ai", "profiles.json")]);
+    expect(snapshot).toMatchObject({ status: "ready", active: "current" });
+  });
+
+  it("reads the .gentle-shell home by default", async () => {
+    const reads: string[] = [];
+    const service = createSetupService(fakeConfigStore({}), {}, () => false, async (file) => {
+      reads.push(file);
+      return VALID;
+    });
+
+    await service.profiles();
+
+    expect(reads[0]).toContain(".gentle-shell");
+    expect(reads[0]?.endsWith(path.join("gentle-ai", "profiles.json"))).toBe(true);
+  });
+
+  it("reports a missing file as none, without creating anything", async () => {
+    const service = createSetupService(fakeConfigStore({}), {}, () => false, async () => {
+      throw notFound();
+    });
+
+    expect(await service.profiles()).toMatchObject({ status: "none", profiles: [] });
+  });
+
+  it("reports any other read failure as an error with its message", async () => {
+    const service = createSetupService(fakeConfigStore({}), {}, () => false, async () => {
+      throw new Error("EACCES: permission denied");
+    });
+
+    expect(await service.profiles()).toMatchObject({ status: "error", message: expect.stringContaining("EACCES") });
+  });
+
+  it("does not guess where a custom home keeps its profiles", async () => {
+    const reads: string[] = [];
+    const service = createSetupService(fakeConfigStore({}), { GENTLE_SHELL_HOME: path.join("/custom", "dir") }, () => false, async (file) => {
+      reads.push(file);
+      return VALID;
+    });
+
+    expect(await service.profiles()).toMatchObject({ status: "unsupported" });
+    expect(reads).toEqual([]);
   });
 });

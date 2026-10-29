@@ -1,4 +1,4 @@
-import type { HomeMode, HomeStatus, SetupStatus } from "@shared/bridge-types";
+import type { HomeMode, HomeStatus, ProfilesSnapshot, SetupStatus } from "@shared/bridge-types";
 
 /**
  * Ports the domain depends on; concrete adapters (src/main/adapters)
@@ -95,4 +95,6 @@ export interface SetupService {
   status(): Promise<SetupStatus>;
   chooseHome(mode: HomeMode): Promise<void>;
   homeStatus(): Promise<HomeStatus>;
+  /** The profiles of the chosen home, read-only. */
+  profiles(): Promise<ProfilesSnapshot>;
 }

@@ -32,6 +32,7 @@ describe("useBridge", () => {
       listCommands: vi.fn(),
       readSettings: vi.fn(),
       setSetting: vi.fn(),
+      readProfiles: vi.fn(),
       runDiagnostic: vi.fn(),
     };
     window.gentle = realBridge;

@@ -30,6 +30,8 @@ export const IPC_CHANNELS = {
   SETTINGS_SET: "settings.set",
   /** Runs one read-only diagnostic. */
   DIAGNOSTIC_RUN: "diagnostic.run",
+  /** The profiles gentle-shell keeps (read-only). */
+  PROFILES_READ: "profiles.read",
 } as const;
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

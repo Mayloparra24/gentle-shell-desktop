@@ -169,6 +169,14 @@ describe("createBridge", () => {
     expect(invoke).toHaveBeenNthCalledWith(3, IPC_CHANNELS.DIAGNOSTIC_RUN, "doctor");
   });
 
+  it("readProfiles invokes profiles.read with no payload", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    invoke.mockResolvedValue({ status: "none", profiles: [] });
+
+    await expect(createBridge(ipc).readProfiles()).resolves.toEqual({ status: "none", profiles: [] });
+    expect(invoke).toHaveBeenCalledWith(IPC_CHANNELS.PROFILES_READ);
+  });
+
   it("onError's returned unsubscribe removes the listener", () => {
     const { ipc, listeners } = createFakeIpc();
     const bridge = createBridge(ipc);

@@ -22,6 +22,7 @@ function fakeSetup(): SetupService {
   return {
     status: vi.fn().mockResolvedValue({ needsChoice: false, detection: { found: false, dir: "", hasAuth: false, hasModels: false } }),
     homeStatus: vi.fn().mockResolvedValue({ mode: "isolated", dir: "/home/.gentle-shell/agent", detection: { found: false, dir: "", hasAuth: false, hasModels: false } }),
+    profiles: vi.fn().mockResolvedValue({ status: "none", profiles: [] }),
     chooseHome: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -99,6 +100,7 @@ describe("registerHandlers", () => {
     const setup: SetupService = {
       status: vi.fn(),
       homeStatus: vi.fn(),
+      profiles: vi.fn(),
       chooseHome: vi.fn().mockRejectedValue(new Error("Could not save the home choice: EACCES")),
     };
 
@@ -170,5 +172,17 @@ describe("registerHandlers: settings", () => {
     await expect(registeredHandler(ipc, "diagnostic.run")({} as never, undefined)).rejects.toThrow("Invalid diagnostic request");
     expect(host.setSetting).not.toHaveBeenCalled();
     expect(host.runDiagnostic).not.toHaveBeenCalled();
+  });
+});
+
+describe("registerHandlers: profiles", () => {
+  it("registers profiles.read wired to the SetupService", async () => {
+    const ipc = fakeIpcMain();
+    const setup = fakeSetup();
+
+    registerHandlers(fakeHost(), setup, fakeWebContents(), ipc);
+
+    expect(await registeredHandler(ipc, "profiles.read")({} as never)).toEqual({ status: "none", profiles: [] });
+    expect(setup.profiles).toHaveBeenCalledTimes(1);
   });
 });

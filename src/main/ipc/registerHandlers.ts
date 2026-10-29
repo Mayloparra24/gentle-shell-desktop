@@ -45,6 +45,7 @@ export function registerHandlers(host: ChatHost, setup: SetupService, webContent
     if (typeof kind !== "string") throw new Error("Invalid diagnostic request");
     return host.runDiagnostic(kind as DiagnosticKind);
   });
+  registerRequestHandler(ipc, IPC_CHANNELS.PROFILES_READ, () => setup.profiles());
   registerRequestHandler(ipc, IPC_CHANNELS.CHOOSE_HOME, (_event, mode: HomeMode) => setup.chooseHome(mode));
 
   const unsubscribeState = host.onState((state) => webContents.send(IPC_CHANNELS.STATE_PUSH, state));
