@@ -9,7 +9,11 @@ export type GitState = GitSummary | { readonly status: "loading" };
 const error = (cause: unknown) => ({ status: "error" as const, message: cause instanceof Error ? cause.message : String(cause) });
 
 // Remounted for each chat selection, so cached children cannot cross folders.
-export function WorkspaceDataContainer({ tab, ready }: { readonly tab: "files" | "git" | "odd"; readonly ready: boolean }) {
+export function WorkspaceDataContainer({ tab, ready, onGitChange }: {
+  readonly tab: "files" | "git";
+  readonly ready: boolean;
+  readonly onGitChange?: (git: GitState) => void;
+}) {
   const bridge = useBridge();
   const [listings, setListings] = useState<Record<string, ListingState>>({});
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -37,13 +41,14 @@ export function WorkspaceDataContainer({ tab, ready }: { readonly tab: "files" |
     return () => { alive.current = false; gitRequest.current += 1; };
   }, [bridge, ready]);
 
+  useEffect(() => { onGitChange?.(git); }, [git, onGitChange]);
+
   function toggle(path: string) {
     const next = new Set(expanded);
     if (next.has(path)) next.delete(path);
     else { next.add(path); if (!listings[path]) void loadDirectory(path); }
     setExpanded(next);
   }
-  if (tab === "odd") return null;
   if (tab === "git") return <GitTab git={git} onRefresh={() => void loadGit()} />;
   return <FilesTab listings={listings} expanded={expanded} query={query} onQueryChange={setQuery}
     onToggle={toggle} onRetry={path => void loadDirectory(path)} />;

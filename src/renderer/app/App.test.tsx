@@ -78,7 +78,8 @@ describe("App", () => {
     const composer = await screen.findByRole("textbox", { name: "Message" });
     fireEvent.change(composer, { target: { value: "keep this draft" } });
     const opens = newChat.mock.calls.length;
-    fireEvent.click(screen.getByRole("button", { name: /Open models screen \(model/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open models screen →" }));
     expect(await screen.findByRole("heading", { name: "Models" })).toBeInTheDocument();
     expect(composer).toBeInTheDocument();
     expect(composer).not.toBeVisible();
@@ -188,6 +189,29 @@ describe("App shell layout", () => {
 });
 
 describe("App status bar", () => {
+  it("renders no old workspace or status samples with the mock bridge", async () => {
+    render(<App />);
+    await screen.findByRole("textbox", { name: "Message" });
+    for (const text of ["Login with magic link", "claude-sonnet-5", "$0.84", "Sample data · not connected yet"]) {
+      expect(screen.queryByText(text, { exact: false })).not.toBeInTheDocument();
+    }
+    expect(screen.getByText("No folder chosen")).toBeInTheDocument();
+  });
+  it("shares Git refresh results and clears the branch when switching to a chat without a known folder", async () => {
+    const git = vi.spyOn(mockBridge, "gitSummary").mockResolvedValue({ status: "ready", branch: "live", changed: [], truncatedChanges: false, commits: [] });
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+    const bar = screen.getByRole("contentinfo", { name: "Status bar" });
+    await waitFor(() => expect(bar).toHaveTextContent("live"));
+    expect(git).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("tab", { name: "Git" }));
+    git.mockResolvedValue({ status: "not-a-repository" });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => expect(bar).not.toHaveTextContent("live"));
+    expect(git).toHaveBeenCalledTimes(3);
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    await waitFor(() => expect(bar).toHaveTextContent("No folder chosen"));
+  });
   beforeEach(() => {
     window.history.pushState({}, "", "?firstRun=0");
     window.localStorage.clear();
@@ -203,7 +227,8 @@ describe("App status bar", () => {
 
     (await screen.findByRole("button", { name: /Write the README intro/ })).click();
 
-    await waitFor(() => expect(screen.getByRole("contentinfo", { name: "Status bar" })).toHaveTextContent("/Users/dev/gentle-shell-desktop"));
+    await waitFor(() => expect(screen.getByRole("contentinfo", { name: "Status bar" })).toHaveTextContent("gentle-shell-desktopmain"));
+    expect(within(screen.getByRole("contentinfo", { name: "Status bar" })).getByText("gentle-shell-desktop")).toHaveAttribute("title", "/Users/dev/gentle-shell-desktop");
   });
 });
 

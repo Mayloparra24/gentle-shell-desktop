@@ -1,24 +1,25 @@
 import { useId, useState, type KeyboardEvent } from "react";
-import { WorkspaceDataContainer } from "./WorkspaceDataContainer";
-import { OddTab } from "./components/OddTab";
-import type { WorkspaceSnapshot } from "./types";
+import { WorkspaceDataContainer, type GitState } from "./WorkspaceDataContainer";
+import { useBridge } from "@renderer/shared/bridge/useBridge";
+import { mockBridge } from "@renderer/shared/bridge/mockBridge";
 import "./WorkspacePanel.css";
 
-export const WORKSPACE_TAB = { FILES: "files", ODD: "odd", GIT: "git" } as const;
+export const WORKSPACE_TAB = { FILES: "files", GIT: "git" } as const;
 export type WorkspaceTab = (typeof WORKSPACE_TAB)[keyof typeof WORKSPACE_TAB];
 
 export interface WorkspacePanelProps {
-  readonly snapshot: WorkspaceSnapshot;
   readonly chatId?: string;
   readonly ready?: boolean;
+  readonly onGitChange?: (git: GitState) => void;
 }
 
-const tabs = [WORKSPACE_TAB.FILES, WORKSPACE_TAB.ODD, WORKSPACE_TAB.GIT];
-const labels = { files: "Files", odd: "ODD", git: "Git" };
+const tabs = [WORKSPACE_TAB.FILES, WORKSPACE_TAB.GIT];
+const labels = { files: "Files", git: "Git" };
 
 // Keeps tab navigation separate from the bridge-backed data container.
-export function WorkspacePanel({ snapshot, chatId = "new", ready = true }: WorkspacePanelProps) {
-  const [active, setActive] = useState<WorkspaceTab>(WORKSPACE_TAB.ODD);
+export function WorkspacePanel({ chatId = "new", ready = true, onGitChange }: WorkspacePanelProps) {
+  const bridge = useBridge();
+  const [active, setActive] = useState<WorkspaceTab>(WORKSPACE_TAB.FILES);
   const id = useId();
 
   function navigate(event: KeyboardEvent<HTMLButtonElement>, tab: WorkspaceTab) {
@@ -40,23 +41,19 @@ export function WorkspacePanel({ snapshot, chatId = "new", ready = true }: Works
       <div className="gc-workspace__tabs" role="tablist" aria-label="Workspace tabs">
         {tabs.map((tab) => (
           <button key={tab} type="button" role="tab" id={`${id}-${tab}-tab`}
-            aria-controls={`${id}-${tab === "odd" ? "odd" : "data"}-panel`} aria-selected={active === tab}
+            aria-controls={`${id}-data-panel`} aria-selected={active === tab}
             tabIndex={active === tab ? 0 : -1} className="gc-workspace__tab"
             onClick={() => setActive(tab)} onKeyDown={(event) => navigate(event, tab)}>
             {labels[tab]}
           </button>
         ))}
       </div>
-      <div role="tabpanel" id={`${id}-odd-panel`} aria-labelledby={`${id}-odd-tab`}
-        hidden={active !== WORKSPACE_TAB.ODD} tabIndex={0} className="gc-workspace__pane">
-        <OddTab odd={snapshot.odd} />
-      </div>
       <div role="tabpanel" id={`${id}-data-panel`}
         aria-labelledby={`${id}-${active === "git" ? "git" : "files"}-tab`}
-        hidden={active === WORKSPACE_TAB.ODD} tabIndex={0} className="gc-workspace__pane">
-        <WorkspaceDataContainer key={`${chatId}-${ready}`} tab={active} ready={ready} />
+        tabIndex={0} className="gc-workspace__pane">
+        <WorkspaceDataContainer key={`${chatId}-${ready}`} tab={active} ready={ready} onGitChange={onGitChange} />
       </div>
-      <footer className="gc-workspace__footer">Sample data · not connected yet</footer>
+      {bridge === mockBridge && <footer className="gc-workspace__footer">Preview data</footer>}
     </section>
   );
 }

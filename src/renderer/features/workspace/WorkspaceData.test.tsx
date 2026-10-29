@@ -4,10 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DirectoryListing, GitSummary } from "@shared/bridge-types";
 import { mockBridge } from "@renderer/shared/bridge/mockBridge";
 import { WorkspacePanel } from "./WorkspacePanel";
-import { PREVIEW_WORKSPACE } from "./preview";
 
 afterEach(() => { vi.restoreAllMocks(); delete window.gentle; });
-function panel(chatId = "a") { return <WorkspacePanel snapshot={PREVIEW_WORKSPACE} chatId={chatId} />; }
+function panel(chatId = "a") { return <WorkspacePanel chatId={chatId} />; }
 function tab(name: string) { fireEvent.click(screen.getByRole("tab", { name })); }
 
 describe("live workspace", () => {

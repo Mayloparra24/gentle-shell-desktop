@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatSummary } from "@shared/bridge-types";
 import { useBridge } from "@renderer/shared/bridge/useBridge";
 import { ChatsContainer } from "@renderer/features/chats/ChatsContainer";
 import { ConversationContainer, type ActiveChat } from "@renderer/features/conversation/ConversationContainer";
 import { FirstRunContainer } from "@renderer/features/first-run/FirstRunContainer";
 import { WorkspacePanel } from "@renderer/features/workspace/WorkspacePanel";
-import { PREVIEW_WORKSPACE } from "@renderer/features/workspace/preview";
+import type { GitState } from "@renderer/features/workspace/WorkspaceDataContainer";
 import { StatusBar } from "@renderer/features/shell/components/StatusBar";
-import { PREVIEW_STATUS } from "@renderer/features/shell/previewStatus";
 import { useTheme } from "@renderer/shared/theme/useTheme";
 import { TopBar } from "@renderer/features/shell/components/TopBar";
 import { useShellLayout } from "@renderer/features/shell/useShellLayout";
@@ -47,6 +46,10 @@ export function App() {
   const [view, setView] = useState<"chat" | "models">("chat");
   const openModels = (): void => setView("models");
   const [homeVersion, setHomeVersion] = useState(0);
+  const [workspaceGit, setWorkspaceGit] = useState<{ chat: ActiveChat; home: number; git: GitState } | null>(null);
+  const handleGitChange = useCallback((git: GitState) => {
+    setWorkspaceGit({ chat: activeChat, home: homeVersion, git });
+  }, [activeChat, homeVersion]);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const { leftOpen, rightOpen, toggleLeft, toggleRight } = useShellLayout();
   const { themeId, setTheme } = useTheme();
@@ -81,7 +84,12 @@ export function App() {
 
   const title = activeChat.kind === "existing" ? activeChat.chat.title : "New chat";
 
-  const statusInfo = activeChat.kind === "existing" ? { ...PREVIEW_STATUS, cwd: activeChat.chat.cwd } : PREVIEW_STATUS;
+  const git = openedChat === activeChat && workspaceGit?.chat === activeChat && workspaceGit.home === homeVersion
+    ? workspaceGit.git : undefined;
+  const statusInfo = {
+    cwd: activeChat.kind === "existing" ? activeChat.chat.cwd : undefined,
+    branch: git?.status === "ready" ? git.branch : undefined,
+  };
 
   return (
     <div className="gc-app">
@@ -105,12 +113,12 @@ export function App() {
           {view === "models" && <ModelsContainer key={homeVersion} onBack={() => setView("chat")} />}
         </div>
         <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen}>
-          <WorkspacePanel snapshot={PREVIEW_WORKSPACE}
+          <WorkspacePanel onGitChange={handleGitChange}
             chatId={`${homeVersion}-${activeChat.kind === "existing" ? activeChat.chat.id : "new"}`}
             ready={openedChat === activeChat} />
         </div>
       </div>
-      <StatusBar info={statusInfo} sample onOpenModels={openModels} />
+      <StatusBar info={statusInfo} />
       {settingsOpen && <SettingsContainer
         onOpenModels={openModels}
         homeVersion={homeVersion}
