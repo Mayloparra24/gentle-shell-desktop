@@ -40,7 +40,7 @@ describe("TopBar", () => {
   });
   it("shows the brand and the chat title", () => {
     renderBar();
-    expect(screen.getByText("gentle web")).toBeInTheDocument();
+    expect(screen.getByText("Gentle Shell Desktop")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Add login with magic link" })).toBeInTheDocument();
   });
 

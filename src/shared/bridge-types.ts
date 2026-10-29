@@ -356,7 +356,7 @@ export const PROFILES_STATUS = {
   READY: "ready",
   /** No profiles file yet. */
   NONE: "none",
-  /** A file this version of gentle-web does not know how to read. */
+  /** A file this version of Gentle Shell Desktop does not know how to read. */
   UNSUPPORTED: "unsupported",
   ERROR: "error",
 } as const;

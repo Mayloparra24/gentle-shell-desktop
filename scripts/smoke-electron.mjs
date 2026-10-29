@@ -39,20 +39,26 @@ async function main() {
     await window.waitForFunction(
       () => {
         const text = document.body.innerText || "";
-        return text.includes("Welcome to gentle shell") || text.includes("Chats");
+        return text.includes("Welcome to Gentle Shell Desktop") || text.includes("Chats");
       },
       undefined,
       { timeout: 15_000 },
     );
 
     const title = await window.title();
-    if (title !== "gentle shell") {
-      throw new Error(`expected window title "gentle shell", got "${title}"`);
+    if (title !== "Gentle Shell Desktop") {
+      throw new Error(`expected window title "Gentle Shell Desktop", got "${title}"`);
+    }
+
+    // No native File/Edit/View/Window bar outside macOS.
+    if (process.platform !== "darwin") {
+      const hasMenu = await app.evaluate(({ Menu }) => Menu.getApplicationMenu() !== null);
+      if (hasMenu) throw new Error("expected no application menu on this platform");
     }
 
     const bodyText = await window.locator("body").innerText();
-    if (!bodyText.includes("Welcome to gentle shell") && !bodyText.includes("Chats")) {
-      throw new Error(`expected the DOM to contain "Welcome to gentle shell" or "Chats", got:\n${bodyText.slice(0, 500)}`);
+    if (!bodyText.includes("Welcome to Gentle Shell Desktop") && !bodyText.includes("Chats")) {
+      throw new Error(`expected the DOM to contain "Welcome to Gentle Shell Desktop" or "Chats", got:\n${bodyText.slice(0, 500)}`);
     }
 
     const screenshotDir = path.join(projectRoot, "release");

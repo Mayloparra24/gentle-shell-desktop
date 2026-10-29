@@ -15,14 +15,14 @@ describe("FirstRun", () => {
   it("renders the title, lead, detection card and fine print copy", () => {
     render(<FirstRun detection={DETECTION} onChoose={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: "Welcome to gentle shell" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Welcome to Gentle Shell Desktop" })).toBeInTheDocument();
     expect(
       screen.getByText("Everything you need is already inside this app. One question before you start."),
     ).toBeInTheDocument();
     expect(screen.getByText("We found pi on this machine")).toBeInTheDocument();
     expect(screen.getByText("/Users/dev/.pi/agent")).toBeInTheDocument();
     expect(
-      screen.getByText("No pi on the machine? This screen is skipped and gentle shell starts in its own space."),
+      screen.getByText("No pi on the machine? This screen is skipped and Gentle Shell Desktop starts in its own space."),
     ).toBeInTheDocument();
   });
 

@@ -58,7 +58,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
               <section className="gc-settings__section" id={`${id}-${name}`} key={name} aria-labelledby={`${id}-${name}-heading`}>
                 <h3 id={`${id}-${name}-heading`}>{name}</h3>
                 {name === "Home" && <>
-                  <h4>Where gentle-web keeps your setup</h4>
+                  <h4>Where Gentle Shell Desktop keeps your setup</h4>
                   <p>Your sign-in, models, packages and chats live in one home. Choose which one this app uses.</p>
                   {!props.home && !props.homeError && <span className="gc-setting-row__skeleton" aria-label="Loading current value" />}
                   {props.home && <div className="gc-settings__homes" role="radiogroup" aria-label="Home">

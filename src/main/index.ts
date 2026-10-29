@@ -1,5 +1,5 @@
 import path from "node:path";
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
 import {
   createAppConfigStore,
   createDynamicPiSessionStore,
@@ -9,7 +9,7 @@ import {
   createSetupService,
 } from "./adapters";
 import { boundedStop } from "./domain/lifecycle/boundedStop";
-import { homeDirFor, resolveHomeMode } from "./domain/home/home";
+import { homeDirFor, resolveHomeMode, withoutGentleHomeAsPiDir } from "./domain/home/home";
 import { ChatHost } from "./domain/session/ChatHost";
 import { registerHandlers } from "./ipc/registerHandlers";
 
@@ -50,8 +50,10 @@ function logPiLine(line: string): void {
 // resolveHomeMode (T6 follow-up), the single source of truth
 // resolveHomeArgs/homeDirFor also defer to.
 const configStore = createAppConfigStore(path.join(app.getPath("userData"), "config.json"));
-const homeSettings = createHomeSettings(configStore);
-const setupService = createSetupService(configStore);
+// One environment for detection, session listing and the child process, so they always agree on the home.
+const appEnv = withoutGentleHomeAsPiDir(process.env);
+const homeSettings = createHomeSettings(configStore, appEnv);
+const setupService = createSetupService(configStore, appEnv);
 
 // The SessionStore re-resolves the current home on every call (instead of
 // once at startup) so it reflects a home choice made mid-session, exactly
@@ -60,8 +62,8 @@ const setupService = createSetupService(configStore);
 const chatHost = new ChatHost({
   spawner: createNodeProcessSpawner(),
   locator: createLauncherLocator(),
-  sessionStore: createDynamicPiSessionStore(() => homeDirFor(resolveHomeMode(configStore.read()), process.env)),
-  env: process.env,
+  sessionStore: createDynamicPiSessionStore(() => homeDirFor(resolveHomeMode(configStore.read()), appEnv)),
+  env: appEnv,
   homeSettings,
   log: logPiLine,
 });
@@ -75,7 +77,9 @@ function createWindow(): void {
   const window = new BrowserWindow({
     width: 1280,
     height: 820,
-    title: "gentle shell",
+    title: "Gentle Shell Desktop",
+    // build/icon.png ships inside the package (electron-builder `files`), so this works in dev and packaged.
+    icon: path.join(app.getAppPath(), "build", "icon.png"),
     backgroundColor: "#060407",
     show: false,
     webPreferences: {
@@ -114,6 +118,10 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  // No File/Edit/View/Window bar on Windows and Linux; macOS keeps a minimal menu so copy/paste shortcuts work.
+  Menu.setApplicationMenu(
+    process.platform === "darwin" ? Menu.buildFromTemplate([{ role: "appMenu" }, { role: "editMenu" }, { role: "windowMenu" }]) : null,
+  );
   createWindow();
 
   app.on("activate", () => {

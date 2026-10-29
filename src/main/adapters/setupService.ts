@@ -42,7 +42,7 @@ export function createSetupService(
     async profiles(): Promise<ProfilesSnapshot> {
       const agentDir = homeDirFor(resolveHomeMode(configStore.read()), env);
       if (path.basename(agentDir) !== "agent") {
-        return { status: "unsupported", message: "gentle-web cannot tell where this custom home keeps its profiles.", profiles: [] };
+        return { status: "unsupported", message: "Gentle Shell Desktop cannot tell where this custom home keeps its profiles.", profiles: [] };
       }
 
       try {

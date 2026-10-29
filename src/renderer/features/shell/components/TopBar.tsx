@@ -31,7 +31,7 @@ export function TopBar({ title, leftOpen, rightOpen, onToggleLeft, onToggleRight
           <span className="gc-topbar__mark" aria-hidden="true">
             ✿
           </span>{" "}
-          gentle web
+          Gentle Shell Desktop
         </span>
         <button type="button" className="gc-topbar__toggle" aria-label="Toggle chat list" aria-pressed={leftOpen} onClick={onToggleLeft}>
           <PanelIcon side="left" />

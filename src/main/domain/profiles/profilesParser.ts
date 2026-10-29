@@ -45,12 +45,12 @@ export function parseProfiles(text: string): ProfilesSnapshot {
   }
 
   if (!isRecord(parsed) || parsed.kind !== PROFILES_KIND) {
-    return { status: "unsupported", message: "This profiles file is not one this version of gentle-web understands.", profiles: [] };
+    return { status: "unsupported", message: "This profiles file is not one this version of Gentle Shell Desktop understands.", profiles: [] };
   }
   if (parsed.version !== PROFILES_VERSION) {
     return {
       status: "unsupported",
-      message: `This profiles file is version ${String(parsed.version)}; this version of gentle-web reads version ${PROFILES_VERSION}.`,
+      message: `This profiles file is version ${String(parsed.version)}; this version of Gentle Shell Desktop reads version ${PROFILES_VERSION}.`,
       profiles: [],
     };
   }

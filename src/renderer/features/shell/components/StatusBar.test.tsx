@@ -32,7 +32,7 @@ describe("StatusBar", () => {
     const bar = screen.getByRole("contentinfo", { name: "Status bar" });
 
     expect(bar).toHaveTextContent(
-      "gentle shell~/work/shop-webfeat/magic-link-login *claude-sonnet-5effort mediumprofile balancedctx 38%$0.84ODD · RDD on",
+      "Gentle Shell Desktop~/work/shop-webfeat/magic-link-login *claude-sonnet-5effort mediumprofile balancedctx 38%$0.84ODD · RDD on",
     );
   });
 

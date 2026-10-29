@@ -119,7 +119,7 @@ describe("App", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "Welcome to gentle shell" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Welcome to Gentle Shell Desktop" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Projects" })).not.toBeInTheDocument();
   });
 
@@ -132,7 +132,7 @@ describe("App", () => {
     button.click();
 
     expect(await screen.findByRole("heading", { name: "Projects" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Welcome to gentle shell" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Welcome to Gentle Shell Desktop" })).not.toBeInTheDocument();
   });
 });
 

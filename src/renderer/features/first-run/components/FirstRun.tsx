@@ -26,7 +26,7 @@ export function FirstRun({ detection, onChoose, error, onRetry }: FirstRunProps)
   return (
     <div className="gc-first-run">
       <div className="gc-first-run__card">
-        <h1 className="gc-first-run__title">Welcome to gentle shell</h1>
+        <h1 className="gc-first-run__title">Welcome to Gentle Shell Desktop</h1>
         <p className="gc-first-run__lead">Everything you need is already inside this app. One question before you start.</p>
 
         {error && (
@@ -71,7 +71,7 @@ export function FirstRun({ detection, onChoose, error, onRetry }: FirstRunProps)
         </div>
 
         <p className="gc-first-run__fine-print">
-          No pi on the machine? This screen is skipped and gentle shell starts in its own space.
+          No pi on the machine? This screen is skipped and Gentle Shell Desktop starts in its own space.
         </p>
       </div>
     </div>
