@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 // Main-process code (src/main, src/preload) runs under Node and never
@@ -19,6 +19,8 @@ export default defineConfig({
   test: {
     globals: false,
     environment: "node",
+    // release/ holds ignored build output and local verification scripts, some of which launch the real gentle-shell.
+    exclude: [...configDefaults.exclude, "release/**"],
     setupFiles: ["test/setup.ts"],
     css: false,
   },
