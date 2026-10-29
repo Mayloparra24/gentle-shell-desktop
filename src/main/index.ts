@@ -78,8 +78,8 @@ function createWindow(): void {
     width: 1280,
     height: 820,
     title: "Gentle Shell Desktop",
-    // build/icon.png ships inside the package (electron-builder `files`), so this works in dev and packaged.
-    icon: path.join(app.getAppPath(), "build", "icon.png"),
+    // out/main -> ../../build: the same relative spot in dev and inside app.asar (build/icon.png is in electron-builder `files`).
+    icon: path.join(moduleDir, "../../build/icon.png"),
     backgroundColor: "#060407",
     show: false,
     webPreferences: {

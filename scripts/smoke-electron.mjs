@@ -56,6 +56,11 @@ async function main() {
       if (hasMenu) throw new Error("expected no application menu on this platform");
     }
 
+    // build/icon.png is the window icon (src/main/index.ts) and the packaging icon: it must exist and decode.
+    const iconPath = path.join(projectRoot, "build", "icon.png");
+    const iconLoads = await app.evaluate(({ nativeImage }, file) => !nativeImage.createFromPath(file).isEmpty(), iconPath);
+    if (!iconLoads) throw new Error("expected build/icon.png to load as the window icon");
+
     const bodyText = await window.locator("body").innerText();
     if (!bodyText.includes("Welcome to Gentle Shell Desktop") && !bodyText.includes("Chats")) {
       throw new Error(`expected the DOM to contain "Welcome to Gentle Shell Desktop" or "Chats", got:\n${bodyText.slice(0, 500)}`);
