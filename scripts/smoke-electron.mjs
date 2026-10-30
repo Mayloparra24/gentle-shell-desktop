@@ -63,6 +63,19 @@ async function main() {
       throw new Error(`expected window title "Gentle Shell Desktop", got "${title}"`);
     }
 
+    // The app draws its own 36 px title bar and it is the window drag area; the native one is hidden.
+    const bar = await window.evaluate(() => {
+      const el = document.querySelector(".gc-topbar");
+      return el ? { height: Math.round(el.getBoundingClientRect().height), drag: getComputedStyle(el).getPropertyValue("-webkit-app-region") } : null;
+    });
+    if (!bar || bar.height !== 36 || bar.drag !== "drag") throw new Error(`expected a 36 px draggable title bar, got ${JSON.stringify(bar)}`);
+    const bounds = await app.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows()[0];
+      return { frame: win.getBounds().height, content: win.getContentBounds().height };
+    });
+    // With the native title bar hidden the content fills the window height (a native bar would take ~30 px).
+    if (process.platform !== "darwin" && bounds.frame - bounds.content > 12) throw new Error(`native title bar still visible: ${JSON.stringify(bounds)}`);
+
     // No native File/Edit/View/Window bar outside macOS.
     if (process.platform !== "darwin") {
       const hasMenu = await app.evaluate(({ Menu }) => Menu.getApplicationMenu() !== null);

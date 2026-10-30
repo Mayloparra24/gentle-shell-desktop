@@ -27,7 +27,7 @@ it("opens settings, restores focus on Escape and resets an existing chat after s
   const chatsBefore = newChat.mock.calls.length;
   const readsBefore = readSettings.mock.calls.length;
   fireEvent.click(otherHome);
-  expect(await screen.findByRole("heading", { name: "New chat" })).toBeInTheDocument();
+  expect(await screen.findByText("Start a chat in any folder")).toBeInTheDocument();
   await waitFor(() => expect(listChats).toHaveBeenCalledTimes(listsBefore + 1));
   expect(newChat).toHaveBeenCalledTimes(chatsBefore);
   await waitFor(() => expect(readSettings).toHaveBeenCalledTimes(readsBefore + 1));
@@ -186,7 +186,9 @@ describe("App", () => {
   it('shows the folder start screen by default', async () => {
     render(<App />);
 
-    expect(await screen.findAllByRole("heading", { name: "New chat" })).toHaveLength(1);
+    expect(await screen.findByText("Start a chat in any folder")).toBeInTheDocument();
+    // The title bar carries no chat title any more; with no chat open there is no title at all.
+    expect(screen.queryByRole("heading", { name: "New chat" })).not.toBeInTheDocument();
   });
 
   it("selecting a sidebar chat updates the conversation header title", async () => {

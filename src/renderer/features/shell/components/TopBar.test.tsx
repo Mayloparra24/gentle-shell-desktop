@@ -5,7 +5,6 @@ import { TopBar } from "./TopBar";
 
 function renderBar(overrides: Partial<Parameters<typeof TopBar>[0]> = {}) {
   const props = {
-    title: "Add login with magic link",
     leftOpen: true,
     rightOpen: true,
     onToggleLeft: vi.fn(),
@@ -38,10 +37,23 @@ describe("TopBar", () => {
     renderBar();
     expect(screen.queryByRole("combobox", { name: "Theme" })).not.toBeInTheDocument();
   });
-  it("shows the brand and the chat title", () => {
+  it("shows the brand with a drawn mark and leaves the title to the conversation tab and status bar", () => {
     renderBar();
+    const bar = screen.getByRole("banner");
     expect(screen.getByText("Gentle Shell Desktop")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Add login with magic link" })).toBeInTheDocument();
+    expect(bar.textContent).not.toContain("✿");
+    expect(bar.querySelector(".gc-topbar__mark svg")).not.toBeNull();
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+  });
+
+  it("is the window drag area", () => {
+    renderBar();
+    expect(screen.getByRole("banner")).toHaveAttribute("data-window-drag");
+  });
+
+  it("shows Settings as an icon with an accessible name instead of a text label", () => {
+    renderBar();
+    expect(screen.getByRole("button", { name: "Settings" })).toHaveTextContent("");
   });
 
   it("reports each toggle's state through aria-pressed", () => {

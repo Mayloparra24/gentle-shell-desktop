@@ -82,8 +82,6 @@ export function App() {
   if (screen === SCREEN.LOADING) return <div className="gc-app-loading" />;
   if (screen === SCREEN.FIRST_RUN) return <FirstRunContainer onDone={() => setScreen(SCREEN.CHAT)} />;
 
-  const title = activeChat.kind === "existing" ? activeChat.chat.title : "New chat";
-
   const git = openedChat === activeChat && workspaceGit?.chat === activeChat && workspaceGit.home === homeVersion
     ? workspaceGit.git : undefined;
   const statusInfo = {
@@ -93,7 +91,7 @@ export function App() {
 
   return (
     <><div className="gc-app" inert={folderDialogOpen}>
-      <TopBar title={title} leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight}
+      <TopBar leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight}
         onOpenSettings={() => setSettingsOpen(true)}
         settingsButtonRef={settingsButtonRef}
       />

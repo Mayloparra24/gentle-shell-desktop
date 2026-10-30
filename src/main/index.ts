@@ -16,6 +16,7 @@ import { boundedStop } from "./domain/lifecycle/boundedStop";
 import { homeDirFor, resolveHomeMode, withoutGentleHomeAsPiDir } from "./domain/home/home";
 import { ChatHost } from "./domain/session/ChatHost";
 import { registerHandlers } from "./ipc/registerHandlers";
+import { windowChrome } from "./domain/window/windowChrome";
 
 // `import.meta.dirname` directly (not a manually computed
 // `path.dirname(fileURLToPath(import.meta.url))` `__dirname`), and under
@@ -89,6 +90,8 @@ function createWindow(): void {
     // out/main -> ../../build: the same relative spot in dev and inside app.asar (build/icon.png is in electron-builder `files`).
     icon: path.join(moduleDir, "../../build/icon.png"),
     backgroundColor: "#060407",
+    // The renderer draws its own title bar (TopBar); see windowChrome for the native window controls.
+    ...windowChrome(process.platform),
     show: false,
     webPreferences: {
       preload: path.join(moduleDir, "../preload/index.mjs"),

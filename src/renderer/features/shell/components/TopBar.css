@@ -3,56 +3,62 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 0.5rem;
-  height: 44px;
-  padding: 0 0.5rem;
+  height: 36px;
+  padding: 0 6px;
+  /* Windows/Linux: leave room for the native window controls the overlay paints on the right (0 elsewhere). */
+  padding-right: calc(100% - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100%) + 6px);
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
+  user-select: none;
+  -webkit-app-region: drag;
 }
 
-.gc-topbar__start {
+/* macOS: the traffic lights sit inside the bar's left edge. */
+.gc-topbar[data-mac] {
+  padding-left: 82px;
+}
+
+.gc-topbar__start,
+.gc-topbar__end {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 2px;
 }
 
 .gc-topbar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 4px;
   font-family: var(--font-display);
+  font-size: 13px;
   font-weight: 600;
-  padding: 0 0.4rem;
   color: var(--text);
+  white-space: nowrap;
 }
 
 .gc-topbar__mark {
+  display: inline-grid;
   color: var(--accent);
-}
-
-.gc-topbar__title {
-  margin: 0;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .gc-topbar__toggle {
   display: inline-grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   color: var(--muted);
   background: transparent;
   border: 0;
   border-radius: 6px;
   cursor: pointer;
+  -webkit-app-region: no-drag;
 }
 
 .gc-topbar__toggle:hover {
   background: var(--raised);
+  color: var(--text);
 }
 
 .gc-topbar__toggle[aria-pressed="true"] {
@@ -63,26 +69,3 @@
   outline: 2px solid var(--accent-active);
   outline-offset: 1px;
 }
-
-.gc-topbar__end {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.gc-topbar__settings {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-2);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-.gc-topbar__settings:hover { background: var(--raised); }
-.gc-topbar__settings:focus-visible { outline: 2px solid var(--accent-active); outline-offset: 2px; }

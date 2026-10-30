@@ -141,6 +141,7 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady, o
   return (
     <section className="gc-conversation">
       <ConversationHeader
+        title={activeChat.kind === "existing" ? activeChat.chat.title : "New chat"}
         working={chatState.working}
         pane={pane}
         runningHelpersCount={chatState.helpers.summary.running}
