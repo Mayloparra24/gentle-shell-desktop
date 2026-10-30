@@ -14,8 +14,8 @@ S7. Handoff text, verbatim: "Implement it in the project's real stack. Use the a
 ## Tasks
 - T1 [S1] done — worker (context backstop), test first (RED observed: missing helper suite, 4 settings tests, Composer hid nothing); verified by the parent: tsc 0, 627 passed/1 skipped. Commit 56a64bc. Risk: none (Settings contract is internal to the app).
 - T2 [S2] in progress — frameless window and renderer bar committed in b7116fa (windowChrome pure function, TopBar 36 px, BrandMark, chat title moved to ConversationHeader, smoke assertion added). Open: overlay color following the theme (needs a bridge channel) and a real Electron smoke run. Risk: item 5 (window chrome on three platforms; no unit test sees OS chrome).
-- T3 [S3] pending — investigate RPC `get_state` for model, effort and context first; reducer keeps the `engram` status; status bar segments. Risk: none expected.
-- T4 [S5] pending — layout, Files and Git read-only visuals, composer hints, Models as modal, remove "Chat in another folder...".
+- T3 [S3] done — worker, test first (8 RED), parent fixed three ChatHost tests that assumed the old startup writes (they now ignore the optional status reads) and wired the folder name; verified: tsc 0, 636 passed/1 skipped. Commit 7327d42. Real model, effort, context and Engram text only. Risk: none.
+- T4 [S5] in progress — T4a done (worker, 4 RED, verified): chat list, Files, read-only Git, one-line composer hints, "Chat in another folder" removed; commit 7e10a7e. T4b open: Models as a settings-style modal (with T5).
 - T5 [S4] pending — Agents & jobs window (agents only until jobs are exposed).
 - T6 [S6] pending — read-only file viewer with CodeMirror 6, lazy loaded. Risk: item 5 (new dependency) and path confinement (security item 2).
 
@@ -26,3 +26,4 @@ L3. Evidence: gentle-pi 4.5.1 registers 17 commands (extensions); gentle-engram 
 L4. Environment: this worktree's `node_modules` pointed at the stale `Gentle-web` path; relinked as a junction to `../repo/node_modules` (shared with the original checkout, so installing a dependency mutates that shared tree: ask before T6 adds CodeMirror).
 L5. Slice boundary: every unit stays under ~400 authored lines (T1 ~365, T2 ~240). The commit hook's "8.7k lines since origin/main" counts the whole 43-commit integration branch, which is the agreed demo branch from which small chained PRs are cut later; it is not this feature's slice.
 L6. RPC evidence for S3: pi `get_state` returns `model` (full Model with contextWindow) and `thinkingLevel`; `get_session_stats` returns `contextUsage {tokens, contextWindow, percent}` (omitted without a model; tokens/percent null right after compaction). Model, effort and context can therefore be real values in the status bar.
+L7. Rendered check (web preview + Edge/Playwright): title bar actions were on the left because removing the center column left the grid with an empty middle; fixed in f7c9a3b. Git Refresh became a ghost icon button. The mock bridge has no model/context/memory, so those segments correctly do not appear in the preview.
