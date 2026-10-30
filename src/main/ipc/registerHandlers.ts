@@ -37,6 +37,10 @@ export function registerHandlers(host: ChatHost, setup: SetupService, webContent
     if (typeof relativePath !== "string") return { status: "error", message: "Invalid relative directory path" };
     return host.listDirectory(relativePath);
   });
+  registerRequestHandler(ipc, IPC_CHANNELS.READ_FILE, (_event, relativePath: unknown) => {
+    if (typeof relativePath !== "string" || !relativePath.length) return { status: "error", message: "Invalid file path" };
+    return host.readFile(relativePath);
+  });
   registerRequestHandler(ipc, IPC_CHANNELS.GIT_SUMMARY, () => host.gitSummary());
   registerRequestHandler(ipc, IPC_CHANNELS.OPEN_CHAT, (_event, id: string) => host.openChat(id));
   registerRequestHandler(ipc, IPC_CHANNELS.NEW_CHAT, () => host.newChat());

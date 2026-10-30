@@ -1,4 +1,4 @@
-import type { StartChatSource, StartChatResult, FolderChoice, DirectoryListing, GitSummary, ChatState, ChatSummary, DialogAnswer, DiagnosticKind, PromptResult, SettingKey, SettingState, SlashCommand } from "@shared/bridge-types";
+import type { FileReadResult, StartChatSource, StartChatResult, FolderChoice, DirectoryListing, GitSummary, ChatState, ChatSummary, DialogAnswer, DiagnosticKind, PromptResult, SettingKey, SettingState, SlashCommand } from "@shared/bridge-types";
 import { boundedStop } from "../lifecycle/boundedStop";
 import type { RpcEvent } from "../rpc/types";
 import type { GitSummaryReader, WorkspaceReader, HomeSettings, LauncherLocator, ProcessSpawner, SessionStore } from "../../ports";
@@ -139,6 +139,12 @@ export class ChatHost {
     if (!this.current || !this.currentCwd) return { status: "no-chat-folder" };
     if (!this.deps.workspaceReader) return { status: "error", message: "Workspace reader unavailable" };
     return this.deps.workspaceReader.listDirectory(this.currentCwd, relativePath);
+  }
+
+  async readFile(relativePath: string): Promise<FileReadResult> {
+    if (!this.current || !this.currentCwd) return { status: "no-chat-folder" };
+    if (!this.deps.workspaceReader) return { status: "error", message: "Workspace reader unavailable" };
+    return this.deps.workspaceReader.readFile(this.currentCwd, relativePath);
   }
 
   async gitSummary(): Promise<GitSummary> {

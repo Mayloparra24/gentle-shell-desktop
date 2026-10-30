@@ -481,6 +481,12 @@ export const mockBridge: GentleBridge = {
     return { status: "error", message: "Preview directory not found" };
   },
 
+  async readFile(relativePath) {
+    if (relativePath === "src/index.ts") return { status: "ok", path: relativePath, text: 'export const greeting = "Hello, Gentle";\n', eol: "lf", language: "typescript" };
+    if (relativePath === "README.md") return { status: "ok", path: relativePath, text: "# Gentle Shell Desktop\n\nRead-only workspace preview.\n", eol: "lf", language: "markdown" };
+    return { status: "error", message: "Preview file not found" };
+  },
+
   async gitSummary() {
     return { status: "ready", branch: "main", changed: [{ path: "src/index.ts", code: " M" }], truncatedChanges: false, commits: [{ hash: "a1b2c3d", subject: "Add desktop preview", relativeTime: "2 hours ago" }] };
   },

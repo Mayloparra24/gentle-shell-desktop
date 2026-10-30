@@ -47,6 +47,16 @@ function fakeWebContents(): WebContents {
 }
 
 describe("registerHandlers", () => {
+  it("validates file paths and forwards only the relative path", async () => {
+    const host = fakeHost({ readFile: vi.fn().mockResolvedValue({ status: "binary" }) });
+    const ipc = fakeIpcMain();
+    registerHandlers(host, fakeSetup(), fakeWebContents(), ipc);
+    const read = registeredHandler(ipc, "workspace.readFile");
+    for (const input of [null, undefined, 1, {}, ""]) expect(await read({}, input)).toEqual({ status: "error", message: "Invalid file path" });
+    expect(host.readFile).not.toHaveBeenCalled();
+    expect(await read({}, "src/app.ts", "/untrusted")).toEqual({ status: "binary" });
+    expect(host.readFile).toHaveBeenCalledExactlyOnceWith("src/app.ts");
+  });
   it("validates window themes and derives colors in main, ignoring renderer colors", async () => {
     const ipc = fakeIpcMain();
     const recolor = vi.fn();

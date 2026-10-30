@@ -19,6 +19,7 @@ describe("useBridge", () => {
   it("returns window.gentle when the preload bridge is defined", () => {
     const realBridge: GentleBridge = {
       listDirectory: vi.fn().mockResolvedValue({ status: "no-chat-folder" }),
+      readFile: vi.fn().mockResolvedValue({ status: "no-chat-folder" }),
       gitSummary: vi.fn().mockResolvedValue({ status: "no-chat-folder" }),
       listChats: vi.fn(),
       openChat: vi.fn(),

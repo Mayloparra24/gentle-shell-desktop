@@ -165,7 +165,10 @@ describe("ChatHost", () => {
     const { spawner, handles } = createFakeSpawner();
     const listDirectory = vi.fn().mockResolvedValue({ status: "ready", entries: [], truncated: false });
     const gitSummary = vi.fn().mockResolvedValue({ status: "not-a-repository" });
-    const host = new ChatHost({ spawner, locator: fakeLocator, sessionStore: fakeSessionStore([session()]), env: {}, workspaceReader: { listDirectory }, gitSummaryReader: { gitSummary } });
+    const readFile = vi.fn().mockResolvedValue({ status: "binary" });
+    const host = new ChatHost({ spawner, locator: fakeLocator, sessionStore: fakeSessionStore([session()]), env: {}, workspaceReader: { listDirectory, readFile }, gitSummaryReader: { gitSummary } });
+    expect(await host.readFile("root.ts")).toEqual({ status: "no-chat-folder" });
+    expect(readFile).not.toHaveBeenCalled();
     expect(await host.listDirectory("")).toEqual({ status: "no-chat-folder" });
     expect(await host.gitSummary()).toEqual({ status: "no-chat-folder" });
     expect(listDirectory).not.toHaveBeenCalled();
@@ -173,6 +176,8 @@ describe("ChatHost", () => {
     await respondToHistoryRequest(handles, 0);
     await opening;
     await host.listDirectory("src");
+    expect(await host.readFile("root.ts")).toEqual({ status: "binary" });
+    expect(readFile).toHaveBeenCalledExactlyOnceWith("/tmp/proj", "root.ts");
     await host.gitSummary();
     expect(listDirectory).toHaveBeenCalledExactlyOnceWith("/tmp/proj", "src");
     expect(gitSummary).toHaveBeenCalledExactlyOnceWith("/tmp/proj");
@@ -182,6 +187,8 @@ describe("ChatHost", () => {
     expect(await host.listDirectory("")).toEqual({ status: "no-chat-folder" });
     expect(await host.gitSummary()).toEqual({ status: "no-chat-folder" });
     expect(listDirectory).toHaveBeenCalledTimes(1);
+    expect(await host.readFile("root.ts")).toEqual({ status: "no-chat-folder" });
+    expect(readFile).toHaveBeenCalledTimes(1);
   });
   it("openChat resolves the session path from the store, starts it, and pushes state", async () => {
     const { spawner, handles } = createFakeSpawner();

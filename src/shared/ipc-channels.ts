@@ -10,6 +10,7 @@ export const IPC_CHANNELS = {
   SET_WINDOW_THEME: "window.setTheme",
   LIST_CHATS: "sessions.list",
   LIST_DIRECTORY: "workspace.listDirectory",
+  READ_FILE: "workspace.readFile",
   GIT_SUMMARY: "workspace.gitSummary",
   OPEN_CHAT: "chat.open",
   NEW_CHAT: "chat.new",

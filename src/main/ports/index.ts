@@ -1,4 +1,4 @@
-import type { DirectoryListing, GitSummary, HomeMode, HomeStatus, ProfilesSnapshot, SetupStatus } from "@shared/bridge-types";
+import type { FileReadResult, DirectoryListing, GitSummary, HomeMode, HomeStatus, ProfilesSnapshot, SetupStatus } from "@shared/bridge-types";
 
 /**
  * Ports the domain depends on; concrete adapters (src/main/adapters)
@@ -93,6 +93,7 @@ export interface HomeSettings {
  */
 export interface WorkspaceReader {
   listDirectory(cwd: string | undefined, relativePath: string): Promise<DirectoryListing>;
+  readFile(cwd: string | undefined, relativePath: string): Promise<FileReadResult>;
 }
 
 export interface GitSummaryReader {

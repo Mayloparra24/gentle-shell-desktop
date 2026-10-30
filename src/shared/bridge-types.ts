@@ -404,6 +404,23 @@ export interface DirectoryEntry {
   readonly size?: number;
 }
 
+export const FILE_EOL = { LF: "lf", CRLF: "crlf", MIXED: "mixed" } as const;
+export type FileEol = (typeof FILE_EOL)[keyof typeof FILE_EOL];
+
+export type FileReadResult =
+  | { readonly status: "ok"; readonly path: string; readonly text: string; readonly eol: FileEol; readonly language?: string }
+  | { readonly status: "too-large"; readonly size: number }
+  | { readonly status: "binary" }
+  | { readonly status: "no-chat-folder" }
+  | { readonly status: "error"; readonly message: string };
+
+export interface FileViewerStatus {
+  readonly line: number;
+  readonly column: number;
+  readonly eol: FileEol;
+  readonly language?: string;
+}
+
 export type DirectoryListing =
   | { readonly status: "ready"; readonly entries: readonly DirectoryEntry[]; readonly truncated: boolean }
   | { readonly status: "no-chat-folder" }
@@ -430,6 +447,8 @@ export interface GentleBridge {
   chooseFolder(): Promise<FolderChoice>;
   /** One level under the active chat folder; empty path means root. Read-only. */
   listDirectory(relativePath: string): Promise<DirectoryListing>;
+  /** UTF-8 source under the active chat folder, at most 1 MiB. Never writes. */
+  readFile(relativePath: string): Promise<FileReadResult>;
   /** Read-only Git metadata for the active chat folder. No renderer-supplied cwd. */
   gitSummary(): Promise<GitSummary>;
   listChats(): Promise<ChatSummary[]>;

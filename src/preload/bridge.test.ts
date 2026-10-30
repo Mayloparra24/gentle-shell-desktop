@@ -29,6 +29,13 @@ function createFakeIpc(): { ipc: RendererIpc; invoke: ReturnType<typeof vi.fn>; 
 }
 
 describe("createBridge", () => {
+  it("forwards file reads and returns their result unchanged", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    const result = { status: "ok", path: "src/app.ts", text: "const n = 1;", eol: "lf", language: "typescript" };
+    invoke.mockResolvedValue(result);
+    expect(await createBridge(ipc).readFile("src/app.ts")).toBe(result);
+    expect(invoke).toHaveBeenCalledExactlyOnceWith("workspace.readFile", "src/app.ts");
+  });
   it("forwards the theme id to window.setTheme and resolves void", async () => {
     const { ipc, invoke } = createFakeIpc();
     invoke.mockResolvedValue({ ok: true });
