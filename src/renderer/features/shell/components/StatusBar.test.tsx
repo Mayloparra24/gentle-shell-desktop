@@ -4,6 +4,14 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { StatusBar } from "./StatusBar";
 
 describe("StatusBar", () => {
+  it.each([["lf", "LF"], ["crlf", "CRLF"], ["mixed", "mixed"]] as const)("shows source position, encoding, %s and language", (eol, label) => {
+    const view = render(<StatusBar info={{}} file={{ line: 2, column: 7, eol, language: "typescript" }} />);
+    expect(screen.getByRole("contentinfo")).toHaveTextContent(`Ln 2, Col 7 · UTF-8 · ${label} · TypeScript`);
+    view.rerender(<StatusBar info={{}} file={{ line: 1, column: 1, eol }} />);
+    expect(screen.getByRole("contentinfo")).toHaveTextContent("Plain text");
+    view.rerender(<StatusBar info={{}} />);
+    expect(screen.getByRole("contentinfo")).not.toHaveTextContent("UTF-8");
+  });
   it("shows real model, context and memory in order with drawn icons and opens Models", () => {
     const open = vi.fn();
     render(<StatusBar info={{ cwd: "/work/desktop", branch: "main", session: { model: "real-model", effort: "high", context: { percent: 62, tokens: 124000, window: 200000 } }, memory: "integration-desktop-mvp · saved ✓" }} onOpenModels={open} />);

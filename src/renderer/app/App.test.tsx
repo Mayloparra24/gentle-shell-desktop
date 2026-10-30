@@ -1,10 +1,73 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { App } from "./App";
 import { mockBridge } from "@renderer/shared/bridge/mockBridge";
 
 afterEach(() => vi.restoreAllMocks());
+
+describe("center file tabs", () => {
+  beforeEach(() => window.history.pushState({}, "", "?firstRun=0"));
+  it("keeps chat first and mounted with its draft, activates existing files, navigates and closes tabs", async () => {
+    const initial = await mockBridge.newChat();
+    let push!: Parameters<typeof mockBridge.onState>[0];
+    vi.spyOn(mockBridge, "onState").mockImplementation(callback => { push = callback; return () => {}; });
+    vi.spyOn(mockBridge, "readFile").mockResolvedValue({ status: "binary" });
+    render(<App />);
+    expect(await screen.findByText("Start a chat in any folder")).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: "Open views" })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+    const composer = await screen.findByRole("textbox", { name: "Message" });
+    fireEvent.change(composer, { target: { value: "keep my draft" } });
+    fireEvent.click(await screen.findByRole("button", { name: "README.md" }));
+    const strip = screen.getByRole("tablist", { name: "Open views" });
+    const tabs = within(strip).getAllByRole("tab");
+    expect(tabs.map(tab => tab.textContent)).toEqual(["Write the README intro", "README.md"]);
+    expect(tabs[1]).toHaveAttribute("aria-selected", "true");
+    expect(composer).toBeInTheDocument();
+    expect(composer).not.toBeVisible();
+    act(() => push({ ...initial, working: true, messages: [{ id: "stream", role: "assistant", text: "Still streaming", streaming: true }] }));
+    expect(screen.getByText("Still streaming")).not.toBeVisible();
+    expect(composer).toHaveValue("keep my draft");
+    fireEvent.click(screen.getByRole("button", { name: "README.md" }));
+    expect(within(strip).getAllByRole("tab")).toHaveLength(2);
+    fireEvent.keyDown(tabs[1]!, { key: "Home" });
+    expect(tabs[0]).toHaveFocus();
+    expect(tabs[0]).toHaveAttribute("tabindex", "0");
+    expect(composer).toBeVisible();
+    expect(screen.getByText("Still streaming")).toBeVisible();
+    expect(screen.getByText("Working…")).toBeVisible();
+    fireEvent.keyDown(tabs[0]!, { key: "ArrowRight" });
+    expect(tabs[1]).toHaveFocus();
+    fireEvent.keyDown(tabs[1]!, { key: "End" });
+    expect(tabs[1]).toHaveFocus();
+    fireEvent.keyDown(tabs[1]!, { key: "ArrowLeft" });
+    expect(tabs[0]).toHaveFocus();
+    fireEvent.click(tabs[1]!);
+    fireEvent.click(screen.getByRole("button", { name: "Close README.md" }));
+    expect(within(strip).getAllByRole("tab")).toHaveLength(1);
+    expect(composer).toBeVisible();
+    expect(composer).toHaveValue("keep my draft");
+  });
+  it("caps file tabs at eight, replaces the oldest non-active file, and clears on chat switch", async () => {
+    vi.spyOn(mockBridge, "listDirectory").mockResolvedValue({ status: "ready", truncated: false, entries: Array.from({ length: 10 }, (_, i) => ({ name: `file${i}.ts`, kind: "file" })) });
+    vi.spyOn(mockBridge, "readFile").mockResolvedValue({ status: "binary" });
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+    for (let i = 0; i < 8; i++) fireEvent.click(await screen.findByRole("button", { name: `file${i}.ts` }));
+    fireEvent.click(screen.getByRole("tab", { name: "file0.ts" }));
+    fireEvent.click(screen.getByRole("button", { name: "file8.ts" }));
+    const strip = screen.getByRole("tablist", { name: "Open views" });
+    expect(within(strip).getAllByRole("tab")).toHaveLength(9);
+    expect(screen.getByRole("tab", { name: "file0.ts" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "file1.ts" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close file8.ts" }));
+    expect(screen.getByRole("tab", { name: "file7.ts" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("button", { name: /Refactor the session store/ }));
+    expect(within(screen.getByRole("tablist", { name: "Open views" })).getAllByRole("tab")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Close file0.ts" })).not.toBeInTheDocument();
+  });
+});
 
 it("opens settings, restores focus on Escape and resets an existing chat after switching home", async () => {
   window.history.pushState({}, "", "?firstRun=0");
@@ -13,11 +76,14 @@ it("opens settings, restores focus on Escape and resets an existing chat after s
   const readSettings = vi.spyOn(mockBridge, "readSettings");
   render(<App />);
   fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
-  expect(await screen.findByRole("heading", { name: "Write the README intro" })).toBeInTheDocument();
+  expect(await screen.findByRole("tab", { name: "Write the README intro" })).toBeInTheDocument();
   const settings = screen.getByRole("button", { name: "Settings" });
   const composer = screen.getByRole("textbox", { name: "Message" });
   composer.focus();
   fireEvent.change(composer, { target: { value: "A draft from the old home" } });
+  vi.spyOn(mockBridge, "readFile").mockResolvedValue({ status: "binary" });
+  fireEvent.click(await screen.findByRole("button", { name: "README.md" }));
+  expect(screen.getByRole("tab", { name: "README.md" })).toBeInTheDocument();
   fireEvent.click(settings);
   const dialog = screen.getByRole("dialog", { name: "Settings" });
   expect(dialog).toContainElement(document.activeElement as HTMLElement);
@@ -32,8 +98,9 @@ it("opens settings, restores focus on Escape and resets an existing chat after s
   expect(newChat).toHaveBeenCalledTimes(chatsBefore);
   await waitFor(() => expect(readSettings).toHaveBeenCalledTimes(readsBefore + 1));
   expect(screen.queryByRole("textbox", { name: "Message" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("tablist", { name: "Open views" })).not.toBeInTheDocument();
   expect(screen.getByText("Start a chat in any folder")).toBeInTheDocument();
-  expect(screen.queryByRole("heading", { name: "Write the README intro" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("tab", { name: "Write the README intro" })).not.toBeInTheDocument();
   fireEvent.keyDown(dialog, { key: "Escape" });
   expect(screen.queryByRole("dialog", { name: "Settings" })).not.toBeInTheDocument();
   expect(settings).toHaveFocus();
@@ -106,7 +173,7 @@ describe("folder start", () => {
     expect(legacy).not.toHaveBeenCalled();
     expect(open).toHaveBeenCalledTimes(1);
     expect(composer).toHaveValue("keep my draft");
-    expect(screen.getByRole("heading", { name: "Write the README intro" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Write the README intro" })).toBeInTheDocument();
   });
   it("choosing a folder starts once and refetches workspace", async () => {
     const initial = await mockBridge.newChat();
@@ -198,7 +265,7 @@ describe("App", () => {
     const item = await screen.findByRole("button", { name: /Write the README intro/ });
     item.click();
 
-    expect(await screen.findByRole("heading", { name: "Write the README intro" })).toBeInTheDocument();
+    expect(await screen.findByRole("tab", { name: "Write the README intro" })).toBeInTheDocument();
   });
 
   it("shows the first-run screen when setupStatus reports needsChoice (no persisted home choice yet)", async () => {

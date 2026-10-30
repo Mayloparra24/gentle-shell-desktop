@@ -25,7 +25,8 @@ describe("live workspace", () => {
     expect(screen.getByText("Showing the first 500 entries")).toBeInTheDocument();
     const rows = within(screen.getByRole("list", { name: "Files" })).getAllByRole("listitem");
     expect(rows[0]).toHaveTextContent("src"); expect(rows[3]).toHaveTextContent("README.md");
-    for (const name of [".git", "node_modules", "README.md"]) expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    for (const name of [".git", "node_modules"]) expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "README.md" })).not.toHaveAttribute("aria-expanded");
     const src = screen.getByRole("button", { name: "src" });
     expect(src).toHaveAttribute("aria-expanded", "false"); src.focus(); expect(src).toHaveFocus();
     fireEvent.click(src);

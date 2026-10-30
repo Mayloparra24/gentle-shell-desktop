@@ -24,6 +24,7 @@ function emptyState(): ChatState {
 function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
   return {
     listDirectory: vi.fn().mockResolvedValue({ status: "no-chat-folder" }),
+    readFile: vi.fn().mockResolvedValue({ status: "no-chat-folder" }),
     gitSummary: vi.fn().mockResolvedValue({ status: "no-chat-folder" }),
     listChats: vi.fn().mockResolvedValue([]),
     openChat: vi.fn().mockResolvedValue(emptyState()),

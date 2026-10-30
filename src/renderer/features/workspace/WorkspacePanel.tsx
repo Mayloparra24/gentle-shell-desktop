@@ -13,13 +13,14 @@ export interface WorkspacePanelProps {
   readonly cwd?: string;
   readonly ready?: boolean;
   readonly onGitChange?: (git: GitState) => void;
+  readonly onOpenFile?: (path: string) => void;
 }
 
 const tabs = [WORKSPACE_TAB.FILES, WORKSPACE_TAB.GIT];
 const labels = { files: "Files", git: "Git" };
 
 // Keeps tab navigation separate from the bridge-backed data container.
-export function WorkspacePanel({ chatId = "new", cwd, ready = true, onGitChange }: WorkspacePanelProps) {
+export function WorkspacePanel({ chatId = "new", cwd, ready = true, onGitChange, onOpenFile }: WorkspacePanelProps) {
   const bridge = useBridge();
   const [active, setActive] = useState<WorkspaceTab>(WORKSPACE_TAB.FILES);
   const id = useId();
@@ -61,7 +62,7 @@ export function WorkspacePanel({ chatId = "new", cwd, ready = true, onGitChange 
       <div role="tabpanel" id={`${id}-data-panel`}
         aria-labelledby={`${id}-${active === "git" ? "git" : "files"}-tab`}
         tabIndex={0} className="gc-workspace__pane">
-        <WorkspaceDataContainer key={`${chatId}-${ready}`} tab={active} ready={ready} cwd={cwd} onGitChange={receiveGit} />
+        <WorkspaceDataContainer key={`${chatId}-${ready}`} tab={active} ready={ready} cwd={cwd} onGitChange={receiveGit} onOpenFile={onOpenFile} />
       </div>
       {bridge === mockBridge && <footer className="gc-workspace__footer">Preview data</footer>}
     </section>

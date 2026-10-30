@@ -1,0 +1,41 @@
+.gc-center-tabs {
+  display: flex;
+  gap: 2px;
+  flex: none;
+  min-width: 0;
+  padding: 6px 8px 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.gc-center-tabs__item {
+  display: flex;
+  align-items: center;
+  flex: none;
+  max-width: 260px;
+  height: 30px;
+  border-radius: 6px 6px 0 0;
+  color: var(--muted);
+}
+.gc-center-tabs__item:hover { color: var(--text); background: var(--raised); }
+.gc-center-tabs__item[data-selected="true"] {
+  color: var(--text);
+  background: var(--bg);
+  box-shadow: inset 0 1px 0 var(--accent);
+}
+.gc-center-tabs button { color: inherit; background: transparent; border: 0; cursor: pointer; }
+.gc-center-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 10px;
+  font: 500 13px var(--font-body);
+}
+.gc-center-tabs__tab svg { flex: none; }
+.gc-center-tabs__tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gc-center-tabs__close { display: grid; place-items: center; width: 20px; height: 20px; flex: none; padding: 0; margin-right: 6px; border-radius: 4px; }
+.gc-center-tabs__close:hover { background: var(--line); }
+.gc-center-tabs button:focus-visible { outline: 2px solid var(--accent-active); outline-offset: -2px; }

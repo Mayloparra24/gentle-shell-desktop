@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { ChatState, ChatSummary } from "@shared/bridge-types";
 import { useBridge } from "@renderer/shared/bridge/useBridge";
 import { ChatsContainer } from "@renderer/features/chats/ChatsContainer";
@@ -14,6 +14,9 @@ import { useShellLayout } from "@renderer/features/shell/useShellLayout";
 import { ModelsContainer } from "@renderer/features/models/ModelsContainer";
 import { AgentsDialog } from "@renderer/features/helpers/AgentsDialog";
 import { SettingsContainer } from "@renderer/features/settings/SettingsContainer";
+import { CenterTabs } from "@renderer/features/editor/CenterTabs";
+import { FileViewer } from "@renderer/features/editor/FileViewer";
+import { useFileTabs } from "@renderer/features/editor/useFileTabs";
 import "./App.css";
 
 const NO_CHAT: ActiveChat = { kind: "none" };
@@ -44,6 +47,8 @@ export function App() {
   const [screen, setScreen] = useState<Screen>(SCREEN.LOADING);
   const [activeChat, setActiveChat] = useState<ActiveChat>(NO_CHAT);
   const [openedChat, setOpenedChat] = useState<ActiveChat | null>(null);
+  const files = useFileTabs(activeChat);
+  const viewsId = useId();
   const [liveStatus, setLiveStatus] = useState<{ chat: ActiveChat; state: ChatState } | null>(null);
   const handleStateChange = useCallback((chat: ActiveChat, state: ChatState) => setLiveStatus({ chat, state }), []);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -118,17 +123,26 @@ export function App() {
           />
         </div>
         <div className="gc-app__center">
-          <div className="gc-app__chat">
+          {activeChat.kind !== "none" && <CenterTabs id={viewsId}
+            title={activeChat.kind === "existing" ? activeChat.chat.title : "New chat"}
+            paths={files.paths} active={files.active} onSelect={files.select} onClose={files.close} />}
+          <div className="gc-app__chat" hidden={files.active !== undefined}
+            role={activeChat.kind !== "none" ? "tabpanel" : undefined}
+            id={`${viewsId}-panel-0`} aria-labelledby={activeChat.kind !== "none" ? `${viewsId}-tab-0` : undefined}>
             <ConversationContainer key={homeVersion} activeChat={activeChat} onOpenModels={openModels} onChatReady={setOpenedChat} onStateChange={handleStateChange} onChooseFolder={handleChooseFolder} />
           </div>
+          {files.paths.map((path, index) => <div className="gc-app__chat" key={path} hidden={files.active !== path}
+            role="tabpanel" id={`${viewsId}-panel-${index + 1}`} aria-labelledby={`${viewsId}-tab-${index + 1}`}>
+            <FileViewer path={path} onStatusChange={status => files.report(path, status)} />
+          </div>)}
         </div>
         <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen}>
-          <WorkspacePanel onGitChange={handleGitChange}
+          <WorkspacePanel onGitChange={handleGitChange} onOpenFile={files.open}
             chatId={`${homeVersion}-${activeChat.kind === "existing" ? activeChat.chat.id : "new"}`}
             cwd={statusInfo.cwd} ready={openedChat === activeChat} />
         </div>
       </div>
-      <StatusBar info={statusInfo} onOpenModels={openModels} />
+      <StatusBar info={statusInfo} file={files.active ? files.statuses[files.active] : undefined} onOpenModels={openModels} />
       {modelsOpen && <ModelsContainer key={homeVersion} onBack={() => setModelsOpen(false)} />}
       {agentsOpen && <AgentsDialog key={`${homeVersion}-${activeChat.kind === "existing" ? activeChat.chat.id : activeChat.kind}`} activity={helpers} onClose={() => setAgentsOpen(false)} />}
       {settingsOpen && <SettingsContainer

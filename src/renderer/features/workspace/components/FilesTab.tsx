@@ -13,6 +13,7 @@ export interface FilesTabProps {
   readonly onQueryChange: (query: string) => void;
   readonly onToggle: (path: string) => void;
   readonly onRetry: (path: string) => void;
+  readonly onOpenFile?: (relativePath: string) => void;
 }
 
 export function FilesTab(props: FilesTabProps) {
@@ -34,10 +35,11 @@ export function FilesTab(props: FilesTabProps) {
           return <li key={entry.name}>
             {expandable ? <button type="button" className="gc-files__row" aria-expanded={open} onClick={() => props.onToggle(childPath)}>
               <WorkspaceIcon name={open ? "down" : "right"} /><WorkspaceIcon name="folder" /><span className="gc-files__name">{entry.name}</span>
-            </button> : <div className="gc-files__row"><WorkspaceIcon name={entry.kind === "directory" ? "folder" : /\.(ts|tsx|js|json|css)$/i.test(entry.name) ? "code" : "file"} /><span className="gc-files__name">{entry.name}</span>
+            </button> : entry.kind === "file" ? <button type="button" className="gc-files__row" aria-label={entry.name} onClick={() => props.onOpenFile?.(childPath)}>
+              <WorkspaceIcon name={/\.(ts|tsx|js|jsx|mjs|cjs|json|css)$/i.test(entry.name) ? "code" : "file"} /><span className="gc-files__name">{entry.name}</span>
               {change && <GitStatus code={change.code} />}
-              {entry.kind === "file" && entry.size !== undefined && <small className="gc-files__size">{humanSize(entry.size)}</small>}
-            </div>}
+              {entry.size !== undefined && <small className="gc-files__size">{humanSize(entry.size)}</small>}
+            </button> : <div className="gc-files__row"><WorkspaceIcon name={entry.kind === "directory" ? "folder" : "file"} /><span className="gc-files__name">{entry.name}</span></div>}
             {expandable && open && directory(childPath)}
           </li>;
         })}

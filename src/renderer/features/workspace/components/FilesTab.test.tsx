@@ -11,6 +11,19 @@ function Files() {
 }
 
 describe("FilesTab", () => {
+  it("exposes file rows as native buttons and opens their relative path", () => {
+    const open = vi.fn();
+    render(<FilesTab listings={{ "": { status: "ready", truncated: false, entries: [{ name: "app.ts", kind: "file" }] } }}
+      expanded={new Set()} query="" onQueryChange={() => {}} onToggle={() => {}} onRetry={() => {}} onOpenFile={open} />);
+    const file = screen.getByRole("button", { name: "app.ts" });
+    expect(file.tagName).toBe("BUTTON");
+    fireEvent.click(file);
+    expect(open).toHaveBeenCalledExactlyOnceWith("app.ts");
+    file.focus();
+    expect(file).toHaveFocus();
+    // Enter/Space activation is supplied by the native button, not a custom key handler.
+    expect(file).not.toHaveAttribute("aria-disabled");
+  });
   it("shows the real folder header, refreshes root and annotates available Git changes", () => {
     const refresh = vi.fn();
     render(<FilesTab folderName="project" listings={{ "": { status: "ready", truncated: false, entries: [{ name: "app.ts", kind: "file" }, { name: "new.json", kind: "file" }, { name: "old.css", kind: "file" }] } }}

@@ -1,4 +1,4 @@
-import type { ChatState } from "@shared/bridge-types";
+import type { ChatState, FileViewerStatus } from "@shared/bridge-types";
 import "./StatusBar.css";
 
 export interface StatusBarInfo {
@@ -11,10 +11,11 @@ export interface StatusBarInfo {
 export interface StatusBarProps {
   readonly info: StatusBarInfo;
   readonly onOpenModels?: () => void;
+  readonly file?: FileViewerStatus;
 }
 
 // Only facts exposed by the active chat and its workspace belong here.
-export function StatusBar({ info, onOpenModels }: StatusBarProps) {
+export function StatusBar({ info, file, onOpenModels }: StatusBarProps) {
   const folder = info.cwd?.split(/[\\/]/).filter(Boolean).pop() || info.cwd;
   const { model, effort, context } = info.session ?? {};
   return (
@@ -33,12 +34,19 @@ export function StatusBar({ info, onOpenModels }: StatusBarProps) {
           </span>{Math.round(context.percent)}% · {abbreviateTokens(context.tokens)} / {abbreviateTokens(context.window)}
         </>}
       </span>}
+      {file && <span className="gc-status-bar__segment">
+        Ln {file.line}, Col {file.column} · UTF-8 · {file.eol === "mixed" ? "mixed" : file.eol.toUpperCase()} · {languageLabels[file.language ?? ""] ?? "Plain text"}
+      </span>}
       {info.memory && <span className="gc-status-bar__segment">
         <StatusIcon path="M12 5a3 3 0 0 0-5-2 4 4 0 0 0-3 6 4 4 0 0 0 0 7 4 4 0 0 0 8 3V5m0 0a3 3 0 0 1 5-2 4 4 0 0 1 3 6 4 4 0 0 1 0 7 4 4 0 0 1-8 3M7 7c0 2 2 3 5 3m5-3c0 2-2 3-5 3M7 16c0-2 2-3 5-3m5 3c0-2-2-3-5-3" />{info.memory}
       </span>}
     </footer>
   );
 }
+
+const languageLabels: Readonly<Record<string, string>> = {
+  typescript: "TypeScript", javascript: "JavaScript", json: "JSON", css: "CSS", markdown: "Markdown",
+};
 
 function StatusIcon({ path }: { readonly path: string }) {
   return <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={path} /></svg>;
