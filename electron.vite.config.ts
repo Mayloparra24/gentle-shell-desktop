@@ -25,6 +25,8 @@ export default defineConfig({
   renderer: {
     root: resolve(import.meta.dirname, "src/renderer"),
     build: {
+      // The audit measured the startup chunk at 871 kB unminified (371 kB with esbuild).
+      minify: true,
       rollupOptions: {
         input: resolve(import.meta.dirname, "src/renderer/index.html"),
       },

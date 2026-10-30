@@ -413,6 +413,7 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
       // `now` feeds reduceChat's setWidget helpers-retention fallback
       // (endedAt for a task gentle-pi drops after it finishes); PiSession
       // is the impure boundary, reduceChat itself stays pure.
+      const before = this.state;
       this.state = reduceChat(this.state, decoded, new Date().toISOString());
       // reduceChat has no case for "response" (its default arm returns
       // state unchanged), so folding the get_messages history response in
@@ -423,7 +424,9 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
       }
       if (decoded.type === "agent_end" || decoded.type === "agent_settled") this.requestStatus();
       this.emit("event", decoded);
-      this.emit("state", this.state);
+      // Every state push is a full-snapshot IPC send that grows with the chat, so an event that left the state
+      // untouched (an ignored line, a reply nobody was waiting for) does not push one.
+      if (this.state !== before) this.emit("state", this.state);
     } catch (error) {
       this.surfaceError(toError(error));
     }

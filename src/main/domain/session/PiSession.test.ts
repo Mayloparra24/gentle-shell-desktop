@@ -535,6 +535,23 @@ describe("PiSession: Electron host follow-ups", () => {
       vi.useRealTimers();
     }
   });
+  it("pushes state only when an event changed it (the audit measured full-state IPC sends for no-op events)", () => {
+    const { spawner, handles } = createFakeSpawner();
+    const session = new PiSession({ spawner, locator: fakeLocator, env: {} });
+    session.start();
+    const states = vi.fn();
+    const events = vi.fn();
+    session.on("state", states);
+    session.on("event", events);
+    const handle = handles[0]!;
+    handle.emitStdout(JSON.stringify({ type: "response", command: "get_state", id: "unrelated", success: true, data: { model: { id: "x" } } }));
+    expect(events).toHaveBeenCalledTimes(1);
+    expect(states).not.toHaveBeenCalled();
+    handle.emitStdout(JSON.stringify({ type: "agent_start" }));
+    expect(events).toHaveBeenCalledTimes(2);
+    expect(states).toHaveBeenCalledTimes(1);
+    expect(session.getState().working).toBe(true);
+  });
   it("listCommands waits for a real home to load its extensions (pi answered after 4.3s there)", async () => {
     vi.useFakeTimers();
     try {
