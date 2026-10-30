@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { TITLE_BAR_HEIGHT, windowChrome } from "./windowChrome";
+import { overlayColorsFor, TITLE_BAR_HEIGHT, windowChrome } from "./windowChrome";
 
 describe("windowChrome", () => {
+  it.each([
+    ["gentleman-cute", { color: "#100a0f", symbolColor: "#d2cbd0" }],
+    ["gentle", { color: "#0d0f14", symbolColor: "#a3b5d6" }],
+    ["gentleman-sexy", { color: "#100a0f", symbolColor: "#d2cbd0" }],
+    ["unknown", undefined],
+    ["toString", undefined],
+  ])("resolves only known overlay themes: %s", (id, colors) => {
+    expect(overlayColorsFor(id as string)).toEqual(colors);
+  });
   it("hides the native title bar on every platform", () => {
     for (const platform of ["win32", "linux", "darwin"] as const) {
       expect(windowChrome(platform).titleBarStyle).toBe("hidden");

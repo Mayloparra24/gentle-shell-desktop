@@ -422,6 +422,8 @@ export type StartChatSource = { readonly source: "browse" } | { readonly source:
 export type StartChatResult = FolderChoice | { readonly status: "error"; readonly message: string };
 
 export interface GentleBridge {
+  /** Best-effort native window control recolor; macOS has no overlay. */
+  setWindowTheme(themeId: string): Promise<void>;
   /** Choose a native folder or resolve a stored chat's folder on the host. Never accepts a path. */
   startChat(source: StartChatSource): Promise<StartChatResult>;
   /** Main-process native folder dialog; no renderer-supplied path. */

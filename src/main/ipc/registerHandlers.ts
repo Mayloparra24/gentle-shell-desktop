@@ -3,6 +3,7 @@ import type { DialogAnswer, DiagnosticKind, HomeMode, SettingKey } from "@shared
 import { IPC_CHANNELS } from "@shared/ipc-channels";
 import type { ChatHost } from "../domain/session/ChatHost";
 import type { SetupService } from "../ports";
+import { overlayColorsFor, type OverlayColors } from "../domain/window/windowChrome";
 
 /**
  * Registers `ipcMain.handle` for every GentleBridge request channel
@@ -24,7 +25,13 @@ import type { SetupService } from "../ports";
  * state, so it is exposed the same way for every window instead of also
  * needing an unsubscribe.
  */
-export function registerHandlers(host: ChatHost, setup: SetupService, webContents: WebContents, ipc: IpcMain): () => void {
+export function registerHandlers(host: ChatHost, setup: SetupService, webContents: WebContents, ipc: IpcMain, setWindowTheme?: (colors: OverlayColors) => void): () => void {
+  registerRequestHandler(ipc, IPC_CHANNELS.SET_WINDOW_THEME, (_event, themeId: unknown) => {
+    const colors = typeof themeId === "string" ? overlayColorsFor(themeId) : undefined;
+    if (!colors) return { ok: false };
+    setWindowTheme?.(colors);
+    return { ok: true };
+  });
   registerRequestHandler(ipc, IPC_CHANNELS.LIST_CHATS, () => host.listChats());
   registerRequestHandler(ipc, IPC_CHANNELS.LIST_DIRECTORY, (_event, relativePath: unknown) => {
     if (typeof relativePath !== "string") return { status: "error", message: "Invalid relative directory path" };

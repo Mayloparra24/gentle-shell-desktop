@@ -29,6 +29,12 @@ function createFakeIpc(): { ipc: RendererIpc; invoke: ReturnType<typeof vi.fn>; 
 }
 
 describe("createBridge", () => {
+  it("forwards the theme id to window.setTheme and resolves void", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    invoke.mockResolvedValue({ ok: true });
+    await expect(createBridge(ipc).setWindowTheme("gentle")).resolves.toBeUndefined();
+    expect(invoke).toHaveBeenCalledExactlyOnceWith("window.setTheme", "gentle");
+  });
   it("startChat sends a source or chat id, never an extra renderer path", async () => {
     const { ipc, invoke } = createFakeIpc();
     invoke.mockResolvedValue({ status: "cancelled" });

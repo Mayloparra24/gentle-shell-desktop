@@ -1,3 +1,6 @@
+import { THEME_IDS, type ThemeId } from "@shared/theme";
+export { isThemeId, type ThemeId } from "@shared/theme";
+
 /**
  * The gentle-shell themes the picker offers. Only ids and labels live here;
  * the color values live in tokens.css (`:root` is Gentleman-Cute, the other
@@ -7,15 +10,9 @@
  * user's live pi theme is still deferred (ADR 0009).
  */
 export const THEMES = [
-  { id: "gentleman-cute", label: "Gentleman-Cute" },
-  { id: "gentle", label: "Gentle" },
-  { id: "gentleman-sexy", label: "Gentleman-Sexy" },
+  { id: THEME_IDS.GENTLEMAN_CUTE, label: "Gentleman-Cute" },
+  { id: THEME_IDS.GENTLE, label: "Gentle" },
+  { id: THEME_IDS.GENTLEMAN_SEXY, label: "Gentleman-Sexy" },
 ] as const;
 
-export type ThemeId = (typeof THEMES)[number]["id"];
-
-export const DEFAULT_THEME_ID: ThemeId = "gentleman-cute";
-
-export function isThemeId(value: unknown): value is ThemeId {
-  return THEMES.some((theme) => theme.id === value);
-}
+export const DEFAULT_THEME_ID: ThemeId = THEME_IDS.GENTLEMAN_CUTE;

@@ -28,6 +28,7 @@ function makeBridge(overrides: Partial<GentleBridge> = {}): GentleBridge {
     readSettings: vi.fn(),
     setSetting: vi.fn(),
     readProfiles: vi.fn(),
+    setWindowTheme: vi.fn(),
     runDiagnostic: vi.fn(),
     ...overrides,
   };

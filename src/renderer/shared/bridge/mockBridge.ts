@@ -464,6 +464,7 @@ function startHelpersScenario(): void {
 }
 
 export const mockBridge: GentleBridge = {
+  async setWindowTheme() {}, /* No native window in the browser preview. */
   async startChat(request) {
     if (request.source === "browse") return mockBridge.chooseFolder();
     const chat = EXAMPLE_CHATS.find(chat => chat.id === request.id);

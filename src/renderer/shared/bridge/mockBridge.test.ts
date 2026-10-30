@@ -11,6 +11,14 @@ function collectStates(): { states: ChatState[]; errors: string[] } {
 }
 
 describe("mockBridge", () => {
+  it("window theme is a no-op that neither pushes state nor errors", async () => {
+    const { states, errors } = collectStates();
+    const settings = await mockBridge.readSettings();
+    await expect(mockBridge.setWindowTheme("gentle")).resolves.toBeUndefined();
+    expect(states).toEqual([]);
+    expect(errors).toEqual([]);
+    expect(await mockBridge.readSettings()).toEqual(settings);
+  });
   it("starts preview chats from a stored id or browse intent, never from a path", async () => {
     expect(await mockBridge.startChat({ source: "fromChat", id: "chat-readme" })).toMatchObject({ status: "chosen", chat: { cwd: "/Users/dev/gentle-shell-desktop" } });
     expect(await mockBridge.startChat({ source: "fromChat", id: "missing" })).toEqual({ status: "error", message: "That folder no longer exists." });

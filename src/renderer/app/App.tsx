@@ -61,6 +61,11 @@ export function App() {
   const { themeId, setTheme } = useTheme();
 
   useEffect(() => {
+    // Native recoloring is cosmetic and must never interrupt the app.
+    void bridge.setWindowTheme(themeId).catch(() => {});
+  }, [bridge, themeId]);
+
+  useEffect(() => {
     let cancelled = false;
     bridge
       .setupStatus()

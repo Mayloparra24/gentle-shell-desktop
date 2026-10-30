@@ -16,7 +16,7 @@ import { boundedStop } from "./domain/lifecycle/boundedStop";
 import { homeDirFor, resolveHomeMode, withoutGentleHomeAsPiDir } from "./domain/home/home";
 import { ChatHost } from "./domain/session/ChatHost";
 import { registerHandlers } from "./ipc/registerHandlers";
-import { windowChrome } from "./domain/window/windowChrome";
+import { TITLE_BAR_HEIGHT, windowChrome } from "./domain/window/windowChrome";
 
 // `import.meta.dirname` directly (not a manually computed
 // `path.dirname(fileURLToPath(import.meta.url))` `__dirname`), and under
@@ -101,7 +101,9 @@ function createWindow(): void {
     },
   });
 
-  const unregisterHandlers = registerHandlers(chatHost, setupService, window.webContents, ipcMain);
+  const unregisterHandlers = registerHandlers(chatHost, setupService, window.webContents, ipcMain, (colors) => {
+    if (process.platform !== "darwin") window.setTitleBarOverlay({ ...colors, height: TITLE_BAR_HEIGHT });
+  });
   window.on("closed", unregisterHandlers);
 
   // Assistant replies now render Markdown links (Markdown.tsx forces

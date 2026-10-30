@@ -1,3 +1,5 @@
+import { isThemeId, THEME_IDS, type ThemeId } from "@shared/theme";
+
 /**
  * Pure description of the frameless window chrome (no Electron imports, so it
  * is testable without a real BrowserWindow). The renderer draws the title bar;
@@ -20,6 +22,17 @@ export interface OverlayColors {
 
 /** Gentleman-Cute, the default theme (src/renderer/shared/theme/tokens.css). */
 export const DEFAULT_OVERLAY_COLORS: OverlayColors = { color: "#100a0f", symbolColor: "#d2cbd0" };
+
+/** Mirrors --panel and --text-2 in the renderer's tokens.css. */
+const OVERLAY_COLORS: Record<ThemeId, OverlayColors> = {
+  [THEME_IDS.GENTLEMAN_CUTE]: DEFAULT_OVERLAY_COLORS,
+  [THEME_IDS.GENTLE]: { color: "#0d0f14", symbolColor: "#a3b5d6" },
+  [THEME_IDS.GENTLEMAN_SEXY]: { color: "#100a0f", symbolColor: "#d2cbd0" },
+};
+
+export function overlayColorsFor(themeId: string): OverlayColors | undefined {
+  return isThemeId(themeId) ? OVERLAY_COLORS[themeId] : undefined;
+}
 
 export interface WindowChrome {
   readonly titleBarStyle: "hidden";

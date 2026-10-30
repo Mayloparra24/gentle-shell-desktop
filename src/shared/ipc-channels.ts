@@ -6,6 +6,8 @@
  * src/README.md).
  */
 export const IPC_CHANNELS = {
+  /** Sets native overlay colors from a validated theme id, never renderer colors. */
+  SET_WINDOW_THEME: "window.setTheme",
   LIST_CHATS: "sessions.list",
   LIST_DIRECTORY: "workspace.listDirectory",
   GIT_SUMMARY: "workspace.gitSummary",

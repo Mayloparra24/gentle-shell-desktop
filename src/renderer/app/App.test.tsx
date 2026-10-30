@@ -374,6 +374,25 @@ describe("App theme", () => {
     document.documentElement.removeAttribute("data-theme");
   });
 
+  it.each([false, true])("syncs the stored theme and Settings changes even when recoloring rejects (%s)", async (reject) => {
+    window.localStorage.setItem("gentle.theme", "gentle");
+    const recolor = vi.spyOn(mockBridge, "setWindowTheme");
+    if (reject) recolor.mockRejectedValue(new Error("Overlay unavailable"));
+    render(<App />);
+    await waitFor(() => expect(recolor).toHaveBeenCalledExactlyOnceWith("gentle"));
+    fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
+    const dialog = await screen.findByRole("dialog", { name: "Settings" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Gentleman-Sexy" }));
+    await waitFor(() => expect(recolor).toHaveBeenLastCalledWith("gentleman-sexy"));
+    expect(recolor).toHaveBeenCalledTimes(2);
+    expect(document.documentElement.dataset.theme).toBe("gentleman-sexy");
+    expect(window.localStorage.getItem("gentle.theme")).toBe("gentleman-sexy");
+    fireEvent.click(screen.getByRole("button", { name: "Close settings" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Write the README intro/ }));
+    expect(await screen.findByRole("textbox", { name: "Message" })).toBeEnabled();
+  });
+
   it("has no theme picker in the top bar", async () => {
     render(<App />);
     await screen.findByRole("button", { name: /Settings/ });

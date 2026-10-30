@@ -36,6 +36,7 @@ export interface RendererIpc {
  * this with the real Electron ipcRenderer. */
 export function createBridge(ipc: RendererIpc): GentleBridge {
   return {
+    setWindowTheme: async (themeId) => { await ipc.invoke(IPC_CHANNELS.SET_WINDOW_THEME, themeId); },
     startChat: (request) => ipc.invoke(IPC_CHANNELS.START_CHAT, request.source === "browse" ? { source: "browse" } : { source: "fromChat", id: request.id }) as Promise<StartChatResult>,
     chooseFolder: () => ipc.invoke(IPC_CHANNELS.CHOOSE_FOLDER) as Promise<FolderChoice>,
     listDirectory: (relativePath: string) => ipc.invoke(IPC_CHANNELS.LIST_DIRECTORY, relativePath) as Promise<DirectoryListing>,

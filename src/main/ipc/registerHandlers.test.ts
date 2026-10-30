@@ -47,6 +47,30 @@ function fakeWebContents(): WebContents {
 }
 
 describe("registerHandlers", () => {
+  it("validates window themes and derives colors in main, ignoring renderer colors", async () => {
+    const ipc = fakeIpcMain();
+    const recolor = vi.fn();
+    registerHandlers(fakeHost(), fakeSetup(), fakeWebContents(), ipc, recolor);
+    const setTheme = registeredHandler(ipc, "window.setTheme");
+    for (const [id, colors] of [
+      ["gentleman-cute", { color: "#100a0f", symbolColor: "#d2cbd0" }],
+      ["gentle", { color: "#0d0f14", symbolColor: "#a3b5d6" }],
+      ["gentleman-sexy", { color: "#100a0f", symbolColor: "#d2cbd0" }],
+    ] as const) {
+      expect(await setTheme({}, id, { color: "red" })).toEqual({ ok: true });
+      expect(recolor).toHaveBeenLastCalledWith(colors);
+    }
+    for (const input of ["unknown", "toString", "", null, undefined, 1, true, {}, ["gentle"], { themeId: "gentle" }]) {
+      expect(await setTheme({}, input)).toEqual({ ok: false });
+      expect(recolor).toHaveBeenCalledTimes(3);
+    }
+  });
+
+  it("accepts a window theme without an overlay callback", async () => {
+    const ipc = fakeIpcMain();
+    registerHandlers(fakeHost(), fakeSetup(), fakeWebContents(), ipc);
+    expect(await registeredHandler(ipc, "window.setTheme")({}, "gentle")).toEqual({ ok: true });
+  });
   it("startChat accepts only a browse intent or stored id and rejects malformed input", async () => {
     const host = fakeHost({ startChat: vi.fn().mockResolvedValue({ status: "cancelled" }) });
     const ipc = fakeIpcMain();
