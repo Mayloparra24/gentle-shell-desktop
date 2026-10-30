@@ -14,7 +14,7 @@ S7. "Sin verificar: El color de los botones nativos de ventana en pantalla, porq
 ## Tasks
 - F1 [S1] done — artboards 02 and 03 edited inline; verified with a render: no theme switcher, gear in 02 (03 has no Settings button). The 02 rail still has its Models button (not part of the request). design/ new files are git-ignored, so nothing to commit. Risk: none.
 - F2 [S2] pending — read-only audit first (explore), then fixes the numbers justify.
-- F3 [S3] in progress — user chose "Aviso claro, sin leer": without a chat, the gentle-shell sections show a notice with a New chat button; no hidden session, no reading of internal files.
+- F3 [S3] done — worker, 2 RED tests; verified by the parent: tsc 0, 688 passed/2 skipped, and a render: without a chat, Permissions/Workflow/Privacy/Diagnostics show the notice with a New chat button; Theme, Home and Models unaffected; no readSettings call. Risk: none.
 - F4 [S4] investigated: PARTIAL (see L4). Build decision pending.
 - F5 [S5] pending — Git writes. Risk: items 1, 2 (writes, hooks run arbitrary code), 6. Needs decisions (hooks policy, push confirmation), design, confinement review and an independent verifier.
 - F6 [S6] pending — file Edit/Save. Risk: items 1, 2, 4 (writes, race, agent writing the same file). The read race accepted in T6 is NOT acceptable for writes: needs its own threat model before any code.

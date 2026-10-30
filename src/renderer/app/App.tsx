@@ -146,6 +146,8 @@ export function App() {
       {modelsOpen && <ModelsContainer key={homeVersion} onBack={() => setModelsOpen(false)} />}
       {agentsOpen && <AgentsDialog key={`${homeVersion}-${activeChat.kind === "existing" ? activeChat.chat.id : activeChat.kind}`} activity={helpers} onClose={() => setAgentsOpen(false)} />}
       {settingsOpen && <SettingsContainer
+        chatOpen={activeChat.kind !== "none"}
+        onNewChat={handleChooseFolder}
         onOpenModels={openModels}
         homeVersion={homeVersion}
         themeId={themeId}

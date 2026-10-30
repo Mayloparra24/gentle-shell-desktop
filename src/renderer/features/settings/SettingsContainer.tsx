@@ -9,6 +9,8 @@ import { errorText, useSettings } from "./useSettings";
 import "./SettingsContainer.css";
 
 export interface SettingsContainerProps {
+  chatOpen: boolean;
+  onNewChat: () => void;
   onClose: () => void;
   onOpenModels?: () => void;
   onHomeChanged: () => void;
@@ -17,9 +19,9 @@ export interface SettingsContainerProps {
   onChangeTheme: (id: ThemeId) => void;
 }
 
-export function SettingsContainer({ onClose, onOpenModels, onHomeChanged, homeVersion, themeId, onChangeTheme }: SettingsContainerProps) {
+export function SettingsContainer({ chatOpen, onNewChat, onClose, onOpenModels, onHomeChanged, homeVersion, themeId, onChangeTheme }: SettingsContainerProps) {
   const bridge = useBridge();
-  const settings = useSettings(bridge, homeVersion);
+  const settings = useSettings(bridge, homeVersion, chatOpen);
   const [home, setHome] = useState<HomeStatus>();
   const [homePending, setHomePending] = useState(false);
   const [homeError, setHomeError] = useState<string>();
@@ -73,7 +75,7 @@ export function SettingsContainer({ onClose, onOpenModels, onHomeChanged, homeVe
   }
 
   async function runDiagnostic(kind: DiagnosticKind) {
-    if (diagnosticBusy.current) return;
+    if (!chatOpen || diagnosticBusy.current) return;
     diagnosticBusy.current = true;
     const epoch = generation.current;
     setDiagnostic({ pending: true });
@@ -88,13 +90,13 @@ export function SettingsContainer({ onClose, onOpenModels, onHomeChanged, homeVe
   }
 
   function change(key: SettingKey, value: string) {
-    if (homePending || settings.rows[key].loading || settings.rows[key].pending || settings.rows[key].value === value) return;
+    if (!chatOpen || homePending || settings.rows[key].loading || settings.rows[key].pending || settings.rows[key].value === value) return;
     const text = riskText(key, value);
     if (text) setConfirmation({ key, value, text });
     else void settings.change(key, value);
   }
 
-  return <SettingsDialog rows={settings.rows} error={settings.error} onReload={settings.reload} onRetry={settings.retry} onChange={change}
+  return <SettingsDialog chatOpen={chatOpen} onNewChat={() => { onClose(); onNewChat(); }} rows={settings.rows} error={settings.error} onReload={settings.reload} onRetry={settings.retry} onChange={change}
     onOpenModels={() => { onClose(); onOpenModels?.(); }} onClose={onClose} themeId={themeId} onChangeTheme={onChangeTheme} home={home} homePending={homePending} homeError={homeError}
     onChooseHome={chooseHome} onRetryHome={retryHome} diagnostic={diagnostic} onDiagnostic={runDiagnostic}
     confirmation={confirmation && <Confirmation text={confirmation.text} onCancel={() => setConfirmation(undefined)} onConfirm={() => {

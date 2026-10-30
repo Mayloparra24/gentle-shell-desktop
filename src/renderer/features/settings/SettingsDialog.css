@@ -29,6 +29,7 @@
 .gc-settings__error { color: var(--red); font-size: 13px; margin: 10px 0; }
 .gc-settings__error button { text-decoration: underline; }
 .gc-settings button.gc-settings__button { border: 1px solid var(--line-strong); padding: 6px 14px; color: var(--text-2); }
+.gc-settings button.gc-settings__primary { flex-shrink: 0; padding: 6px 14px; background: var(--accent); color: var(--bg); }
 .gc-settings__output { white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border: 1px dashed var(--line-strong); background: var(--bg); color: var(--text-2); border-radius: 10px; font-family: var(--font-mono); font-size: 12px; }
 @media (max-width: 760px) {
   .gc-settings { width: calc(100% - 16px); height: calc(100% - 16px); }

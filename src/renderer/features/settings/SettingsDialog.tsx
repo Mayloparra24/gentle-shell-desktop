@@ -8,6 +8,8 @@ import { trapTab, useModalFocus } from "./useModalFocus";
 import "./SettingsDialog.css";
 
 export interface SettingsDialogProps {
+  chatOpen: boolean;
+  onNewChat: () => void;
   rows: SettingsRows;
   error?: string;
   onReload: () => void;
@@ -53,7 +55,7 @@ export function SettingsDialog(props: SettingsDialogProps) {
           </nav>
           <div className="gc-settings__scroll" ref={scroll}>
             <p className="gc-settings__intro">Most settings belong to gentle-shell, so your terminal sees the same values. Changes run silently and do not appear in your chat.</p>
-            {props.error && <div className="gc-settings__error" role="alert">{props.error} <button type="button" onClick={props.onReload}>Retry</button></div>}
+            {props.chatOpen && props.error && <div className="gc-settings__error" role="alert">{props.error} <button type="button" onClick={props.onReload}>Retry</button></div>}
             {SECTIONS.map((name) => (
               <section className="gc-settings__section" id={`${id}-${name}`} key={name} aria-labelledby={`${id}-${name}-heading`}>
                 <h3 id={`${id}-${name}-heading`}>{name}</h3>
@@ -90,8 +92,12 @@ export function SettingsDialog(props: SettingsDialogProps) {
                     themeTimer.current = setTimeout(() => setThemeApplied(false), 1800);
                   }}>{theme.label}</button>)}</div>
                 </div>}
-                {SETTING_ROWS.filter((row) => row.section === name).map((definition) => <SettingRow key={definition.key} definition={definition} state={props.rows[definition.key]} onChange={(value) => props.onChange(definition.key, value)} onRetry={() => props.onRetry(definition.key)} />)}
-                {name === "Diagnostics" && <>
+                {!props.chatOpen && (SETTING_ROWS.some((row) => row.section === name) || name === "Diagnostics") && <div className="gc-setting-row">
+                  <div><div className="gc-setting-row__title">Open a chat to read and change this</div><p>These settings live in gentle-shell and are read through a chat. Start a chat in a folder and they appear here.</p></div>
+                  <button type="button" className="gc-settings__primary" onClick={props.onNewChat}>New chat</button>
+                </div>}
+                {props.chatOpen && SETTING_ROWS.filter((row) => row.section === name).map((definition) => <SettingRow key={definition.key} definition={definition} state={props.rows[definition.key]} onChange={(value) => props.onChange(definition.key, value)} onRetry={() => props.onRetry(definition.key)} />)}
+                {props.chatOpen && name === "Diagnostics" && <>
                   {DIAGNOSTICS.map((diagnostic) => <div className="gc-setting-row" key={diagnostic.kind}><div><div className="gc-setting-row__title">{diagnostic.title}</div><p>{diagnostic.description}</p><div className="gc-setting-row__meta"><code>{diagnostic.command}</code></div></div><button type="button" className="gc-settings__button" disabled={props.diagnostic.pending} onClick={() => props.onDiagnostic(diagnostic.kind)}>{diagnostic.title}</button></div>)}
                   {(props.diagnostic.pending || props.diagnostic.output !== undefined) && <pre className="gc-settings__output" role="status" aria-live="polite">{props.diagnostic.pending ? "Running diagnostics…" : props.diagnostic.output}</pre>}
                   {props.diagnostic.error && <div className="gc-settings__error" role="alert">{props.diagnostic.error}</div>}

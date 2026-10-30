@@ -20,7 +20,7 @@ function fromRead(key: SettingKey, states: SettingState[]): SettingsRowState {
 }
 
 /** A mounted dialog owns one generation; a home reset invalidates every outstanding operation. */
-export function useSettings(bridge: Pick<GentleBridge, "readSettings" | "setSetting">, homeVersion: number) {
+export function useSettings(bridge: Pick<GentleBridge, "readSettings" | "setSetting">, homeVersion: number, chatOpen = true) {
   const [rows, setRows] = useState<SettingsRows>(initialRows);
   const [error, setError] = useState<string>();
   const generation = useRef(0);
@@ -29,6 +29,7 @@ export function useSettings(bridge: Pick<GentleBridge, "readSettings" | "setSett
   const timers = useRef<Partial<Record<SettingKey, ReturnType<typeof setTimeout>>>>({});
 
   const read = useCallback(async (key?: SettingKey, retryAfterReset = false) => {
+    if (!chatOpen) return;
     const epoch = generation.current;
     const keys = key ? [key] : KEYS;
     const tokens = Object.fromEntries(keys.map((item) => [item, requests.current[item] = (requests.current[item] ?? 0) + 1]));
@@ -66,13 +67,14 @@ export function useSettings(bridge: Pick<GentleBridge, "readSettings" | "setSett
         return next;
       });
     }
-  }, [bridge]);
+  }, [bridge, chatOpen]);
 
   useEffect(() => {
     generation.current += 1;
     requests.current = {};
     failedWrites.current = {};
     setRows(initialRows());
+    setError(undefined);
     void read(undefined, homeVersion > 0);
     return () => {
       generation.current += 1;
@@ -81,6 +83,7 @@ export function useSettings(bridge: Pick<GentleBridge, "readSettings" | "setSett
   }, [read, homeVersion]);
 
   const change = useCallback(async (key: SettingKey, value: string) => {
+    if (!chatOpen) return;
     const epoch = generation.current;
     const token = requests.current[key] = (requests.current[key] ?? 0) + 1;
     clearTimeout(timers.current[key]);
@@ -103,7 +106,7 @@ export function useSettings(bridge: Pick<GentleBridge, "readSettings" | "setSett
       failedWrites.current[key] = value;
       setRows((previous) => ({ ...previous, [key]: { ...previous[key], pending: false, applied: false, error: errorText(cause) } }));
     }
-  }, [bridge]);
+  }, [bridge, chatOpen]);
 
   const retry = useCallback((key: SettingKey) => {
     const value = failedWrites.current[key];

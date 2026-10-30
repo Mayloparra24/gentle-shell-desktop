@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { mockBridge } from "@renderer/shared/bridge/mockBridge";
 import { SettingsContainer } from "./SettingsContainer";
 
-function setup(found = true) {
+function setup(found = true, chatOpen = true) {
   const bridge = {
     ...mockBridge,
     readSettings: vi.fn().mockResolvedValue([
@@ -18,13 +18,48 @@ function setup(found = true) {
     runDiagnostic: vi.fn().mockResolvedValue("All checks passed"),
   };
   window.gentle = bridge;
-  const props = { onOpenModels: vi.fn(), onClose: vi.fn(), onHomeChanged: vi.fn(), homeVersion: 0, themeId: "gentleman-cute" as const, onChangeTheme: vi.fn() };
+  const props = { chatOpen, onNewChat: vi.fn(), onOpenModels: vi.fn(), onClose: vi.fn(), onHomeChanged: vi.fn(), homeVersion: 0, themeId: "gentleman-cute" as const, onChangeTheme: vi.fn() };
   const view = render(<SettingsContainer {...props} />);
   return { bridge, props, unmount: view.unmount };
 }
 afterEach(() => { delete window.gentle; vi.restoreAllMocks(); });
 
 describe("Settings", () => {
+  it("replaces chat-backed sections with notices without reading or writing settings", async () => {
+    const { bridge, props } = setup(true, false);
+    await screen.findByRole("radio", { checked: true });
+    for (const name of ["Permissions", "Workflow", "Privacy", "Diagnostics"]) {
+      const section = within(screen.getByRole("region", { name }));
+      expect(section.getByText("Open a chat to read and change this")).toBeInTheDocument();
+      expect(section.getByText("These settings live in gentle-shell and are read through a chat. Start a chat in a folder and they appear here.")).toBeInTheDocument();
+      expect(section.getAllByRole("button")).toHaveLength(1);
+      expect(section.queryByRole("switch")).not.toBeInTheDocument();
+      expect(section.queryByLabelText("Loading current value")).not.toBeInTheDocument();
+    }
+    expect(screen.queryByText(/ChatHost|no chat is open|Error invoking/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Home" })).getAllByRole("radio")).toHaveLength(2);
+    expect(within(screen.getByRole("region", { name: "Models" })).getByRole("button", { name: "Open models →" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Gentleman-Sexy" }));
+    expect(props.onChangeTheme).toHaveBeenCalledWith("gentleman-sexy");
+    fireEvent.click(within(screen.getByRole("region", { name: "Permissions" })).getByRole("button", { name: "New chat" }));
+    expect(props.onClose).toHaveBeenCalledTimes(1);
+    expect(props.onNewChat).toHaveBeenCalledTimes(1);
+    expect(props.onClose.mock.invocationCallOrder[0]).toBeLessThan(props.onNewChat.mock.invocationCallOrder[0]!);
+    expect(bridge.readSettings).not.toHaveBeenCalled();
+    expect(bridge.setSetting).not.toHaveBeenCalled();
+    expect(bridge.runDiagnostic).not.toHaveBeenCalled();
+  });
+
+  it("reads once and renders existing rows with a chat open", async () => {
+    const { bridge } = setup();
+    const control = await screen.findByRole("switch", { name: "Receipt-driven review (RDD)" });
+    await waitFor(() => expect(control).toBeEnabled());
+    expect(bridge.readSettings).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Run diagnostics" })).toBeEnabled();
+    expect(screen.queryByText("Open a chat to read and change this")).not.toBeInTheDocument();
+  });
   it("closes settings and opens the models dialog from its dedicated row", async () => {
     const { props, bridge } = setup();
     expect(screen.getByText("Profiles, models and effort")).toBeInTheDocument();

@@ -69,6 +69,34 @@ describe("center file tabs", () => {
   });
 });
 
+it("opens settings without a chat, hands off to the folder dialog and reads after a chat opens", async () => {
+  window.history.pushState({}, "", "?firstRun=0");
+  const read = vi.spyOn(mockBridge, "readSettings");
+  const write = vi.spyOn(mockBridge, "setSetting");
+  render(<App />);
+  const settings = await screen.findByRole("button", { name: "Settings" });
+  settings.focus();
+  fireEvent.click(settings);
+  const dialog = screen.getByRole("dialog", { name: "Settings" });
+  expect(within(dialog).getAllByText("Open a chat to read and change this")).toHaveLength(4);
+  await screen.findByRole("radio", { checked: true });
+  expect(read).not.toHaveBeenCalled();
+  expect(write).not.toHaveBeenCalled();
+  expect(screen.queryByText(/ChatHost|no chat is open|Error invoking/)).not.toBeInTheDocument();
+  fireEvent.click(within(dialog).getAllByRole("button", { name: "New chat" })[0]!);
+  expect(screen.queryByRole("dialog", { name: "Settings" })).not.toBeInTheDocument();
+  const folders = await screen.findByRole("dialog", { name: "Choose a folder" });
+  expect(folders).toContainElement(document.activeElement as HTMLElement);
+  fireEvent.keyDown(folders, { key: "Escape" });
+  expect(settings).toHaveFocus();
+  fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+  await screen.findByRole("textbox", { name: "Message" });
+  fireEvent.click(settings);
+  await waitFor(() => expect(read).toHaveBeenCalledTimes(1));
+  expect(screen.getByRole("switch", { name: "Receipt-driven review (RDD)" })).toBeInTheDocument();
+  expect(screen.queryByText("Open a chat to read and change this")).not.toBeInTheDocument();
+});
+
 it("opens settings, restores focus on Escape and resets an existing chat after switching home", async () => {
   window.history.pushState({}, "", "?firstRun=0");
   const listChats = vi.spyOn(mockBridge, "listChats");
@@ -96,7 +124,8 @@ it("opens settings, restores focus on Escape and resets an existing chat after s
   expect(await screen.findByText("Start a chat in any folder")).toBeInTheDocument();
   await waitFor(() => expect(listChats).toHaveBeenCalledTimes(listsBefore + 1));
   expect(newChat).toHaveBeenCalledTimes(chatsBefore);
-  await waitFor(() => expect(readSettings).toHaveBeenCalledTimes(readsBefore + 1));
+  expect(readSettings).toHaveBeenCalledTimes(readsBefore);
+  expect(screen.getAllByText("Open a chat to read and change this")).toHaveLength(4);
   expect(screen.queryByRole("textbox", { name: "Message" })).not.toBeInTheDocument();
   expect(screen.queryByRole("tablist", { name: "Open views" })).not.toBeInTheDocument();
   expect(screen.getByText("Start a chat in any folder")).toBeInTheDocument();
