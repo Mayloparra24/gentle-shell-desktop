@@ -140,6 +140,20 @@ export interface ChatState {
   readonly lastError?: string;
   readonly activity: number;
   readonly helpers: HelpersActivity;
+  readonly session?: SessionStatus;
+  readonly memory?: string;
+}
+
+export interface SessionStatus {
+  readonly model?: string;
+  readonly effort?: string;
+  readonly context?: ContextUsage;
+}
+
+export interface ContextUsage {
+  readonly percent: number | null;
+  readonly tokens: number | null;
+  readonly window: number;
 }
 
 export const HELPER_STATUS = {

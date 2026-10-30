@@ -486,6 +486,55 @@ async function flushMicrotasks(): Promise<void> {
 }
 
 describe("PiSession: Electron host follow-ups", () => {
+  it("fetches correlated session facts on open and finished turns, silently retaining them on failure or timeout", () => {
+    vi.useFakeTimers();
+    try {
+      const { spawner, handles } = createFakeSpawner();
+      const session = new PiSession({ spawner, locator: fakeLocator, env: {} });
+      const errors = vi.fn();
+      session.on("error", errors);
+      session.start();
+      const handle = handles[0]!;
+      const requests = () => handle.writes.map(line => JSON.parse(line));
+      expect(requests().map(request => request.type)).toEqual(["get_state", "get_session_stats"]);
+      const reply = (request: { type: string; id: string }, data: unknown, success = true) => handle.emitStdout(JSON.stringify({ type: "response", command: request.type, id: request.id, success, data, error: "unavailable" }));
+      reply({ ...requests()[0], id: "unrelated" }, { model: { id: "wrong" } });
+      expect(session.getState().session).toBeUndefined();
+      reply(requests()[0], { model: { id: "real-model" }, thinkingLevel: "high" });
+      reply(requests()[1], { contextUsage: { percent: 62, tokens: 124000, contextWindow: 200000 } });
+      const facts = { model: "real-model", effort: "high", context: { percent: 62, tokens: 124000, window: 200000 } };
+      expect(session.getState().session).toEqual(facts);
+      for (const type of ["agent_end", "agent_settled"]) {
+        handle.emitStdout(JSON.stringify({ type }));
+        expect(requests().slice(-2).map(request => request.type)).toEqual(["get_state", "get_session_stats"]);
+        reply(requests().at(-2), undefined, false);
+        reply(requests().at(-1), undefined, false);
+        expect(session.getState().session).toEqual(facts);
+      }
+      handle.emitStdout(JSON.stringify({ type: "agent_settled" }));
+      vi.advanceTimersByTime(16000);
+      reply(requests().at(-2), { model: { id: "late" } });
+      expect(session.getState().session).toEqual(facts);
+      handle.emitStdout(JSON.stringify({ type: "agent_settled" }));
+      reply(requests().at(-1), { contextUsage: { percent: null, tokens: null, contextWindow: 200000 } });
+      expect(session.getState().session?.context).toEqual({ percent: null, tokens: null, window: 200000 });
+      reply(requests().at(-2), { model: { id: "changed-model" } });
+      expect(session.getState().session?.model).toBe("changed-model");
+      expect(session.getState().session?.effort).toBeUndefined();
+      handle.emitStdout(JSON.stringify({ type: "agent_settled" }));
+      reply(requests().at(-2), {});
+      reply(requests().at(-1), {});
+      expect(session.getState().session).toEqual({ model: undefined, effort: undefined, context: undefined });
+      expect(session.getState().lastError).toBeUndefined();
+      expect(errors).not.toHaveBeenCalled();
+      expect(session.prompt("still usable")).toEqual({ queued: true });
+      const fresh = new PiSession({ spawner, locator: fakeLocator, env: {} });
+      expect(fresh.getState().session).toBeUndefined();
+      expect(fresh.getState().memory).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it("listCommands waits for a real home to load its extensions (pi answered after 4.3s there)", async () => {
     vi.useFakeTimers();
     try {
@@ -591,7 +640,7 @@ describe("PiSession: Electron host follow-ups", () => {
 
     expect(result).toEqual({ queued: false, reason: "Gentle is still working" });
     expect(session.getState().messages).toHaveLength(beforeCount);
-    expect(handles[0]?.writes).toEqual([]);
+    expect(handles[0]?.writes.map(line => JSON.parse(line).type)).toEqual(["get_state", "get_session_stats"]);
     expect(session.getState().lastError).toBe("Gentle is still working");
   });
 
@@ -604,7 +653,7 @@ describe("PiSession: Electron host follow-ups", () => {
 
     expect(result).toEqual({ queued: true });
     expect(session.getState().messages).toHaveLength(1);
-    expect(handles[0]?.writes).toHaveLength(1);
+    expect(handles[0]?.writes.map(line => JSON.parse(line).type)).toEqual(["get_state", "get_session_stats", "prompt"]);
   });
 
   it("merges the launcher's env (e.g. ELECTRON_RUN_AS_NODE for a JS entry) into the spawned process env", () => {
@@ -646,7 +695,7 @@ describe("PiSession: Electron host follow-ups", () => {
 
     session.start();
 
-    expect(handles[0]?.writes).toHaveLength(1);
+    expect(handles[0]?.writes).toHaveLength(3);
     const sent = JSON.parse(handles[0]?.writes[0] ?? "{}");
     expect(sent).toMatchObject({ type: "get_messages" });
     expect(typeof sent.id).toBe("string");
@@ -678,7 +727,7 @@ describe("PiSession: Electron host follow-ups", () => {
 
     session.start();
 
-    expect(handles[0]?.writes).toEqual([]);
+    expect(handles[0]?.writes.map(line => JSON.parse(line).type)).not.toContain("get_messages");
   });
 
   it("surfaces lastError instead of throwing when the get_messages response fails", () => {

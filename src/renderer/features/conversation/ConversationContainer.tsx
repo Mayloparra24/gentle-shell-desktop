@@ -24,6 +24,7 @@ export interface ConversationContainerProps {
   readonly onOpenModels?: () => void;
   readonly onChooseFolder?: () => void;
   readonly onChatReady?: (chat: ActiveChat) => void;
+  readonly onStateChange?: (chat: ActiveChat, state: ChatState) => void;
 }
 
 function emptyChatState(): ChatState {
@@ -47,7 +48,7 @@ function errorText(cause: unknown): string {
  * bridge.onError pushes) render in a dedicated StatusLine, never as a
  * synthetic ChatMessage appended to the thread.
  */
-export function ConversationContainer({ activeChat, onOpenModels, onChatReady, onChooseFolder }: ConversationContainerProps) {
+export function ConversationContainer({ activeChat, onOpenModels, onChatReady, onChooseFolder, onStateChange }: ConversationContainerProps) {
   const bridge = useBridge();
   const [chatState, setChatState] = useState<ChatState>(emptyChatState());
   const [bridgeError, setBridgeError] = useState<string | undefined>(undefined);
@@ -62,13 +63,16 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady, o
   // Subscribes once: GentleBridge pushes state/error for whichever chat is
   // currently open, independent of which activeChat this render owns.
   useEffect(() => {
-    const unsubscribeState = bridge.onState(setChatState);
+    const unsubscribeState = bridge.onState((state) => {
+      setChatState(state);
+      onStateChange?.(activeChat, state);
+    });
     const unsubscribeError = bridge.onError(setBridgeError);
     return () => {
       unsubscribeState();
       unsubscribeError();
     };
-  }, [bridge]);
+  }, [bridge, activeChat, onStateChange]);
 
   // Opens the selected saved chat, or displays the chat already started by the folder dialog.
   // Guarded against stale resolutions: if the selection changes again
@@ -84,6 +88,7 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady, o
 
   useEffect(() => {
     setBridgeError(undefined);
+    setChatState(emptyChatState());
     let cancelled = false;
     if (activeChat.kind === "none") return;
     const opening = activeChat.kind === "ready" ? Promise.resolve(activeChat.state)
@@ -92,6 +97,7 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady, o
       .then((state) => {
         if (!cancelled) {
           setChatState(state);
+          onStateChange?.(activeChat, state);
           onChatReady?.(activeChat);
         }
       })
@@ -101,7 +107,7 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady, o
     return () => {
       cancelled = true;
     };
-  }, [bridge, activeChat, onChatReady]);
+  }, [bridge, activeChat, onChatReady, onStateChange]);
 
   const handleSend = (): void => {
     const text = draft.trim();

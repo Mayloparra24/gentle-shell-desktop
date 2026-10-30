@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ChatSummary } from "@shared/bridge-types";
+import type { ChatState, ChatSummary } from "@shared/bridge-types";
 import { useBridge } from "@renderer/shared/bridge/useBridge";
 import { ChatsContainer } from "@renderer/features/chats/ChatsContainer";
 import { FolderDialog } from "@renderer/features/chats/FolderDialog";
@@ -43,6 +43,8 @@ export function App() {
   const [screen, setScreen] = useState<Screen>(SCREEN.LOADING);
   const [activeChat, setActiveChat] = useState<ActiveChat>(NO_CHAT);
   const [openedChat, setOpenedChat] = useState<ActiveChat | null>(null);
+  const [liveStatus, setLiveStatus] = useState<{ chat: ActiveChat; state: ChatState } | null>(null);
+  const handleStateChange = useCallback((chat: ActiveChat, state: ChatState) => setLiveStatus({ chat, state }), []);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [view, setView] = useState<"chat" | "models">("chat");
@@ -87,6 +89,8 @@ export function App() {
   const statusInfo = {
     cwd: activeChat.kind === "existing" ? activeChat.chat.cwd : activeChat.kind === "ready" ? activeChat.state.cwd : undefined,
     branch: git?.status === "ready" ? git.branch : undefined,
+    session: liveStatus?.chat === activeChat ? liveStatus.state.session : undefined,
+    memory: liveStatus?.chat === activeChat ? liveStatus.state.memory : undefined,
   };
 
   return (
@@ -101,23 +105,22 @@ export function App() {
             key={homeVersion}
             onSelectChat={handleSelectChat}
             onNewChat={handleChooseFolder}
-            onChooseFolder={handleChooseFolder}
             selectedChatId={activeChat.kind === "existing" ? activeChat.chat.id : undefined}
           />
         </div>
         <div className="gc-app__center">
           <div className="gc-app__chat" hidden={view !== "chat"}>
-            <ConversationContainer key={homeVersion} activeChat={activeChat} onOpenModels={openModels} onChatReady={setOpenedChat} onChooseFolder={handleChooseFolder} />
+            <ConversationContainer key={homeVersion} activeChat={activeChat} onOpenModels={openModels} onChatReady={setOpenedChat} onStateChange={handleStateChange} onChooseFolder={handleChooseFolder} />
           </div>
           {view === "models" && <ModelsContainer key={homeVersion} onBack={() => setView("chat")} />}
         </div>
         <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen}>
           <WorkspacePanel onGitChange={handleGitChange}
             chatId={`${homeVersion}-${activeChat.kind === "existing" ? activeChat.chat.id : "new"}`}
-            ready={openedChat === activeChat} />
+            cwd={statusInfo.cwd} ready={openedChat === activeChat} />
         </div>
       </div>
-      <StatusBar info={statusInfo} />
+      <StatusBar info={statusInfo} onOpenModels={openModels} />
       {settingsOpen && <SettingsContainer
         onOpenModels={openModels}
         homeVersion={homeVersion}

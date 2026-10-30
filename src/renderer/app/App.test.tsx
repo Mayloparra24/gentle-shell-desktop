@@ -71,13 +71,14 @@ describe("folder start", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Git" }));
     expect(screen.getByRole("tabpanel")).toHaveTextContent("Choose a folder");
   });
-  it("all three entry points open the same modal, cancellation restores focus and starts nothing", async () => {
+  it("both New chat buttons open the same modal, cancellation restores focus and starts nothing", async () => {
     const start = vi.spyOn(mockBridge, "startChat");
     const legacy = vi.spyOn(mockBridge, "newChat");
     render(<App />);
     await screen.findByText("Start a chat in any folder");
-    const triggers = [...screen.getAllByRole("button", { name: "New chat" }), screen.getByRole("button", { name: "Chat in another folder…" })];
-    expect(triggers).toHaveLength(3);
+    const triggers = screen.getAllByRole("button", { name: "New chat" });
+    expect(triggers).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Chat in another folder…" })).not.toBeInTheDocument();
     for (const trigger of triggers) {
       trigger.focus();
       fireEvent.click(trigger);
@@ -259,6 +260,23 @@ describe("App shell layout", () => {
 });
 
 describe("App status bar", () => {
+  it("opens Models from the live model segment and clears old facts on chat switch", async () => {
+    const initial = await mockBridge.newChat();
+    let push!: Parameters<typeof mockBridge.onState>[0];
+    vi.spyOn(mockBridge, "onState").mockImplementation(callback => { push = callback; return () => {}; });
+    const open = vi.spyOn(mockBridge, "openChat").mockResolvedValue({ ...initial, session: { model: "real-model", effort: "high" }, memory: "project · saved ✓" });
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "real-model · high" }));
+    expect(await screen.findByRole("heading", { name: "Models" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "← Back to chat" }));
+    push({ ...initial, session: { model: "updated-model" } });
+    expect(await screen.findByRole("button", { name: "updated-model" })).toBeInTheDocument();
+    expect(screen.queryByText("project · saved ✓")).not.toBeInTheDocument();
+    open.mockImplementation(() => new Promise(() => {}));
+    fireEvent.click(screen.getByRole("button", { name: /Write the README intro/ }));
+    expect(screen.queryByRole("button", { name: "updated-model" })).not.toBeInTheDocument();
+  });
   it("renders no old workspace or status samples with the mock bridge", async () => {
     render(<App />);
     await screen.findByText("Start a chat in any folder");
@@ -298,7 +316,7 @@ describe("App status bar", () => {
 
     (await screen.findByRole("button", { name: /Write the README intro/ })).click();
 
-    await waitFor(() => expect(screen.getByRole("contentinfo", { name: "Status bar" })).toHaveTextContent("gentle-shell-desktopmain"));
+    await waitFor(() => expect(screen.getByRole("contentinfo", { name: "Status bar" })).toHaveTextContent("gentle-shell-desktopbranch: main"));
     expect(within(screen.getByRole("contentinfo", { name: "Status bar" })).getByText("gentle-shell-desktop")).toHaveAttribute("title", "/Users/dev/gentle-shell-desktop");
   });
 });

@@ -181,10 +181,13 @@ function applyExtensionUIRequest(state: ChatState, event: RpcExtensionUIRequest,
       return pushDialog(state, { id: event.id, method: "editor", title: event.title, prefill: event.prefill });
     case "setWidget":
       return applySetWidget(state, event, now);
+    case "setStatus":
+      if (event.statusKey !== "engram") return state;
+      return { ...state, memory: typeof event.statusText === "string" ? event.statusText.replace(/^\s*(?:🧠\uFE0F?\s*)?/, "") : undefined };
     case "notify":
       return applyNotify(state, event);
     default:
-      // Other fire-and-forget methods: setStatus, setTitle, set_editor_text.
+      // Other fire-and-forget methods: setTitle, set_editor_text.
       return state;
   }
 }

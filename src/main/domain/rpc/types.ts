@@ -29,7 +29,8 @@ export type RpcCommand =
   | { readonly type: "abort" }
   | { readonly type: "new_session" }
   | { readonly type: "switch_session"; readonly sessionPath: string }
-  | { readonly type: "get_state" }
+  | { readonly type: "get_state"; readonly id?: string }
+  | { readonly type: "get_session_stats"; readonly id?: string }
   /** Lists extension commands, prompt templates and skills; correlated by `id` like `get_messages`. */
   | { readonly type: "get_commands"; readonly id?: string }
   /**

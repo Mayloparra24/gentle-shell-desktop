@@ -123,6 +123,8 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
   private historyRequestCounter = 0;
   private commandsRequestCounter = 0;
   private silentCounter = 0;
+  private statusCounter = 0;
+  private readonly pendingStatus = new Map<string, { readonly id: string; readonly expires: number }>();
   private capture: SilentCapture | undefined;
   private silentChain: Promise<unknown> = Promise.resolve();
   /** Set right after a `get_messages` history request is sent (reopening a
@@ -178,6 +180,7 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
       // empty thread until we ask for them. A fresh chat has no history to
       // load, so this is skipped entirely when sessionPath is unset.
       if (this.sessionPath) this.requestHistory();
+      this.requestStatus();
     } catch (error) {
       this.surfaceError(toError(error));
     }
@@ -190,6 +193,45 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
     const id = `history-${this.historyRequestCounter++}`;
     this.pendingHistoryRequestId = id;
     this.send({ type: "get_messages", id });
+  }
+
+  /** Optional status reads never block a chat or surface errors. Only the newest unexpired reply counts. */
+  private requestStatus(): void {
+    if (!this.process || this.stopping) return;
+    for (const type of ["get_state", "get_session_stats"] as const) {
+      const id = `status-${this.statusCounter++}`;
+      this.pendingStatus.set(type, { id, expires: Date.now() + COMMANDS_TIMEOUT_MS });
+      try {
+        this.send({ type, id });
+      } catch {
+        this.pendingStatus.delete(type);
+      }
+    }
+  }
+
+  private applyStatusResponse(state: ChatState, response: RpcResponse): ChatState {
+    const pending = this.pendingStatus.get(response.command);
+    if (!pending || response.id !== pending.id) return state;
+    this.pendingStatus.delete(response.command);
+    if (!response.success || Date.now() >= pending.expires) return state;
+    const data = record(response.data);
+    if (!data) return state;
+    if (response.command === "get_state") {
+      const model = record(data.model);
+      if (data.model != null && (!model || typeof model.id !== "string")) return state;
+      return { ...state, session: { ...state.session,
+        model: typeof model?.id === "string" ? model.id : undefined,
+        effort: typeof data.thinkingLevel === "string" ? data.thinkingLevel : undefined,
+      } };
+    }
+    if (data.contextUsage === undefined) return { ...state, session: { ...state.session, context: undefined } };
+    const context = record(data.contextUsage);
+    if (!context || !finiteNumber(context.contextWindow) || context.contextWindow <= 0
+      || !(context.percent === null || finiteNumber(context.percent))
+      || !(context.tokens === null || finiteNumber(context.tokens))) return state;
+    return { ...state, session: { ...state.session, context: {
+      percent: context.percent, tokens: context.tokens, window: context.contextWindow,
+    } } };
   }
 
   /**
@@ -375,7 +417,11 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
       // reduceChat has no case for "response" (its default arm returns
       // state unchanged), so folding the get_messages history response in
       // here, right after, never fights it.
-      if (decoded.type === "response") this.state = this.applyHistoryResponse(this.state, decoded);
+      if (decoded.type === "response") {
+        this.state = this.applyHistoryResponse(this.state, decoded);
+        this.state = this.applyStatusResponse(this.state, decoded);
+      }
+      if (decoded.type === "agent_end" || decoded.type === "agent_settled") this.requestStatus();
       this.emit("event", decoded);
       this.emit("state", this.state);
     } catch (error) {
@@ -472,6 +518,14 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
 function appendUserMessage(state: ChatState, text: string): ChatState {
   const message: ChatMessage = { id: `msg-${state.messages.length}`, role: MESSAGE_ROLE.USER, text };
   return { ...state, messages: [...state.messages, message] };
+}
+
+function record(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
+function finiteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 function toError(value: unknown): Error {

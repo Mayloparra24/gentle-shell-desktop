@@ -101,13 +101,21 @@ function session(overrides: Partial<SessionInfoLike> = {}): SessionInfoLike {
  * away instead of blocking on the real 2s bound; tests that do care about
  * the content answer inline instead.
  */
+const OPTIONAL_STATUS_READS = new Set(["get_state", "get_session_stats"]);
+
+/** What the host sent to pi on purpose: the optional status-bar reads (get_state, get_session_stats) are not part of any chat behavior. */
+function writesExceptStatusReads(handle: FakeProcessHandle | undefined): string[] {
+  return (handle?.writes ?? []).filter((line) => !OPTIONAL_STATUS_READS.has(JSON.parse(line).type));
+}
+
 async function respondToHistoryRequest(
   handles: readonly FakeProcessHandle[],
   index: number,
   data: unknown = { messages: [] },
 ): Promise<void> {
-  await vi.waitFor(() => expect(handles[index]?.writes.length ?? 0).toBeGreaterThan(0));
-  const sent = JSON.parse(handles[index]!.writes[handles[index]!.writes.length - 1]!);
+  const historyWrite = (): string | undefined => handles[index]?.writes.filter((line) => JSON.parse(line).type === "get_messages").pop();
+  await vi.waitFor(() => expect(historyWrite()).toBeDefined());
+  const sent = JSON.parse(historyWrite()!);
   handles[index]!.emitStdout(
     JSON.stringify({ type: "response", id: sent.id, command: "get_messages", success: true, data }),
   );
@@ -278,7 +286,7 @@ describe("ChatHost", () => {
     const result = await host.sendMessage("another message");
 
     expect(result).toEqual({ queued: false, reason: "Gentle is still working" });
-    expect(handles[0]?.writes).toEqual([]);
+    expect(writesExceptStatusReads(handles[0])).toEqual([]);
   });
 
   it("startSession serializes overlapping open/new calls: the previous session is fully stopped before the next spawns, and the last request wins", async () => {
@@ -353,7 +361,7 @@ describe("ChatHost", () => {
 
     await host.answerDialog("dlg-1", { value: "A" });
 
-    expect(handles[0]?.writes).toEqual([`${JSON.stringify({ type: "extension_ui_response", id: "dlg-1", value: "A" })}\n`]);
+    expect(writesExceptStatusReads(handles[0])).toEqual([`${JSON.stringify({ type: "extension_ui_response", id: "dlg-1", value: "A" })}\n`]);
   });
 
   it("abort() with no chat open rejects instead of throwing synchronously", async () => {

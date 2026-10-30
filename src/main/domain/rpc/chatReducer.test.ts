@@ -26,6 +26,17 @@ function replay(events: RpcEvent[]): ChatState {
   return events.reduce((state, event) => reduceChat(state, event), INITIAL_CHAT_STATE);
 }
 
+describe("reduceChat: Engram status", () => {
+  it("strips only the leading emoji and spaces, preserves the text, clears and ignores other keys", () => {
+    const event: RpcEvent = { type: "extension_ui_request", id: "status", method: "setStatus", statusKey: "engram", statusText: "  🧠 integration-desktop-mvp · saved ✓" };
+    const state = reduceChat(INITIAL_CHAT_STATE, event);
+    expect(state).toEqual({ ...INITIAL_CHAT_STATE, memory: "integration-desktop-mvp · saved ✓" });
+    expect(reduceChat(state, { ...event, statusKey: "other", statusText: "ignore" })).toBe(state);
+    expect(reduceChat(state, { ...event, statusText: undefined })).toEqual({ ...INITIAL_CHAT_STATE, memory: undefined });
+    expect(INITIAL_CHAT_STATE).not.toHaveProperty("memory");
+  });
+});
+
 describe("reduceChat: working state", () => {
   it("agent_start sets working true", () => {
     const state = reduceChat(INITIAL_CHAT_STATE, { type: "agent_start" });
