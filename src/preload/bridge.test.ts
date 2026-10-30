@@ -187,11 +187,11 @@ describe("createBridge", () => {
     const bridge = createBridge(ipc);
 
     await bridge.readSettings();
-    await bridge.setSetting("vim", "on");
+    await bridge.setSetting("review-mode", "on");
     await bridge.runDiagnostic("doctor");
 
     expect(invoke).toHaveBeenNthCalledWith(1, IPC_CHANNELS.SETTINGS_READ);
-    expect(invoke).toHaveBeenNthCalledWith(2, IPC_CHANNELS.SETTINGS_SET, "vim", "on");
+    expect(invoke).toHaveBeenNthCalledWith(2, IPC_CHANNELS.SETTINGS_SET, "review-mode", "on");
     expect(invoke).toHaveBeenNthCalledWith(3, IPC_CHANNELS.DIAGNOSTIC_RUN, "doctor");
   });
 

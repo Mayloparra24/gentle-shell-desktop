@@ -9,10 +9,12 @@ export interface CommandMenuProps {
   readonly status: CommandsStatus;
   readonly error?: string;
   readonly onPick: (command: SlashCommand) => void;
+  readonly showAll?: boolean;
+  readonly onToggleShowAll?: () => void;
 }
 
 /** Focus stays in the composer; aria-activedescendant identifies the active row. */
-export function CommandMenu({ id, commands, activeIndex, status, error, onPick }: CommandMenuProps) {
+export function CommandMenu({ id, commands, activeIndex, status, error, onPick, showAll = false, onToggleShowAll }: CommandMenuProps) {
   return (
     <div className="gc-command-menu">
       <div id={id} role="listbox" aria-label="Commands" className="gc-command-menu__list" aria-busy={status === "loading"}>
@@ -35,7 +37,12 @@ export function CommandMenu({ id, commands, activeIndex, status, error, onPick }
       <div role="status" className="gc-command-menu__status">
         {error !== undefined ? `Could not load commands: ${error}` : status === "loading" ? "Loading commands…" : commands.length === 0 ? "No commands match" : null}
       </div>
-      <p className="gc-command-menu__footer">Pi's built-in commands such as /model are not available here.</p>
+      <div className="gc-command-menu__footer">
+        <p>Pi's built-in commands such as /model are not available here.</p>
+        <button type="button" className="gc-command-menu__toggle" aria-pressed={showAll} onMouseDown={(event) => event.preventDefault()} onClick={onToggleShowAll}>
+          {showAll ? "Hide advanced commands" : "Show all commands"}
+        </button>
+      </div>
     </div>
   );
 }

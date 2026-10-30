@@ -58,11 +58,11 @@ describe("mockBridge", () => {
 
   it("readSettings() returns a state for every setting and setSetting() changes one", async () => {
     const before = await mockBridge.readSettings();
-    expect(before.map((state) => state.key)).toContain("vim");
-    expect(before.find((state) => state.key === "vim")).toMatchObject({ value: "off" });
+    expect(before.map((state) => state.key)).toContain("review-mode");
+    expect(before.find((state) => state.key === "review-mode")).toMatchObject({ value: "on" });
 
-    expect(await mockBridge.setSetting("vim", "on")).toEqual({ key: "vim", value: "on" });
-    expect((await mockBridge.readSettings()).find((state) => state.key === "vim")).toEqual({ key: "vim", value: "on" });
+    expect(await mockBridge.setSetting("review-mode", "off")).toEqual({ key: "review-mode", value: "off" });
+    expect((await mockBridge.readSettings()).find((state) => state.key === "review-mode")).toEqual({ key: "review-mode", value: "off" });
   });
 
   it("setSetting() refuses a read-only setting like the real service", async () => {

@@ -8,10 +8,9 @@ function setup(found = true) {
   const bridge = {
     ...mockBridge,
     readSettings: vi.fn().mockResolvedValue([
-      { key: "vim", value: "off" }, { key: "animations", value: "quality" },
       { key: "permission-mode", value: "normal" }, { key: "telemetry", value: "off" },
       { key: "yolo", value: "off" }, { key: "background-subagents", unavailable: true },
-      { key: "double-esc-cancel", value: "off" }, { key: "review-mode", value: "on" },
+      { key: "review-mode", value: "off" },
     ]),
     setSetting: vi.fn().mockImplementation(async (key, value) => ({ key, value })),
     homeStatus: vi.fn().mockResolvedValue({ mode: "isolated", dir: "/mock/gentle", detection: { found, dir: "/mock/pi", hasAuth: false, hasModels: false } }),
@@ -38,15 +37,19 @@ describe("Settings", () => {
   });
   it("renders ordered sections, confirmed switches, commands and unavailable compatibility", async () => {
     const { bridge } = setup();
-    expect(within(screen.getByRole("navigation")).getAllByRole("button").map((el) => el.textContent)).toEqual(["Home", "Models", "Appearance", "Editing", "Permissions", "Workflow", "Privacy", "Diagnostics"]);
-    const control = await screen.findByRole("switch", { name: "Vim prompt editing" });
+    expect(within(screen.getByRole("navigation")).getAllByRole("button").map((el) => el.textContent)).toEqual(["Home", "Models", "Appearance", "Permissions", "Workflow", "Privacy", "Diagnostics"]);
+    const control = await screen.findByRole("switch", { name: "Receipt-driven review (RDD)" });
+    expect(screen.queryByText("Vim prompt editing")).not.toBeInTheDocument();
+    expect(screen.queryByText("Animations")).not.toBeInTheDocument();
+    expect(screen.queryByText("Double Esc to cancel")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Theme" })).toBeInTheDocument();
     await waitFor(() => expect(control).not.toBeDisabled());
     expect(screen.queryByRole("switch", { name: "Background subagents" })).not.toBeInTheDocument();
     fireEvent.click(control);
     await waitFor(() => expect(control).toHaveAttribute("aria-checked", "true"));
-    expect(bridge.setSetting).toHaveBeenCalledWith("vim", "on");
+    expect(bridge.setSetting).toHaveBeenCalledWith("review-mode", "on");
     expect(screen.getByText("Applied")).toHaveAttribute("role", "status");
-    expect(screen.getByText("/gentle:vim").tagName).toBe("CODE");
+    expect(screen.getByText("/gentle:review-mode").tagName).toBe("CODE");
     expect(screen.getByRole("switch", { name: "YOLO" })).toBeDisabled();
     expect(screen.getByText(/Applies to new chats, not the one that is open/)).toBeInTheDocument();
   });
@@ -54,7 +57,7 @@ describe("Settings", () => {
   it("shows write errors and retains the old value", async () => {
     const { bridge } = setup();
     bridge.setSetting.mockRejectedValueOnce(new Error("Could not save"));
-    const control = screen.getByRole("switch", { name: "Vim prompt editing" });
+    const control = screen.getByRole("switch", { name: "Receipt-driven review (RDD)" });
     await waitFor(() => expect(control).not.toBeDisabled());
     fireEvent.click(control);
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not save");

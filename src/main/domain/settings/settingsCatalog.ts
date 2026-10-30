@@ -36,30 +36,6 @@ function matchWord(text: string, pattern: RegExp): string | undefined {
 
 export const SETTING_DEFS: readonly SettingDef[] = [
   {
-    key: SETTING_KEY.VIM,
-    commandName: "gentle:vim",
-    statusCommand: "/gentle:vim status",
-    parse: (text) => matchWord(text, /^vim:\s*(on|off)\b/m),
-    allowed: ON_OFF,
-    writeCommand: enableDisable("/gentle:vim"),
-  },
-  {
-    key: SETTING_KEY.ANIMATIONS,
-    commandName: "gentle:animations",
-    statusCommand: "/gentle:animations status",
-    parse: (text) => matchWord(text, /^animations:\s*(quality|performance|potato)\b/m),
-    allowed: ["quality", "performance", "potato"],
-    writeCommand: (value) => `/gentle:animations ${value}`,
-  },
-  {
-    key: SETTING_KEY.DOUBLE_ESC_CANCEL,
-    commandName: "gentle:double-esc-cancel",
-    statusCommand: "/gentle:double-esc-cancel status",
-    parse: (text) => matchWord(text, /^double-esc-cancel:\s*(on|off)\b/m),
-    allowed: ON_OFF,
-    writeCommand: enableDisable("/gentle:double-esc-cancel"),
-  },
-  {
     key: SETTING_KEY.PERMISSION_MODE,
     commandName: "gentle:mode",
     statusCommand: "/gentle:mode status",

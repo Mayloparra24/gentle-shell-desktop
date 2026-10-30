@@ -54,5 +54,24 @@
 }
 
 .gc-command-menu__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   border-top: 1px solid var(--line);
+}
+
+.gc-command-menu__footer p {
+  margin: 0;
+}
+
+.gc-command-menu__toggle {
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  background: var(--panel);
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
 }

@@ -178,8 +178,8 @@ describe("registerHandlers: home status and commands", () => {
 describe("registerHandlers: settings", () => {
   const settingsHost = () =>
     fakeHost({
-      readSettings: vi.fn().mockResolvedValue([{ key: "vim", value: "off" }]),
-      setSetting: vi.fn().mockResolvedValue({ key: "vim", value: "on" }),
+      readSettings: vi.fn().mockResolvedValue([{ key: "review-mode", value: "off" }]),
+      setSetting: vi.fn().mockResolvedValue({ key: "review-mode", value: "on" }),
       runDiagnostic: vi.fn().mockResolvedValue("ok"),
     });
 
@@ -189,9 +189,9 @@ describe("registerHandlers: settings", () => {
 
     registerHandlers(host, fakeSetup(), fakeWebContents(), ipc);
 
-    expect(await registeredHandler(ipc, "settings.read")({} as never)).toEqual([{ key: "vim", value: "off" }]);
-    expect(await registeredHandler(ipc, "settings.set")({} as never, "vim", "on")).toEqual({ key: "vim", value: "on" });
-    expect(host.setSetting).toHaveBeenCalledWith("vim", "on");
+    expect(await registeredHandler(ipc, "settings.read")({} as never)).toEqual([{ key: "review-mode", value: "off" }]);
+    expect(await registeredHandler(ipc, "settings.set")({} as never, "review-mode", "on")).toEqual({ key: "review-mode", value: "on" });
+    expect(host.setSetting).toHaveBeenCalledWith("review-mode", "on");
     expect(await registeredHandler(ipc, "diagnostic.run")({} as never, "doctor")).toBe("ok");
     expect(host.runDiagnostic).toHaveBeenCalledWith("doctor");
   });
@@ -201,8 +201,8 @@ describe("registerHandlers: settings", () => {
     const host = settingsHost();
     registerHandlers(host, fakeSetup(), fakeWebContents(), ipc);
 
-    await expect(registeredHandler(ipc, "settings.set")({} as never, { key: "vim" }, "on")).rejects.toThrow("Invalid settings request");
-    await expect(registeredHandler(ipc, "settings.set")({} as never, "vim", 1)).rejects.toThrow("Invalid settings request");
+    await expect(registeredHandler(ipc, "settings.set")({} as never, { key: "review-mode" }, "on")).rejects.toThrow("Invalid settings request");
+    await expect(registeredHandler(ipc, "settings.set")({} as never, "review-mode", 1)).rejects.toThrow("Invalid settings request");
     await expect(registeredHandler(ipc, "diagnostic.run")({} as never, undefined)).rejects.toThrow("Invalid diagnostic request");
     expect(host.setSetting).not.toHaveBeenCalled();
     expect(host.runDiagnostic).not.toHaveBeenCalled();

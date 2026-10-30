@@ -315,9 +315,6 @@ export interface SlashCommand {
  * key and a value, never a command.
  */
 export const SETTING_KEY = {
-  VIM: "vim",
-  ANIMATIONS: "animations",
-  DOUBLE_ESC_CANCEL: "double-esc-cancel",
   PERMISSION_MODE: "permission-mode",
   YOLO: "yolo",
   REVIEW_MODE: "review-mode",

@@ -3,8 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Composer } from "./Composer";
 import { useState } from "react";
+import type { SlashCommand } from "@shared/bridge-types";
 
-const commands = [
+const commands: SlashCommand[] = [
   { name: "review", source: "skill" as const },
   { name: "commit-message", description: "Write a commit", source: "prompt" as const },
 ];
@@ -15,6 +16,36 @@ function Draft({ working = false, load = () => Promise.resolve(commands), onSend
 }
 
 describe("Composer commands", () => {
+  it("hides advanced commands until toggled, preserves focus and resets on close", async () => {
+    render(<Draft load={() => Promise.resolve([...commands, { name: "history", source: "extension" as const }])} />);
+    const field = screen.getByRole("textbox");
+    field.focus();
+    fireEvent.change(field, { target: { value: "/" } });
+    await screen.findByText("/review");
+    expect(screen.queryByText("/history")).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: "Show all commands" });
+    expect(fireEvent.mouseDown(toggle)).toBe(false);
+    fireEvent.click(toggle);
+    expect(field).toHaveFocus();
+    expect(screen.getByText("/history")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Hide advanced commands" }));
+    fireEvent.change(field, { target: { value: "/hist" } });
+    expect(screen.getByRole("status")).toHaveTextContent("No commands match");
+    expect(screen.queryByRole("option")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show all commands" }));
+    expect(screen.getAllByRole("option")).toHaveLength(1);
+    fireEvent.keyDown(field, { key: "Escape" });
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Commands" }));
+    expect(screen.getByRole("status")).toHaveTextContent("No commands match");
+    fireEvent.click(screen.getByRole("button", { name: "Show all commands" }));
+    fireEvent.keyDown(field, { key: "ArrowDown" });
+    fireEvent.keyDown(field, { key: "Tab" });
+    expect(field).toHaveValue("/history ");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    fireEvent.change(field, { target: { value: "/" } });
+    expect(screen.queryByText("/history")).not.toBeInTheDocument();
+  });
   it("opens on slash, filters, navigates and inserts without sending", async () => {
     const onSend = vi.fn();
     render(<Draft onSend={onSend} />);

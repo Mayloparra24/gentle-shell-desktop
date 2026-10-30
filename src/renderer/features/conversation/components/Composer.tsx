@@ -3,6 +3,7 @@ import type { SlashCommand } from "@shared/bridge-types";
 import { Button } from "@renderer/shared/ui/atoms/Button";
 import { TextField } from "@renderer/shared/ui/atoms/TextField";
 import { CommandMenu } from "@renderer/features/commands/components/CommandMenu";
+import { visibleCommands } from "@renderer/features/commands/hiddenCommands";
 import { filterCommands } from "@renderer/features/commands/filterCommands";
 import { useSlashCommands } from "@renderer/features/commands/useSlashCommands";
 import "./Composer.css";
@@ -25,13 +26,14 @@ const emptyCommands = (): Promise<SlashCommand[]> => Promise.resolve([]);
 export function Composer({ value, working, onChange, onSend, onAbort, loadCommands = emptyCommands, commandsResetKey }: ComposerProps) {
   const canSend = !working && value.trim().length > 0;
   const [open, setOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const field = useRef<HTMLTextAreaElement>(null);
   const selectionPending = useRef(false);
   const menuId = useId();
   const { commands, status, error, ensureLoaded } = useSlashCommands(loadCommands, commandsResetKey);
   const matchesToken = /^\/\S*$/.test(value);
-  const filtered = filterCommands(commands, matchesToken ? value.slice(1) : "");
+  const filtered = filterCommands(visibleCommands(commands, showAll), matchesToken ? value.slice(1) : "");
   const active = Math.min(activeIndex, Math.max(0, filtered.length - 1));
 
   useEffect(() => {
@@ -39,6 +41,10 @@ export function Composer({ value, working, onChange, onSend, onAbort, loadComman
     setActiveIndex(0);
     if (matchesToken) ensureLoaded();
   }, [value, matchesToken, ensureLoaded]);
+
+  useEffect(() => {
+    if (!open) setShowAll(false);
+  }, [open]);
 
   useLayoutEffect(() => {
     if (!selectionPending.current) return;
@@ -100,7 +106,7 @@ export function Composer({ value, working, onChange, onSend, onAbort, loadComman
 
   return (
     <form className="gc-composer" onSubmit={handleSubmit} ref={(node) => { field.current = node?.querySelector("textarea") ?? null; }}>
-      {open && <CommandMenu id={menuId} commands={filtered} activeIndex={active} status={status} error={error} onPick={pick} />}
+      {open && <CommandMenu id={menuId} commands={filtered} activeIndex={active} status={status} error={error} onPick={pick} showAll={showAll} onToggleShowAll={() => { setShowAll(!showAll); setActiveIndex(0); }} />}
       <div className="gc-composer__box">
         <TextField
           multiline

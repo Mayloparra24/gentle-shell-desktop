@@ -126,9 +126,6 @@ const MOCK_COMMANDS: SlashCommand[] = [
 
 /** Sample settings so the browser preview can exercise the Settings screen. */
 const MOCK_SETTING_DEFAULTS: Record<SettingKey, string> = {
-  vim: "off",
-  animations: "performance",
-  "double-esc-cancel": "off",
   "permission-mode": "normal",
   yolo: "off",
   "review-mode": "on",
@@ -136,9 +133,6 @@ const MOCK_SETTING_DEFAULTS: Record<SettingKey, string> = {
   telemetry: "off",
 };
 const MOCK_SETTING_ALLOWED: Partial<Record<SettingKey, readonly string[]>> = {
-  vim: ["on", "off"],
-  animations: ["quality", "performance", "potato"],
-  "double-esc-cancel": ["on", "off"],
   "permission-mode": ["normal", "auto", "yolo", "super-yolo"],
   "review-mode": ["on", "off"],
   "background-subagents": ["on", "off"],
