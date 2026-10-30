@@ -145,3 +145,15 @@ describe("workspace file reads: reserved names and growth", () => {
     }
   });
 });
+
+describe("workspace file reads: POSIX-only inputs", () => {
+  // Windows has no mkfifo; the same rule (regular files only) is covered there by the directory and device cases above.
+  it.skipIf(process.platform === "win32")("refuses a real named pipe without blocking and lists it as a non-regular entry", async () => {
+    const { execFileSync } = await import("node:child_process");
+    execFileSync("mkfifo", [path.join(root, "pipe")]);
+    const started = Date.now();
+    expect(await reader().readFile(root, "pipe")).toEqual({ status: "error", message: "Not a regular file" });
+    expect(Date.now() - started).toBeLessThan(2000);
+    expect(await reader().listDirectory(root, "")).toMatchObject({ entries: [{ name: "pipe", kind: "other" }] });
+  });
+});
