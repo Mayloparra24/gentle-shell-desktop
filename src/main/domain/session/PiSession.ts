@@ -123,6 +123,11 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
   private historyRequestCounter = 0;
   private commandsRequestCounter = 0;
   private silentCounter = 0;
+  private promptCounter = 0;
+  /** Requests remain busy before agent_start; responses are correlated, never inferred from status reads. */
+  private readonly pendingPrompts = new Map<string, boolean>();
+  private readonly unconfirmedSilent = new Set<string>();
+  private silentWork = 0;
   private statusCounter = 0;
   private readonly pendingStatus = new Map<string, { readonly id: string; readonly expires: number }>();
   private capture: SilentCapture | undefined;
@@ -254,9 +259,11 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
       return { queued: false, reason };
     }
 
+    const id = `prompt-${this.promptCounter++}`;
+    if (this.process && !this.stopping) this.pendingPrompts.set(id, false);
     this.state = appendUserMessage(this.state, text);
     this.emit("state", this.state);
-    this.send({ type: "prompt", message: text });
+    this.send({ type: "prompt", message: text, id });
     return { queued: true };
   }
 
@@ -311,7 +318,9 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
       return Promise.reject(new Error("Gentle is still working; try again when it finishes"));
     }
 
-    const run = this.silentChain.then(() => this.execSilent(command, timeoutMs));
+    this.silentWork += 1;
+    const run = this.silentChain.then(() => this.execSilent(command, timeoutMs))
+      .finally(() => { this.silentWork -= 1; });
     this.silentChain = run.then(
       () => undefined,
       () => undefined,
@@ -343,6 +352,8 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
         onExit: (error) => finish(() => reject(error)),
       };
 
+      // A timeout releases the caller, not the command. Keep Git writes blocked until confirmed completion/exit.
+      if (this.process && !this.stopping) this.unconfirmedSilent.add(id);
       this.send({ type: "prompt", message: command, id });
     });
   }
@@ -366,6 +377,13 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
     } else {
       this.send({ type: "extension_ui_response", id, value: answer.value });
     }
+  }
+
+  /** Main-process write exclusion, including queued requests and commands whose timeout did not prove termination. */
+  isBusy(): boolean {
+    if (!this.process) return false;
+    return this.state.working || this.state.pendingDialogs.length > 0 || this.pendingPrompts.size > 0
+      || this.silentWork > 0 || this.unconfirmedSilent.size > 0;
   }
 
   getState(): ChatState {
@@ -408,6 +426,7 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
     try {
       const decoded = decodeLine(line);
       if ("kind" in decoded) return; // unknown/unmodeled line: nothing to fold or emit
+      this.updateActivity(decoded);
       if (this.capture && this.takeForSilentRun(decoded)) return;
 
       // `now` feeds reduceChat's setWidget helpers-retention fallback
@@ -429,6 +448,23 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
       if (this.state !== before) this.emit("state", this.state);
     } catch (error) {
       this.surfaceError(toError(error));
+    }
+  }
+
+  private updateActivity(event: RpcEvent): void {
+    if (event.type === "response" && event.command === "prompt" && event.id) {
+      if (!event.success || record(event.data)?.disposition === "handled") {
+        this.pendingPrompts.delete(event.id);
+        this.unconfirmedSilent.delete(event.id);
+      }
+    }
+    if (event.type === "agent_start" && !this.unconfirmedSilent.size
+      && ![...this.pendingPrompts.values()].some(Boolean)) {
+      const next = this.pendingPrompts.keys().next().value;
+      if (next) this.pendingPrompts.set(next, true);
+    }
+    if (event.type === "agent_settled" || (event.type === "agent_end" && !event.willRetry)) {
+      for (const [id, started] of this.pendingPrompts) if (started) this.pendingPrompts.delete(id);
     }
   }
 
@@ -495,10 +531,12 @@ export class PiSession extends TypedEmitter<PiSessionEventMap> {
    */
   private handleExit(code: number | null, signal: NodeJS.Signals | null, spawnError?: Error): void {
     this.process = undefined;
+    this.pendingPrompts.clear();
+    this.unconfirmedSilent.clear();
+    this.capture?.onExit(new Error("gentle-shell exited before it answered"));
     if (this.stopping) return;
 
     this.state = { ...this.state, working: false, pendingDialogs: [] };
-    this.capture?.onExit(new Error("gentle-shell exited before it answered"));
 
     if (spawnError) {
       this.emit("state", this.state);

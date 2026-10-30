@@ -29,6 +29,20 @@ function createFakeIpc(): { ipc: RendererIpc; invoke: ReturnType<typeof vi.fn>; 
 }
 
 describe("createBridge", () => {
+  it("forwards Git context and typed operations over fixed channels without wrapping results/errors", async () => {
+    const { ipc, invoke } = createFakeIpc();
+    const bridge = createBridge(ipc);
+    const result = { planId: "p" };
+    invoke.mockResolvedValue(result);
+    expect(await bridge.gitPlan("ctx", { kind: "stage", path: "a" })).toBe(result);
+    expect(invoke).toHaveBeenLastCalledWith("git.plan", "ctx", { kind: "stage", path: "a" });
+    await bridge.gitTrust("ctx", "p");
+    expect(invoke).toHaveBeenLastCalledWith("git.trust", "ctx", "p");
+    expect(await bridge.gitApply("ctx", "p")).toBe(result);
+    expect(invoke).toHaveBeenLastCalledWith("git.apply", "ctx", "p");
+    invoke.mockRejectedValue(new Error("Safe refusal"));
+    await expect(bridge.gitApply("ctx", "p")).rejects.toThrow("Safe refusal");
+  });
   it("forwards file reads and returns their result unchanged", async () => {
     const { ipc, invoke } = createFakeIpc();
     const result = { status: "ok", path: "src/app.ts", text: "const n = 1;", eol: "lf", language: "typescript" };

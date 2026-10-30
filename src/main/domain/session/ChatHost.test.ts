@@ -2,6 +2,30 @@ import { describe, expect, it, vi } from "vitest";
 import type { ChatState } from "@shared/bridge-types";
 import type { LauncherLocator, ProcessSpawner, SessionInfoLike, SessionStore, SpawnedProcess } from "../../ports";
 import { ChatHost } from "./ChatHost";
+import { PiSession } from "./PiSession";
+import type { GitWriteService } from "../../adapters/gitWrite";
+import type { GitSummary } from "@shared/bridge-types";
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+const readyGit = { status: "ready", branch: "main", changed: [], truncatedChanges: false, commits: [] } as const;
+const writeResult = { kind: "push", status: "success", pulled: false, pushed: true, message: "Done" } as const;
+function writeFixture(extra: Partial<ConstructorParameters<typeof ChatHost>[0]> = {}) {
+  const fake = createFakeSpawner();
+  const service: GitWriteService = { plan: vi.fn().mockResolvedValue({ planId: "plan" }), trust: vi.fn().mockResolvedValue(undefined), apply: vi.fn().mockResolvedValue(writeResult) };
+  const host = new ChatHost({ spawner: fake.spawner, locator: fakeLocator, sessionStore: fakeSessionStore([]), env: {}, gitSummaryReader: { gitSummary: vi.fn().mockResolvedValue(readyGit) }, gitWrites: service, ...extra });
+  return { ...fake, host, service };
+}
+async function contextId(host: ChatHost): Promise<string> {
+  const summary = await host.gitSummary();
+  expect(summary.status).toBe("ready");
+  if (summary.status !== "ready" || !summary.contextId) throw new Error("Missing Git context");
+  return summary.contextId;
+}
 
 /**
  * A controllable fake ProcessSpawner (no real child process), mirroring
@@ -120,6 +144,245 @@ async function respondToHistoryRequest(
     JSON.stringify({ type: "response", id: sent.id, command: "get_messages", success: true, data }),
   );
 }
+
+describe("ChatHost Git lifecycle", () => {
+  it("blocks Git before delayed agent_start and preserves prompt/abort behavior through confirmed settlement", async () => {
+    const { host, service, handles } = writeFixture();
+    const states: ChatState[] = [];
+    host.onState(state => states.push(state));
+    await host.newChat("/repo");
+    const id = await contextId(host);
+    expect(await host.sendMessage("hello")).toEqual({ queued: true });
+    expect(states.at(-1)?.messages).toMatchObject([{ role: "user", text: "hello" }]);
+    expect(states.at(-1)?.working).toBe(false);
+    const before = [...handles[0]!.writes];
+    await expect(host.gitApply(id, "p")).rejects.toThrow(/busy/i);
+    await expect(host.gitPlan(id, { kind: "push" })).rejects.toThrow(/busy/i);
+    expect(service.apply).not.toHaveBeenCalled();
+    expect(service.plan).not.toHaveBeenCalled();
+    expect(handles[0]!.writes).toEqual(before);
+    const request = JSON.parse(before.find(line => JSON.parse(line).type === "prompt")!);
+    handles[0]!.emitStdout(JSON.stringify({ type: "response", id: request.id, command: "prompt", success: true, data: { disposition: "queued" } }));
+    handles[0]!.emitStdout(JSON.stringify({ type: "response", command: "get_state", success: true, data: { isStreaming: false } }));
+    await expect(host.gitApply(id, "p")).rejects.toThrow(/busy/i);
+    handles[0]!.emitStdout(JSON.stringify({ type: "agent_start" }));
+    expect(await host.sendMessage("another")).toEqual({ queued: false, reason: "Gentle is still working" });
+    await host.abort();
+    expect(JSON.parse(handles[0]!.writes.at(-1)!)).toEqual({ type: "abort" });
+    await expect(host.gitApply(id, "p")).rejects.toThrow(/busy/i);
+    handles[0]!.emitStdout(JSON.stringify({ type: "agent_end", willRetry: true }));
+    await expect(host.gitApply(id, "p")).rejects.toThrow(/busy/i);
+    handles[0]!.emitStdout(JSON.stringify({ type: "agent_settled" }));
+    expect(await host.gitPlan(id, { kind: "push" })).toEqual({ planId: "plan" });
+    expect(await host.gitApply(id, "p")).toEqual(writeResult);
+  });
+
+  it.each(["handled", "rejected", "end", "clean-exit", "error-exit"])("restores Git after confirmed prompt completion: %s", async (completion) => {
+    const { host, service, handles } = writeFixture();
+    await host.newChat("/repo");
+    const id = await contextId(host);
+    expect(await host.sendMessage("/gentle:status")).toEqual({ queued: true });
+    const prompt = JSON.parse(handles[0]!.writes.at(-1)!);
+    await expect(host.gitApply(id, "p")).rejects.toThrow(/busy/i);
+    handles[0]!.emitStdout(JSON.stringify({ type: "response", id: "unrelated", command: "prompt", success: true, data: { disposition: "handled" } }));
+    await expect(host.gitApply(id, "p")).rejects.toThrow(/busy/i);
+    expect(service.apply).not.toHaveBeenCalled();
+    if (completion.endsWith("exit")) {
+      handles[0]!.resolveExited({ code: completion === "clean-exit" ? 0 : 1, signal: null });
+      await Promise.resolve();
+    } else if (completion === "end") {
+      handles[0]!.emitStdout(JSON.stringify({ type: "agent_start" }));
+      handles[0]!.emitStdout(JSON.stringify({ type: "agent_end" }));
+    } else {
+      handles[0]!.emitStdout(JSON.stringify({ type: "response", id: prompt.id, command: "prompt", success: completion !== "rejected", data: { disposition: "handled" }, error: "Rejected" }));
+    }
+    expect(await host.gitPlan(id, { kind: "push" })).toEqual({ planId: "plan" });
+    expect(await host.gitApply(id, "p")).toEqual(writeResult);
+  });
+
+  it.each(["handled", "rejected", "switch"])("keeps timed-out silent work blocked until confirmed recovery: %s", async (recovery) => {
+    vi.useFakeTimers();
+    try {
+      const { host, service, handles } = writeFixture();
+      await host.newChat("/repo");
+      const id = await contextId(host);
+      const diagnostic = host.runDiagnostic("status");
+      const rejected = expect(diagnostic).rejects.toThrow(/Timed out/);
+      await vi.advanceTimersByTimeAsync(0);
+      const prompt = JSON.parse(handles[0]!.writes.at(-1)!);
+      const before = [...handles[0]!.writes];
+      await expect(host.gitApply(id, "p")).rejects.toThrow(/busy/i);
+      expect(handles[0]!.writes).toEqual(before);
+      await vi.advanceTimersByTimeAsync(8000);
+      await rejected;
+      handles[0]!.emitStdout(JSON.stringify({ type: "agent_settled" }));
+      const status = handles[0]!.writes.map(line => JSON.parse(line)).find(command => command.type === "get_state");
+      handles[0]!.emitStdout(JSON.stringify({ type: "response", command: "get_state", id: status.id, success: true, data: { model: { id: "idle" } } }));
+      await expect(host.gitApply(id, "p")).rejects.toThrow(/timed out|switch/i);
+      expect(service.apply).not.toHaveBeenCalled();
+      if (recovery === "switch") {
+        const switching = host.newChat("/next");
+        handles[0]!.resolveExited({ code: 0, signal: null });
+        await switching;
+      } else {
+        handles[0]!.emitStdout(JSON.stringify({ type: "response", command: "prompt", id: prompt.id, success: recovery === "handled", data: { disposition: "handled" }, error: "Rejected" }));
+      }
+      expect(await host.gitApply(await contextId(host), "p")).toEqual(writeResult);
+    } finally { vi.useRealTimers(); }
+  });
+  it.each([false, true])("locks synchronously and releases after apply (error=%s)", async (fails) => {
+    const { host, service, handles } = writeFixture();
+    await host.newChat("/authoritative");
+    const id = await contextId(host);
+    const pending = deferred<typeof writeResult>();
+    vi.mocked(service.apply).mockReturnValue(pending.promise);
+    const applying = host.gitApply(id, "plan");
+    const outcome = fails ? expect(applying).rejects.toThrow("Safe failure") : expect(applying).resolves.toEqual(writeResult);
+    const before = [...handles[0]!.writes];
+    for (const operation of [() => host.openChat("x"), () => host.newChat(), () => host.startChat({ source: "browse" }), () => host.chooseFolder(), () => host.sendMessage("no"), () => host.answerDialog("x", { confirmed: true }), () => host.readSettings(), () => host.setSetting("review-mode", "on"), () => host.runDiagnostic("doctor"), () => host.listCommands(), () => host.gitSummary(), () => host.gitPlan(id, { kind: "push" }), () => host.gitTrust(id, "plan"), () => host.gitApply(id, "plan")]) {
+      await expect(operation()).rejects.toThrow(/Git write in progress/);
+    }
+    expect(handles).toHaveLength(1);
+    expect(handles[0]!.writes).toEqual(before);
+    expect(service.apply).toHaveBeenCalledTimes(1);
+    const captured = vi.mocked(service.apply).mock.calls[0]![0];
+    expect(captured.cwd).toBe("/authoritative");
+    expect(captured.isCurrent()).toBe(true);
+    expect(captured.isBusy()).toBe(false);
+    if (fails) pending.reject(new Error("Safe failure")); else pending.resolve(writeResult);
+    await outcome;
+    expect(await host.sendMessage("released")).toEqual({ queued: true });
+  });
+
+  it("holds off apply while earlier settings work is awaiting commands, then releases the guard", async () => {
+    const commands = deferred<[]>();
+    const list = vi.spyOn(PiSession.prototype, "listCommands").mockReturnValue(commands.promise);
+    try {
+      const { host, service } = writeFixture();
+      await host.newChat("/repo");
+      const id = await contextId(host);
+      const reading = host.readSettings();
+      await expect(host.gitApply(id, "p")).rejects.toThrow(/busy/i);
+      expect(service.apply).not.toHaveBeenCalled();
+      commands.resolve([]);
+      expect(await reading).toEqual([
+        { key: "permission-mode", unavailable: true }, { key: "yolo", unavailable: true },
+        { key: "review-mode", unavailable: true }, { key: "background-subagents", unavailable: true },
+        { key: "telemetry", unavailable: true },
+      ]);
+      expect(await host.gitApply(id, "p")).toEqual(writeResult);
+    } finally { list.mockRestore(); }
+  });
+
+  it("waits beyond the quit cleanup timeout for an active apply, including its rejection", async () => {
+    vi.useFakeTimers();
+    try {
+      const { host, service, handles, events } = writeFixture();
+      await host.newChat("/repo");
+      const pending = deferred<typeof writeResult>();
+      vi.mocked(service.apply).mockReturnValue(pending.promise);
+      const applying = host.gitApply(await contextId(host), "p");
+      const rejected = expect(applying).rejects.toThrow("Safe failure");
+      let stopped = false;
+      const stopping = host.stop(10).then(() => { stopped = true; });
+      await vi.advanceTimersByTimeAsync(100);
+      expect(stopped).toBe(false);
+      expect(events).toEqual(["spawn:0"]);
+      pending.reject(new Error("Safe failure"));
+      await rejected;
+      await vi.advanceTimersByTimeAsync(0);
+      expect(events).toEqual(["spawn:0", "endStdin:0"]);
+      handles[0]!.resolveExited({ code: 0, signal: null });
+      await stopping;
+      expect(stopped).toBe(true);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it("invalidates before an asynchronous open lookup and refuses apply until the switch settles", async () => {
+    const lookup = deferred<SessionInfoLike[]>();
+    const { host, service, handles } = writeFixture({ sessionStore: { listAll: () => lookup.promise } });
+    await host.newChat("/old");
+    const old = await contextId(host);
+    await host.gitPlan(old, { kind: "push" });
+    const captured = vi.mocked(service.plan).mock.calls[0]![0];
+    const opening = host.openChat("next");
+    expect(captured.isCurrent()).toBe(false);
+    await expect(host.gitApply(old, "plan")).rejects.toThrow(/changed|switch/i);
+    expect(service.apply).not.toHaveBeenCalled();
+    lookup.resolve([session({ id: "next", cwd: "/new" })]);
+    handles[0]!.resolveExited({ code: 0, signal: null });
+    await respondToHistoryRequest(handles, 1);
+    await opening;
+    expect(await contextId(host)).not.toBe(old);
+    await expect(host.gitTrust(old, "plan")).rejects.toThrow(/changed/i);
+  });
+
+  it("does not stamp a stale summary with a new context", async () => {
+    const read = deferred<GitSummary>();
+    const { host, handles } = writeFixture({ gitSummaryReader: { gitSummary: () => read.promise } });
+    await host.newChat("/old");
+    const reading = host.gitSummary();
+    const switching = host.newChat("/new");
+    handles[0]!.resolveExited({ code: 0, signal: null });
+    await switching;
+    read.resolve(readyGit);
+    expect(await reading).toEqual({ status: "no-chat-folder" });
+  });
+
+  it("blocks apply during an awaiting folder dialog or queued start", async () => {
+    const dialog = deferred<string | undefined>();
+    const { host, service, handles } = writeFixture({ chooseFolder: () => dialog.promise });
+    await host.newChat("/old");
+    const old = await contextId(host);
+    const choosing = host.chooseFolder();
+    await expect(host.gitApply(old, "plan")).rejects.toThrow(/changed|switch/i);
+    dialog.resolve(undefined);
+    expect(await choosing).toEqual({ status: "cancelled" });
+    const fresh = await contextId(host);
+    const queued = host.newChat("/next");
+    await expect(host.gitApply(fresh, "plan")).rejects.toThrow(/changed|switch/i);
+    expect(service.apply).not.toHaveBeenCalled();
+    handles[0]!.resolveExited({ code: 0, signal: null });
+    await queued;
+  });
+
+  it("stop invalidates immediately but waits for apply settlement before stopping the child", async () => {
+    const { host, service, handles, events } = writeFixture();
+    await host.newChat("/repo");
+    const pending = deferred<typeof writeResult>();
+    vi.mocked(service.apply).mockReturnValue(pending.promise);
+    const applying = host.gitApply(await contextId(host), "plan");
+    const captured = vi.mocked(service.apply).mock.calls[0]![0];
+    const stopping = host.stop();
+    expect(captured.isCurrent()).toBe(false);
+    await Promise.resolve();
+    expect(events).toEqual(["spawn:0"]);
+    pending.resolve(writeResult);
+    await applying;
+    await vi.waitFor(() => expect(events).toContain("endStdin:0"));
+    handles[0]!.resolveExited({ code: 0, signal: null });
+    await stopping;
+    expect(await host.gitSummary()).toEqual({ status: "no-chat-folder" });
+  });
+
+  it("refuses missing chat/service, active turns and pending dialogs without reaching the engine", async () => {
+    const { host, service, handles } = writeFixture();
+    await expect(host.gitPlan("absent", { kind: "push" })).rejects.toThrow();
+    await host.newChat("/repo");
+    const id = await contextId(host);
+    await host.gitTrust(id, "trust-plan");
+    expect(service.trust).toHaveBeenCalledWith(expect.objectContaining({ cwd: "/repo" }), "trust-plan");
+    handles[0]!.emitStdout(JSON.stringify({ type: "agent_start" }));
+    await expect(host.gitApply(id, "plan")).rejects.toThrow(/busy|working/i);
+    handles[0]!.emitStdout(JSON.stringify({ type: "agent_end" }));
+    handles[0]!.emitStdout(JSON.stringify({ type: "extension_ui_request", id: "d", method: "confirm", title: "Confirm", message: "Continue?" }));
+    await expect(host.gitApply(id, "plan")).rejects.toThrow(/busy|dialog/i);
+    expect(service.apply).not.toHaveBeenCalled();
+    const unavailable = writeFixture({ gitWrites: undefined });
+    await unavailable.host.newChat("/repo");
+    await expect(unavailable.host.gitPlan(await contextId(unavailable.host), { kind: "push" })).rejects.toThrow(/unavailable/i);
+  });
+});
 
 describe("ChatHost", () => {
   it("resolves a recent chat id on the host, validates its folder, and never trusts an extra path", async () => {

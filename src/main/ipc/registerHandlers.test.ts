@@ -46,6 +46,38 @@ function fakeWebContents(): WebContents {
   return { send: vi.fn() } as unknown as WebContents;
 }
 
+describe("registerHandlers Git writes", () => {
+  it("validates exact kind-specific shapes and bounded identifiers before calling host", async () => {
+    const host = fakeHost({ gitPlan: vi.fn().mockResolvedValue({ planId: "p" }), gitTrust: vi.fn().mockResolvedValue(undefined), gitApply: vi.fn().mockResolvedValue({ status: "success" }) });
+    const ipc = fakeIpcMain();
+    registerHandlers(host, fakeSetup(), fakeWebContents(), ipc);
+    const plan = registeredHandler(ipc, "git.plan");
+    const trust = registeredHandler(ipc, "git.trust");
+    const apply = registeredHandler(ipc, "git.apply");
+    for (const request of [null, [], {}, { kind: "force" }, { kind: "push", cwd: "/bad" }, { kind: "pull", argv: [] }, { kind: "push", path: "a" }, { kind: "stage", path: "a", message: "x" }, { kind: "stage" }, { kind: "unstage", path: "" }, { kind: "stage", path: "a".repeat(4097) }, { kind: "commit", message: " " }, { kind: "commit", message: "a".repeat(20001) }, { kind: "commit", message: "x", path: "a" }, { kind: "sync", message: "x" }]) {
+      await expect(plan({}, "ctx", request)).rejects.toThrow("Invalid Git request");
+    }
+    for (const id of [null, 1, {}, "", "a".repeat(129), "x\u0000"]) {
+      await expect(plan({}, id, { kind: "push" })).rejects.toThrow("Invalid Git request");
+      await expect(trust({}, "ctx", id)).rejects.toThrow("Invalid Git request");
+      await expect(apply({}, id, "p")).rejects.toThrow("Invalid Git request");
+    }
+    await expect(plan({}, "ctx", { kind: "push" }, { cwd: "/bad" })).rejects.toThrow("Invalid Git request");
+    await expect(apply({}, "ctx", "p", ["--force"])).rejects.toThrow("Invalid Git request");
+    expect(host.gitPlan).not.toHaveBeenCalled();
+    expect(host.gitTrust).not.toHaveBeenCalled();
+    expect(host.gitApply).not.toHaveBeenCalled();
+    for (const request of [{ kind: "stage", path: "a" }, { kind: "stage", path: " " }, { kind: "unstage", path: "b" }, { kind: "commit", message: "a".repeat(20000) }, { kind: "push" }, { kind: "pull" }, { kind: "sync" }]) {
+      expect(await plan({}, "ctx", request)).toEqual({ planId: "p" });
+      expect(host.gitPlan).toHaveBeenLastCalledWith("ctx", request);
+    }
+    expect(await trust({}, "ctx", "p")).toBeUndefined();
+    expect(host.gitTrust).toHaveBeenCalledExactlyOnceWith("ctx", "p");
+    expect(await apply({}, "ctx", "p")).toEqual({ status: "success" });
+    expect(host.gitApply).toHaveBeenCalledExactlyOnceWith("ctx", "p");
+  });
+});
+
 describe("registerHandlers", () => {
   it("validates file paths and forwards only the relative path", async () => {
     const host = fakeHost({ readFile: vi.fn().mockResolvedValue({ status: "binary" }) });

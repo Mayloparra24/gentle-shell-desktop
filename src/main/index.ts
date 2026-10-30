@@ -12,7 +12,7 @@ import {
   createFolderDialog,
   folderExists,
 } from "./adapters";
-import { boundedStop } from "./domain/lifecycle/boundedStop";
+import { createGitWriteService } from "./adapters/gitWrite";
 import { homeDirFor, resolveHomeMode, withoutGentleHomeAsPiDir } from "./domain/home/home";
 import { ChatHost } from "./domain/session/ChatHost";
 import { registerHandlers } from "./ipc/registerHandlers";
@@ -74,6 +74,7 @@ const chatHost = new ChatHost({
   homeSettings,
   workspaceReader: createWorkspaceReader(),
   gitSummaryReader: createGitSummaryReader(),
+  gitWrites: createGitWriteService(),
   log: logPiLine,
 });
 
@@ -147,8 +148,8 @@ app.on("window-all-closed", () => {
 });
 
 // Stops the current PiSession's child process cleanly instead of leaving
-// it orphaned when the app quits, bounded to STOP_ON_QUIT_TIMEOUT_MS so a
-// child that refuses to exit never hangs shutdown. `quitting` guards
+// it orphaned when the app quits. After any Git apply settles, agent cleanup
+// is bounded to STOP_ON_QUIT_TIMEOUT_MS so a child cannot hang shutdown. `quitting` guards
 // against the re-entrant app.quit() below re-triggering this handler in a
 // loop (before-quit fires again for that quit() call too).
 let quitting = false;
@@ -156,5 +157,5 @@ app.on("before-quit", (event) => {
   if (quitting) return;
   quitting = true;
   event.preventDefault();
-  void boundedStop(() => chatHost.stop(), STOP_ON_QUIT_TIMEOUT_MS).finally(() => app.quit());
+  void chatHost.stop(STOP_ON_QUIT_TIMEOUT_MS).finally(() => app.quit());
 });

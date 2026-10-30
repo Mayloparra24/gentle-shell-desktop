@@ -486,6 +486,111 @@ async function flushMicrotasks(): Promise<void> {
 }
 
 describe("PiSession: Electron host follow-ups", () => {
+  it("reports idle after a requested stop even when the last agent state was working", async () => {
+    const { spawner, handles } = createFakeSpawner();
+    const session = new PiSession({ spawner, locator: fakeLocator, env: {} });
+    session.start();
+    session.prompt("hello");
+    handles[0]!.emitStdout(JSON.stringify({ type: "agent_start" }));
+    expect(session.isBusy()).toBe(true);
+    const stopping = session.stop();
+    handles[0]!.resolveExited({ code: 0, signal: null });
+    await stopping;
+    expect(session.isBusy()).toBe(false);
+  });
+
+  it("tracks queued prompts without changing idle state or clearing a later request on an earlier terminal event", () => {
+    const { spawner, handles } = createFakeSpawner();
+    const session = new PiSession({ spawner, locator: fakeLocator, env: {} });
+    session.start();
+    expect(session.isBusy()).toBe(false);
+    expect(session.prompt("first")).toEqual({ queued: true });
+    expect(session.prompt("second")).toEqual({ queued: true });
+    expect(session.getState().working).toBe(false);
+    expect(session.getState().messages.map(message => message.text)).toEqual(["first", "second"]);
+    expect(session.isBusy()).toBe(true);
+    const handle = handles[0]!;
+    const prompts = handle.writes.map(line => JSON.parse(line)).filter(command => command.type === "prompt");
+    expect(prompts).toMatchObject([{ message: "first" }, { message: "second" }]);
+    expect(prompts[0].id).not.toBe(prompts[1].id);
+    handle.emitStdout(JSON.stringify({ type: "agent_start" }));
+    handle.emitStdout(JSON.stringify({ type: "agent_end" }));
+    handle.emitStdout(JSON.stringify({ type: "agent_settled" }));
+    expect(session.isBusy()).toBe(true);
+    handle.emitStdout(JSON.stringify({ type: "response", command: "prompt", id: prompts[1].id, success: false, error: "Not accepted" }));
+    expect(session.isBusy()).toBe(false);
+    expect(session.getState().messages).toHaveLength(2);
+  });
+
+  it("does not guess completion of unstarted prompts from an uncorrelated abort settlement", () => {
+    const { spawner, handles } = createFakeSpawner();
+    const session = new PiSession({ spawner, locator: fakeLocator, env: {} });
+    session.start();
+    session.prompt("before abort");
+    const earlier = JSON.parse(handles[0]!.writes.at(-1)!);
+    session.abort();
+    expect(JSON.parse(handles[0]!.writes.at(-1)!)).toEqual({ type: "abort" });
+    expect(session.isBusy()).toBe(true);
+    session.prompt("after abort");
+    const later = JSON.parse(handles[0]!.writes.at(-1)!);
+    handles[0]!.emitStdout(JSON.stringify({ type: "agent_settled" }));
+    expect(session.isBusy()).toBe(true);
+    handles[0]!.emitStdout(JSON.stringify({ type: "response", command: "prompt", id: later.id, success: true, data: { disposition: "handled" } }));
+    expect(session.isBusy()).toBe(true);
+    handles[0]!.emitStdout(JSON.stringify({ type: "response", command: "prompt", id: earlier.id, success: false, error: "Aborted" }));
+    expect(session.isBusy()).toBe(false);
+  });
+
+  it("tracks queued silent runs through handled success and rejection without changing the thread", async () => {
+    vi.useFakeTimers();
+    try {
+      const { spawner, handles } = createFakeSpawner();
+      const session = new PiSession({ spawner, locator: fakeLocator, env: {} });
+      session.start();
+      const first = session.runSilent("/first");
+      const second = session.runSilent("/second");
+      const rejected = expect(second).rejects.toThrow("Rejected");
+      expect(session.isBusy()).toBe(true);
+      await vi.advanceTimersByTimeAsync(0);
+      const one = JSON.parse(handles[0]!.writes.at(-1)!);
+      expect(one.message).toBe("/first");
+      handles[0]!.emitStdout(JSON.stringify({ type: "response", command: "prompt", id: one.id, success: true, data: { disposition: "handled" } }));
+      expect(session.isBusy()).toBe(true);
+      await vi.advanceTimersByTimeAsync(150);
+      expect(await first).toEqual([]);
+      const two = JSON.parse(handles[0]!.writes.at(-1)!);
+      expect(two.message).toBe("/second");
+      expect(session.isBusy()).toBe(true);
+      handles[0]!.emitStdout(JSON.stringify({ type: "response", command: "prompt", id: two.id, success: false, error: "Rejected" }));
+      await rejected;
+      expect(session.isBusy()).toBe(false);
+      expect(session.getState().working).toBe(false);
+      expect(session.getState().messages).toEqual([]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it.each([0, 1])("clears uncertain silent activity on confirmed process exit (code=%s)", async (code) => {
+    vi.useFakeTimers();
+    try {
+      const { spawner, handles } = createFakeSpawner();
+      const session = new PiSession({ spawner, locator: fakeLocator, env: {} });
+      session.start();
+      const command = session.runSilent("/hang", 10);
+      const rejected = expect(command).rejects.toThrow("Timed out");
+      await vi.advanceTimersByTimeAsync(10);
+      await rejected;
+      expect(session.isBusy()).toBe(true);
+      handles[0]!.resolveExited({ code, signal: null });
+      await flushMicrotasks();
+      expect(session.isBusy()).toBe(false);
+      expect(session.getState().working).toBe(false);
+      expect(session.getState().pendingDialogs).toEqual([]);
+      // A prompt declined by the dead transport must not create phantom activity.
+      expect(session.prompt("after exit")).toEqual({ queued: true });
+      expect(session.isBusy()).toBe(false);
+    } finally { vi.useRealTimers(); }
+  });
+
   it("fetches correlated session facts on open and finished turns, silently retaining them on failure or timeout", () => {
     vi.useFakeTimers();
     try {
@@ -504,6 +609,7 @@ describe("PiSession: Electron host follow-ups", () => {
       reply(requests()[1], { contextUsage: { percent: 62, tokens: 124000, contextWindow: 200000 } });
       const facts = { model: "real-model", effort: "high", context: { percent: 62, tokens: 124000, window: 200000 } };
       expect(session.getState().session).toEqual(facts);
+      expect(session.isBusy()).toBe(false);
       for (const type of ["agent_end", "agent_settled"]) {
         handle.emitStdout(JSON.stringify({ type }));
         expect(requests().slice(-2).map(request => request.type)).toEqual(["get_state", "get_session_stats"]);

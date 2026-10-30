@@ -1,5 +1,6 @@
 import type { IpcMain, WebContents } from "electron";
 import type { DialogAnswer, DiagnosticKind, HomeMode, SettingKey } from "@shared/bridge-types";
+import type { GitWriteRequest } from "@shared/git-write-types";
 import { IPC_CHANNELS } from "@shared/ipc-channels";
 import type { ChatHost } from "../domain/session/ChatHost";
 import type { SetupService } from "../ports";
@@ -42,6 +43,16 @@ export function registerHandlers(host: ChatHost, setup: SetupService, webContent
     return host.readFile(relativePath);
   });
   registerRequestHandler(ipc, IPC_CHANNELS.GIT_SUMMARY, () => host.gitSummary());
+  registerRequestHandler(ipc, IPC_CHANNELS.GIT_PLAN, async (_event, ...args: unknown[]) => {
+    if (args.length !== 2 || !gitId(args[0]) || !gitRequest(args[1])) throw new Error("Invalid Git request");
+    return host.gitPlan(args[0], args[1]);
+  });
+  for (const [channel, method] of [[IPC_CHANNELS.GIT_TRUST, "gitTrust"], [IPC_CHANNELS.GIT_APPLY, "gitApply"]] as const) {
+    registerRequestHandler(ipc, channel, async (_event, ...args: unknown[]) => {
+      if (args.length !== 2 || !gitId(args[0]) || !gitId(args[1])) throw new Error("Invalid Git request");
+      return host[method](args[0], args[1]);
+    });
+  }
   registerRequestHandler(ipc, IPC_CHANNELS.OPEN_CHAT, (_event, id: string) => host.openChat(id));
   registerRequestHandler(ipc, IPC_CHANNELS.NEW_CHAT, () => host.newChat());
   registerRequestHandler(ipc, IPC_CHANNELS.CHOOSE_FOLDER, () => host.chooseFolder());
@@ -81,6 +92,26 @@ export function registerHandlers(host: ChatHost, setup: SetupService, webContent
     unsubscribeState();
     unsubscribeError();
   };
+}
+
+function gitString(value: unknown, max: number): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= max && !value.includes("\u0000");
+}
+
+function gitId(value: unknown): value is string { return gitString(value, 128) && value.trim().length > 0; }
+
+function gitRequest(value: unknown): value is GitWriteRequest {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const request = value as Record<string, unknown>;
+  const keys = Object.keys(request);
+  if (!Object.hasOwn(request, "kind")) return false;
+  if (request.kind === "stage" || request.kind === "unstage") {
+    return keys.length === 2 && Object.hasOwn(request, "path") && gitString(request.path, 4096);
+  }
+  if (request.kind === "commit") {
+    return keys.length === 2 && Object.hasOwn(request, "message") && gitString(request.message, 20_000) && request.message.trim().length > 0;
+  }
+  return keys.length === 1 && ["push", "pull", "sync"].includes(request.kind as string);
 }
 
 type IpcHandleListener = Parameters<IpcMain["handle"]>[1];

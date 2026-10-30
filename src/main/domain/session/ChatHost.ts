@@ -1,4 +1,7 @@
 import type { FileReadResult, StartChatSource, StartChatResult, FolderChoice, DirectoryListing, GitSummary, ChatState, ChatSummary, DialogAnswer, DiagnosticKind, PromptResult, SettingKey, SettingState, SlashCommand } from "@shared/bridge-types";
+import { randomUUID } from "node:crypto";
+import type { GitWriteRequest, GitWritePlan, GitWriteResult } from "@shared/git-write-types";
+import type { GitWriteContext, GitWriteService } from "../../adapters/gitWrite";
 import { boundedStop } from "../lifecycle/boundedStop";
 import type { RpcEvent } from "../rpc/types";
 import type { GitSummaryReader, WorkspaceReader, HomeSettings, LauncherLocator, ProcessSpawner, SessionStore } from "../../ports";
@@ -47,6 +50,7 @@ export interface ChatHostDeps {
   readonly env: NodeJS.ProcessEnv;
   readonly workspaceReader?: WorkspaceReader;
   readonly gitSummaryReader?: GitSummaryReader;
+  readonly gitWrites?: GitWriteService;
   /** Resolves the launcher home flags (e.g. `["--link"]`) fresh on every
    * spawned session, from the persisted home choice (T5) instead of a
    * fixed constant, so a choice made mid-session takes effect on the very
@@ -83,6 +87,13 @@ export class ChatHost {
    * spawn a live child, leaking the first one — see ChatHost.test.ts's
    * "startSession serializes overlapping open/new calls" test. */
   private startChain: Promise<void> = Promise.resolve();
+  private generation = 0;
+  private contextId = randomUUID();
+  private readonly lifecycleOperations = new Set<Promise<unknown>>();
+  private hostWork = 0;
+  private gitPreparing = 0;
+  private applySettlement: Promise<void> | undefined;
+  private stopping = false;
 
   constructor(deps: ChatHostDeps) {
     this.deps = deps;
@@ -107,32 +118,38 @@ export class ChatHost {
    * store (ChatSummary.id is pi's session id, not a file path) and passes
    * it to PiSession as `sessionPath` (`--session <path>`). */
   async openChat(id: string): Promise<ChatState> {
-    const sessions = await this.deps.sessionStore.listAll();
-    const match = sessions.find((session) => session.id === id);
-    if (!match) throw new Error(`ChatHost: no session found for id "${id}"`);
-    return this.startSession(match.path, match.cwd);
+    return this.lifecycle(async () => {
+      const sessions = await this.deps.sessionStore.listAll();
+      const match = sessions.find((session) => session.id === id);
+      if (!match) throw new Error(`ChatHost: no session found for id "${id}"`);
+      return this.startSession(match.path, match.cwd);
+    });
   }
 
   /** Starts a fresh chat: no sessionPath, so PiSession omits `--session`. */
   async newChat(cwd?: string): Promise<ChatState> {
-    return this.startSession(undefined, cwd);
+    return this.lifecycle(() => this.startSession(undefined, cwd));
   }
 
   async startChat(request: StartChatSource): Promise<StartChatResult> {
     if (request.source === "browse") return this.chooseFolder();
-    const sessions = await this.deps.sessionStore.listAll();
-    const match = sessions.find((session) => session.id === request.id);
-    if (!match?.cwd || !await this.deps.folderExists?.(match.cwd)) {
-      return { status: "error", message: "That folder no longer exists." };
-    }
-    return { status: "chosen", chat: await this.newChat(match.cwd) };
+    return this.lifecycle(async () => {
+      const sessions = await this.deps.sessionStore.listAll();
+      const match = sessions.find((session) => session.id === request.id);
+      if (!match?.cwd || !await this.deps.folderExists?.(match.cwd)) {
+        return { status: "error", message: "That folder no longer exists." };
+      }
+      return { status: "chosen", chat: await this.startSession(undefined, match.cwd) };
+    });
   }
 
   async chooseFolder(): Promise<FolderChoice> {
-    if (!this.deps.chooseFolder) throw new Error("Folder dialog unavailable");
-    const cwd = await this.deps.chooseFolder();
-    if (!cwd) return { status: "cancelled" };
-    return { status: "chosen", chat: await this.newChat(cwd) };
+    return this.lifecycle(async () => {
+      if (!this.deps.chooseFolder) throw new Error("Folder dialog unavailable");
+      const cwd = await this.deps.chooseFolder();
+      if (!cwd) return { status: "cancelled" };
+      return { status: "chosen", chat: await this.startSession(undefined, cwd) };
+    });
   }
 
   async listDirectory(relativePath: string): Promise<DirectoryListing> {
@@ -148,9 +165,45 @@ export class ChatHost {
   }
 
   async gitSummary(): Promise<GitSummary> {
-    if (!this.current || !this.currentCwd) return { status: "no-chat-folder" };
+    this.assertUnlocked();
+    if (!this.current || !this.currentCwd || this.lifecycleOperations.size) return { status: "no-chat-folder" };
     if (!this.deps.gitSummaryReader) return { status: "error", message: "Git reader unavailable" };
-    return this.deps.gitSummaryReader.gitSummary(this.currentCwd);
+    const generation = this.generation;
+    const contextId = this.contextId;
+    const cwd = this.currentCwd;
+    return this.withHostWork(async () => {
+      const summary = await this.deps.gitSummaryReader!.gitSummary(cwd);
+      if (generation !== this.generation) return { status: "no-chat-folder" };
+      return summary.status === "ready" ? { ...summary, contextId } : summary;
+    });
+  }
+
+  async gitPlan(contextId: string, request: GitWriteRequest): Promise<GitWritePlan> {
+    const context = this.gitContext(contextId);
+    this.gitPreparing += 1;
+    try { return await this.deps.gitWrites!.plan(context, request); }
+    finally { this.gitPreparing -= 1; }
+  }
+
+  async gitTrust(contextId: string, planId: string): Promise<void> {
+    const context = this.gitContext(contextId);
+    this.gitPreparing += 1;
+    try { await this.deps.gitWrites!.trust(context, planId); }
+    finally { this.gitPreparing -= 1; }
+  }
+
+  async gitApply(contextId: string, planId: string): Promise<GitWriteResult> {
+    const context = this.gitContext(contextId);
+    if (this.gitPreparing || context.isBusy()) throw new Error("Chat is busy: wait for agent work and dialogs to finish.");
+    // Acquire before invoking the service, including synchronous callbacks/throws.
+    let release!: () => void;
+    this.applySettlement = new Promise<void>((resolve) => { release = resolve; });
+    try {
+      return await this.deps.gitWrites!.apply(context, planId);
+    } finally {
+      this.applySettlement = undefined;
+      release();
+    }
   }
 
   /** Resolves the PromptResult as-is instead of throwing when the
@@ -158,26 +211,26 @@ export class ChatHost {
    * decline once (state push + this return value), so rejecting here too
    * would report it a second time through the IPC error path. */
   async sendMessage(text: string): Promise<PromptResult> {
-    return this.requireCurrent().prompt(text);
+    return this.withHostWork(() => this.requireCurrent().prompt(text));
   }
 
   /** The commands the open chat can run with `/name`; rejects when no chat is open. */
   async listCommands(): Promise<SlashCommand[]> {
-    return this.requireCurrent().listCommands();
+    return this.withHostWork(() => this.requireCurrent().listCommands());
   }
 
   /** Every setting's value as the open gentle-shell reports it; rejects when no chat is open. */
   async readSettings(): Promise<SettingState[]> {
-    return this.settingsService().readAll();
+    return this.withHostWork(() => this.settingsService().readAll());
   }
 
   /** Sets one allowlisted setting and resolves with the value gentle-shell confirms. */
   async setSetting(key: SettingKey, value: string): Promise<SettingState> {
-    return this.settingsService().set(key, value);
+    return this.withHostWork(() => this.settingsService().set(key, value));
   }
 
   async runDiagnostic(kind: DiagnosticKind): Promise<string> {
-    return this.settingsService().diagnostic(kind);
+    return this.withHostWork(() => this.settingsService().diagnostic(kind));
   }
 
   async abort(): Promise<void> {
@@ -185,7 +238,7 @@ export class ChatHost {
   }
 
   async answerDialog(id: string, answer: DialogAnswer): Promise<void> {
-    this.requireCurrent().answerDialog(id, answer);
+    await this.withHostWork(() => this.requireCurrent().answerDialog(id, answer));
   }
 
   /** Stops the current session, if any. Called on app quit. Joins
@@ -194,9 +247,23 @@ export class ChatHost {
    * `current` happens to be at that exact synchronous instant — possibly
    * still unset, or the previous session — leaving the queued session's
    * eventual child unstopped and outliving the app. */
-  async stop(): Promise<void> {
-    await this.startChain;
-    await this.current?.stop();
+  async stop(timeoutMs?: number): Promise<void> {
+    this.invalidateGitContext();
+    this.stopping = true;
+    try {
+      await this.applySettlement;
+      const stopSessions = async () => {
+        await Promise.allSettled([...this.lifecycleOperations]);
+        await this.startChain;
+        await this.current?.stop();
+        this.currentCwd = undefined;
+      };
+      // Shutdown may bound agent cleanup, but must never abandon an active write.
+      if (timeoutMs === undefined) await stopSessions();
+      else await boundedStop(stopSessions, timeoutMs);
+    } finally {
+      this.stopping = false;
+    }
   }
 
   /** Queues this start behind the previous one via `startChain` (see its
@@ -214,6 +281,7 @@ export class ChatHost {
   }
 
   private async performStart(sessionPath: string | undefined, cwd?: string): Promise<ChatState> {
+    if (this.applySettlement) throw new Error("Git write in progress. Wait for it to finish.");
     this.currentCwd = undefined;
     await this.current?.stop();
 
@@ -256,7 +324,61 @@ export class ChatHost {
     );
   }
 
+  private invalidateGitContext(): void {
+    this.generation += 1;
+    this.contextId = randomUUID();
+  }
+
+  private assertUnlocked(): void {
+    if (this.applySettlement) throw new Error("Git write in progress. Wait for it to finish.");
+    if (this.stopping) throw new Error("Chat is stopping. Wait for it to finish.");
+  }
+
+  /** Register the entire lookup/dialog, not just the eventual serialized spawn. */
+  private async lifecycle<T>(operation: () => Promise<T>): Promise<T> {
+    this.assertUnlocked();
+    this.invalidateGitContext();
+    let settle!: () => void;
+    const pending = new Promise<void>((resolve) => { settle = resolve; });
+    this.lifecycleOperations.add(pending);
+    try { return await operation(); }
+    finally {
+      this.lifecycleOperations.delete(pending);
+      settle();
+    }
+  }
+
+  private async withHostWork<T>(operation: () => T | Promise<T>): Promise<T> {
+    this.assertUnlocked();
+    this.hostWork += 1;
+    try { return await operation(); }
+    finally { this.hostWork -= 1; }
+  }
+
+  private gitContext(contextId: string): GitWriteContext {
+    this.assertUnlocked();
+    if (contextId !== this.contextId || this.lifecycleOperations.size) {
+      throw new Error("Chat context changed or is switching. Reload Git and plan again.");
+    }
+    this.requireCurrent();
+    if (!this.currentCwd) throw new Error("No chat folder is open.");
+    if (!this.deps.gitWrites) throw new Error("Git writes unavailable.");
+    const generation = this.generation;
+    const session = this.current!;
+    const context = {
+      cwd: this.currentCwd,
+      generation,
+      isCurrent: () => generation === this.generation,
+      isBusy: () => this.hostWork > 0 || session.isBusy(),
+    };
+    if (context.isBusy()) {
+      throw new Error("Chat is busy: wait for agent work, queued commands and dialogs to finish. If a command timed out, switch chats before writing.");
+    }
+    return context;
+  }
+
   private requireCurrent(): PiSession {
+    this.assertUnlocked();
     if (!this.current) throw new Error("ChatHost: no chat is open (call openChat or newChat first)");
     return this.current;
   }

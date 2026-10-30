@@ -5,6 +5,8 @@
  * (here, 2+ processes) belongs in a shared location, never duplicated
  * locally in one of them.
  */
+import type { GitWriteRequest, GitWritePlan, GitWriteResult } from "./git-write-types";
+
 export const CHAT_STATE = {
   IDLE: "idle",
   WORKING: "working",
@@ -450,6 +452,8 @@ export type DirectoryListing =
 
 export type GitSummary =
   | { readonly status: "ready"; readonly branch: string;
+      /** Opaque host generation token; absent in legacy/read-only fixtures. */
+      readonly contextId?: string;
       readonly changed: readonly { readonly path: string; readonly code: string }[];
       readonly truncatedChanges: boolean;
       readonly commits: readonly { readonly hash: string; readonly subject: string; readonly relativeTime: string }[] }
@@ -473,6 +477,12 @@ export interface GentleBridge {
   readFile(relativePath: string): Promise<FileReadResult>;
   /** Read-only Git metadata for the active chat folder. No renderer-supplied cwd. */
   gitSummary(): Promise<GitSummary>;
+  /** Plan only against the context returned by a fresh ready Git summary. */
+  gitPlan(contextId: string, request: GitWriteRequest): Promise<GitWritePlan>;
+  /** Explicit session-scoped repository trust; consumes plan without executing it. Replan afterward. */
+  gitTrust(contextId: string, planId: string): Promise<void>;
+  /** Single-use plan; confirm commit/remote destinations before calling. Never retry automatically. */
+  gitApply(contextId: string, planId: string): Promise<GitWriteResult>;
   listChats(): Promise<ChatSummary[]>;
   /** Opens an existing chat by id and returns its current ChatState. */
   openChat(id: string): Promise<ChatState>;

@@ -18,6 +18,7 @@ import type {
   SetupStatus,
   SlashCommand,
 } from "@shared/bridge-types";
+import type { GitWritePlan, GitWriteResult } from "@shared/git-write-types";
 import { IPC_CHANNELS } from "@shared/ipc-channels";
 
 /**
@@ -43,6 +44,9 @@ export function createBridge(ipc: RendererIpc): GentleBridge {
     listDirectory: (relativePath: string) => ipc.invoke(IPC_CHANNELS.LIST_DIRECTORY, relativePath) as Promise<DirectoryListing>,
     readFile: (relativePath: string) => ipc.invoke(IPC_CHANNELS.READ_FILE, relativePath) as Promise<FileReadResult>,
     gitSummary: () => ipc.invoke(IPC_CHANNELS.GIT_SUMMARY) as Promise<GitSummary>,
+    gitPlan: (contextId, request) => ipc.invoke(IPC_CHANNELS.GIT_PLAN, contextId, request) as Promise<GitWritePlan>,
+    gitTrust: (contextId, planId) => ipc.invoke(IPC_CHANNELS.GIT_TRUST, contextId, planId) as Promise<void>,
+    gitApply: (contextId, planId) => ipc.invoke(IPC_CHANNELS.GIT_APPLY, contextId, planId) as Promise<GitWriteResult>,
     listChats: () => ipc.invoke(IPC_CHANNELS.LIST_CHATS) as Promise<ChatSummary[]>,
     openChat: (id: string) => ipc.invoke(IPC_CHANNELS.OPEN_CHAT, id) as Promise<ChatState>,
     newChat: () => ipc.invoke(IPC_CHANNELS.NEW_CHAT) as Promise<ChatState>,
