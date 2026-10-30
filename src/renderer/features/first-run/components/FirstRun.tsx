@@ -48,18 +48,8 @@ export function FirstRun({ detection, onChoose, error, onRetry }: FirstRunProps)
 
         <div className="gc-first-run__options">
           <FirstRunOption
-            title="Use my pi setup"
-            recommended
-            bullets={[
-              "Your sign-ins, local models and chats appear here",
-              "Chats you start here also show up in your terminal",
-              "Your pi settings are never edited",
-            ]}
-            footnote="links to ~/.pi/agent"
-            onChoose={() => onChoose(HOME_MODE.LINK)}
-          />
-          <FirstRunOption
             title="Keep it separate"
+            recommended
             bullets={[
               "A clean space with its own sign-ins and chats",
               "Nothing on this machine is touched",
@@ -67,6 +57,16 @@ export function FirstRun({ detection, onChoose, error, onRetry }: FirstRunProps)
             ]}
             footnote="creates ~/.gentle-shell/agent"
             onChoose={() => onChoose(HOME_MODE.ISOLATED)}
+          />
+          <FirstRunOption
+            title="Use my pi setup"
+            bullets={[
+              "Your sign-ins, local models and chats appear here",
+              "Chats you start here also show up in your terminal",
+              "Your pi settings are never edited",
+            ]}
+            footnote="links to ~/.pi/agent"
+            onChoose={() => onChoose(HOME_MODE.LINK)}
           />
         </div>
 

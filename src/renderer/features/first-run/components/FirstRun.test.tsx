@@ -26,7 +26,7 @@ describe("FirstRun", () => {
     ).toBeInTheDocument();
   });
 
-  it('renders both option cards with their bullets, footnotes, and the "Recommended" badge on "Use my pi setup"', () => {
+  it('renders both option cards with their bullets, footnotes, and the "Recommended" badge on "Keep it separate"', () => {
     render(<FirstRun detection={DETECTION} onChoose={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Use my pi setup" })).toBeInTheDocument();
@@ -34,13 +34,26 @@ describe("FirstRun", () => {
     expect(screen.getByText("Chats you start here also show up in your terminal")).toBeInTheDocument();
     expect(screen.getByText("Your pi settings are never edited")).toBeInTheDocument();
     expect(screen.getByText("links to ~/.pi/agent")).toBeInTheDocument();
-    expect(screen.getByText("Recommended")).toBeInTheDocument();
+    expect(screen.getAllByText("Recommended")).toHaveLength(1);
 
     expect(screen.getByRole("heading", { name: "Keep it separate" })).toBeInTheDocument();
     expect(screen.getByText("A clean space with its own sign-ins and chats")).toBeInTheDocument();
     expect(screen.getByText("Nothing on this machine is touched")).toBeInTheDocument();
     expect(screen.getByText("You can link to pi later from Providers")).toBeInTheDocument();
     expect(screen.getByText("creates ~/.gentle-shell/agent")).toBeInTheDocument();
+  });
+
+  it("recommends the gentle-shell home: the badge and the primary button belong to the first card, Keep it separate", () => {
+    render(<FirstRun detection={DETECTION} onChoose={vi.fn()} />);
+
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+    expect(headings).toEqual(["Keep it separate", "Use my pi setup"]);
+    const recommended = screen.getByRole("heading", { name: "Keep it separate" }).closest(".gc-first-run__option") as HTMLElement;
+    const other = screen.getByRole("heading", { name: "Use my pi setup" }).closest(".gc-first-run__option") as HTMLElement;
+    expect(recommended).toHaveTextContent("Recommended");
+    expect(other).not.toHaveTextContent("Recommended");
+    expect(recommended.querySelector("button")).toHaveClass("gc-button--primary");
+    expect(other.querySelector("button")).toHaveClass("gc-button--ghost");
   });
 
   it('calls onChoose("link") for "Use my pi setup"', () => {

@@ -39,7 +39,7 @@ node node_modules/electron/install.js   # downloads the Electron binary; pnpm ma
 pnpm dev
 ```
 
-On first run the window asks where your chats live ("Use my pi setup" or "Keep it separate"). The screen only appears when `~/.pi/agent` exists. The choice is saved; the chat list then shows your existing pi chats, and "New chat" opens a small folder chooser each time: pick a recent folder or use "Browse…" to select another. No chat starts automatically; cancelling the folder dialog leaves your current chat open.
+On first run the window asks where your chats live ("Keep it separate", the recommended choice, uses `~/.gentle-shell/agent`; "Use my pi setup" links to your `~/.pi/agent`). The screen only appears when `~/.pi/agent` exists. The choice is saved; the chat list then shows your existing pi chats, and "New chat" opens a small folder chooser each time: pick a recent folder or use "Browse…" to select another. No chat starts automatically; cancelling the folder dialog leaves your current chat open.
 
 To see the Helpers tab, ask for something that delegates work to a subagent; the helper shows up under that chat within a few seconds.
 
