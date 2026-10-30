@@ -12,14 +12,19 @@
 .gc-workspace__tabs {
   display: flex;
   flex-shrink: 0;
-  padding: 0 6px;
+  gap: 2px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--line);
 }
 
 .gc-workspace__tab {
-  padding: 11px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-radius: 6px;
   background: transparent;
   color: var(--muted);
   font: inherit;
@@ -28,20 +33,30 @@
 }
 
 .gc-workspace__tab[aria-selected="true"] {
-  color: var(--text);
-  border-bottom-color: var(--accent);
+  color: var(--accent-active);
+  background: var(--raised);
 }
 
 .gc-workspace__pane {
   flex: 1;
   min-height: 0;
-  padding: 14px;
+  padding: 0;
   overflow: auto;
+}
+
+.gc-workspace__tab:hover { background: var(--raised); }
+.gc-workspace-icon { flex: none; }
+.gc-workspace__count {
+  font: 11px var(--font-mono);
+  padding: 1px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--text-2);
 }
 
 /* Hints, loading and empty messages: quiet text, not body copy. */
 .gc-workspace__pane > p {
-  margin: 0;
+  margin: 12px;
   color: var(--muted);
   font-size: 13px;
 }

@@ -143,10 +143,10 @@ export function Composer({ value, working, onChange, onSend, onAbort, loadComman
         </Button>
       </div>
       <p className="gc-composer__hints">
-        <span>Enter to send</span>
-        <span>Shift+Enter for a new line</span>
-        <span>Esc to stop the agent</span>
-        <span>/ for commands · ↑↓ to choose · Enter/Tab to insert · Esc to close</span>
+        <span><kbd>Enter</kbd> send</span> · {" "}
+        <span><kbd>Shift+Enter</kbd> new line</span> · {" "}
+        <span><kbd>/</kbd> commands</span> · {" "}
+        <span><kbd>Esc</kbd> stop</span>
       </p>
     </form>
   );

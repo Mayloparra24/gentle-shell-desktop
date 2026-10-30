@@ -1,5 +1,6 @@
 .gc-files > .gc-text-field {
-  margin-bottom: 12px;
+  margin: 6px 12px;
+  width: calc(100% - 24px);
   border-color: var(--line-strong);
 }
 
@@ -11,23 +12,23 @@
 
 .gc-files__list {
   list-style: none;
-  margin: 0 -14px;
-  padding: 10px 0 0;
-  border-top: 1px solid var(--line);
+  margin: 0;
+  padding: 0;
 }
 
 .gc-files__row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-height: 28px;
   width: 100%;
-  padding: 6px 14px;
+  padding: 4px 12px;
   border: 0;
   background: transparent;
-  color: var(--text);
-  font: 14px var(--font-body);
+  color: var(--text-2);
+  font: 13px var(--font-body);
   text-align: left;
-  overflow-wrap: anywhere;
+  min-width: 0;
   cursor: pointer;
 }
 
@@ -35,10 +36,13 @@ button.gc-files__row:hover { background: var(--raised); }
 div.gc-files__row { cursor: default; }
 .gc-files__size { margin-left: auto; color: var(--muted); }
 .gc-files__list .gc-files__list { margin: 0 0 0 14px; padding-top: 0; border: 0; }
-.gc-files__row[aria-expanded="true"] {
-  background: var(--raised);
-  box-shadow: inset 2px 0 var(--accent);
-}
+.gc-files__row[aria-expanded="true"] { background: var(--raised); }
+.gc-files__row > .gc-workspace-icon { color: var(--muted); }
+.gc-files__row > .gc-workspace-icon:first-child:not(:last-child) { flex-shrink: 0; }
+.gc-files__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gc-files__heading { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 4px; color: var(--muted); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; }
+.gc-files__heading button { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; }
+.gc-files__heading button:hover { background: var(--raised); color: var(--text); }
 .gc-files__row--ignored { color: var(--muted); font-style: italic; }
 .gc-files__chevron { width: 12px; flex-shrink: 0; color: var(--muted); text-align: center; }
 .gc-files__icon { display: inline-flex; color: var(--muted); }

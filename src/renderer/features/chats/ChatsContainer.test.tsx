@@ -84,11 +84,13 @@ it("filters the chat list by title from the search field", async () => {
   expect(screen.getByRole("button", { name: /Fix cart rounding/ })).toBeInTheDocument();
 });
 
-it("offers Chat in another folder through the same native folder flow", () => {
+it("offers only New chat as the folder-flow entry point without an unimplemented shortcut hint", () => {
   window.gentle = makeBridge();
   const choose = vi.fn();
-  render(<ChatsContainer onSelectChat={vi.fn()} onNewChat={vi.fn()} onChooseFolder={choose} />);
-  fireEvent.click(screen.getByRole("button", { name: "Chat in another folder…" }));
+  render(<ChatsContainer onSelectChat={vi.fn()} onNewChat={choose} />);
+  expect(screen.queryByRole("button", { name: "Chat in another folder…" })).not.toBeInTheDocument();
+  expect(screen.queryByText("Ctrl+N")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "New chat" }));
   expect(choose).toHaveBeenCalledTimes(1);
 });
 

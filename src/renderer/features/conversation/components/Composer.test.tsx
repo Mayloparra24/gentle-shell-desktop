@@ -119,9 +119,11 @@ describe("Composer", () => {
     render(<Composer value="" working={false} onChange={vi.fn()} onSend={vi.fn()} onAbort={vi.fn()} />);
 
     expect(screen.getByPlaceholderText("Tell Gentle what you need…")).toBeInTheDocument();
-    expect(screen.getByText("Enter to send")).toBeInTheDocument();
-    expect(screen.getByText("Shift+Enter for a new line")).toBeInTheDocument();
-    expect(screen.getByText("Esc to stop the agent")).toBeInTheDocument();
+    const hints = screen.getByText("Enter", { selector: "kbd" }).parentElement?.parentElement;
+    expect(hints?.querySelectorAll("kbd")).toHaveLength(4);
+    expect(Array.from(hints?.querySelectorAll("kbd") ?? []).map(key => key.textContent)).toEqual(["Enter", "Shift+Enter", "/", "Esc"]);
+    expect(hints).toHaveTextContent("Enter send · Shift+Enter new line · / commands · Esc stop");
+    expect(screen.queryByText(/to choose|to insert|to close/)).not.toBeInTheDocument();
   });
 
   it("calls onSend and does not insert a newline when Enter is pressed without Shift", () => {

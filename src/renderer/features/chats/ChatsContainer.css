@@ -12,11 +12,11 @@
 }
 
 .gc-chats__search,
-.gc-chats__new,
-.gc-chats__other-folder {
+.gc-chats__new {
   margin: 0 0.75rem;
-  padding: 0.5rem 0.7rem;
-  border-radius: 8px;
+  padding: 0 10px;
+  min-height: 28px;
+  border-radius: 6px;
   font-family: var(--font-body);
   font-size: 0.8125rem;
   text-align: left;
@@ -33,7 +33,11 @@
 }
 
 .gc-chats__new {
-  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  background: var(--raised);
   border: 1px solid var(--line-strong);
   color: var(--accent-active);
   cursor: pointer;
@@ -43,26 +47,8 @@
   background: var(--raised);
 }
 
-.gc-chats__other-folder {
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--text-2);
-  cursor: pointer;
-}
-
-.gc-chats__other-folder:hover:not(:disabled) {
-  background: var(--raised);
-  border-color: var(--line-strong);
-}
-
-.gc-chats__other-folder:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .gc-chats__search:focus-visible,
-.gc-chats__new:focus-visible,
-.gc-chats__other-folder:focus-visible {
+.gc-chats__new:focus-visible {
   outline: 2px solid var(--accent-active);
   outline-offset: 1px;
 }

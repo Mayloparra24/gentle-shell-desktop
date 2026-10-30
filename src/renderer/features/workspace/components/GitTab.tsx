@@ -1,3 +1,5 @@
+import { WorkspaceIcon } from "./WorkspaceIcon";
+import { GitStatus } from "./GitStatus";
 import { Button } from "@renderer/shared/ui/atoms/Button";
 import type { GitState } from "../WorkspaceDataContainer";
 import "./GitTab.css";
@@ -19,28 +21,23 @@ export function GitTab({ git, onRefresh }: GitTabProps) {
     return <p>{messages[git.status]}</p>;
   }
   return <div className="gc-git">
-    <div className="gc-git__branch"><span className="gc-git__branch-info">{git.branch}</span>
-      <Button type="button" onClick={onRefresh}>Refresh</Button></div>
+    <div className="gc-git__branch"><span className="gc-git__branch-info"><WorkspaceIcon name="branch" /><span>{git.branch}</span></span>
+      <Button type="button" variant="ghost" aria-label="Refresh" onClick={onRefresh}><WorkspaceIcon name="refresh" /></Button></div>
     <h3 className="gc-git__heading">Changes · {git.changed.length}</h3>
     {git.changed.length === 0 && <p>No changes.</p>}
     <ul className="gc-git__changes" aria-label="Changes">
       {git.changed.map(change => <li key={change.path} className="gc-git__change">
-        <span>{change.path}</span><span title={change.code}>{statusWords(change.code)}</span>
+        <span className="gc-git__path" title={change.path}><span>{change.path.split("/").at(-1)}</span>{change.path.includes("/") && <small>{change.path.slice(0, change.path.lastIndexOf("/"))}</small>}</span>
+        <GitStatus code={change.code} />
       </li>)}
     </ul>
     {git.truncatedChanges && <small>Showing the first 500 changes</small>}
     <h3 className="gc-git__heading">Recent commits</h3>
     {git.commits.length === 0 && <p>No commits yet.</p>}
     <ul className="gc-git__changes" aria-label="Recent commits">
-      {git.commits.map(commit => <li key={commit.hash} className="gc-git__change">
-        <span title={commit.hash}>{commit.hash.slice(0, 7)}</span><span>{commit.subject}</span><small>{commit.relativeTime}</small>
+      {git.commits.map(commit => <li key={commit.hash} className="gc-git__commit">
+        <code title={commit.hash}>{commit.hash.slice(0, 7)}</code><span title={commit.subject}>{commit.subject}</span><small>{commit.relativeTime}</small>
       </li>)}
     </ul>
   </div>;
-}
-
-function statusWords(code: string): string {
-  if (code === "??") return "untracked";
-  const names: Record<string, string> = { M: "modified", A: "added", D: "deleted", R: "renamed", C: "copied", U: "unmerged", T: "type changed" };
-  return [...new Set([...code.trim()].map(letter => names[letter] ?? letter))].join(", ");
 }

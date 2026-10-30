@@ -1,8 +1,12 @@
 import { TextField } from "@renderer/shared/ui/atoms/TextField";
-import type { ListingState } from "../WorkspaceDataContainer";
+import type { GitState, ListingState } from "../WorkspaceDataContainer";
+import { WorkspaceIcon } from "./WorkspaceIcon";
+import { GitStatus } from "./GitStatus";
 import "./FilesTab.css";
 
 export interface FilesTabProps {
+  readonly git?: GitState;
+  readonly folderName?: string;
   readonly listings: Readonly<Record<string, ListingState>>;
   readonly expanded: ReadonlySet<string>;
   readonly query: string;
@@ -26,10 +30,12 @@ export function FilesTab(props: FilesTabProps) {
           const childPath = path ? `${path}/${entry.name}` : entry.name;
           const expandable = entry.kind === "directory" && entry.name !== ".git" && entry.name !== "node_modules";
           const open = props.expanded.has(childPath);
+          const change = entry.kind === "file" && props.git?.status === "ready" ? props.git.changed.find(change => change.path === childPath) : undefined;
           return <li key={entry.name}>
             {expandable ? <button type="button" className="gc-files__row" aria-expanded={open} onClick={() => props.onToggle(childPath)}>
-              <span aria-hidden="true">{open ? "⌄" : "›"}</span><span>{entry.name}</span>
-            </button> : <div className="gc-files__row"><span>{entry.name}</span>
+              <WorkspaceIcon name={open ? "down" : "right"} /><WorkspaceIcon name="folder" /><span className="gc-files__name">{entry.name}</span>
+            </button> : <div className="gc-files__row"><WorkspaceIcon name={entry.kind === "directory" ? "folder" : /\.(ts|tsx|js|json|css)$/i.test(entry.name) ? "code" : "file"} /><span className="gc-files__name">{entry.name}</span>
+              {change && <GitStatus code={change.code} />}
               {entry.kind === "file" && entry.size !== undefined && <small className="gc-files__size">{humanSize(entry.size)}</small>}
             </div>}
             {expandable && open && directory(childPath)}
@@ -40,6 +46,7 @@ export function FilesTab(props: FilesTabProps) {
     </>;
   }
   return <div className="gc-files">
+    <div className="gc-files__heading"><span>{props.folderName || "Files"}</span><button type="button" aria-label="Refresh files" onClick={() => props.onRetry("")}><WorkspaceIcon name="refresh" /></button></div>
     <TextField type="search" aria-label="Search files" placeholder="Search files" value={props.query}
       onChange={event => props.onQueryChange(event.target.value)} />
     {directory("")}

@@ -9,9 +9,10 @@ export type GitState = GitSummary | { readonly status: "loading" };
 const error = (cause: unknown) => ({ status: "error" as const, message: cause instanceof Error ? cause.message : String(cause) });
 
 // Remounted for each chat selection, so cached children cannot cross folders.
-export function WorkspaceDataContainer({ tab, ready, onGitChange }: {
+export function WorkspaceDataContainer({ tab, ready, cwd, onGitChange }: {
   readonly tab: "files" | "git";
   readonly ready: boolean;
+  readonly cwd?: string;
   readonly onGitChange?: (git: GitState) => void;
 }) {
   const bridge = useBridge();
@@ -52,5 +53,6 @@ export function WorkspaceDataContainer({ tab, ready, onGitChange }: {
   if (!ready) return <p>Choose a folder to see its files and Git status.</p>;
   if (tab === "git") return <GitTab git={git} onRefresh={() => void loadGit()} />;
   return <FilesTab listings={listings} expanded={expanded} query={query} onQueryChange={setQuery}
-    onToggle={toggle} onRetry={path => void loadDirectory(path)} />;
+    onToggle={toggle} onRetry={path => void loadDirectory(path)} git={git}
+    folderName={cwd?.replace(/[\\/]+$/, "").split(/[\\/]/).at(-1)} />;
 }

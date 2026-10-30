@@ -9,7 +9,6 @@ export interface ChatsContainerProps {
   readonly onSelectChat: (chat: ChatSummary) => void;
   /** Notifies the parent that "New chat" was clicked. */
   readonly onNewChat: () => void;
-  readonly onChooseFolder?: () => void;
   /** The currently open chat's id, for highlighting; undefined while a fresh chat is open. */
   readonly selectedChatId?: string;
 }
@@ -22,7 +21,7 @@ export interface ChatsContainerProps {
  * GentleBridge's single-current-chat shape, so this only reports selection
  * intent up to App.
  */
-export function ChatsContainer({ onSelectChat, onNewChat, onChooseFolder, selectedChatId }: ChatsContainerProps) {
+export function ChatsContainer({ onSelectChat, onNewChat, selectedChatId }: ChatsContainerProps) {
   const bridge = useBridge();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +49,10 @@ export function ChatsContainer({ onSelectChat, onNewChat, onChooseFolder, select
 
   return (
     <aside className="gc-chats" aria-label="Projects and chats">
+      <button type="button" className="gc-chats__new" onClick={onNewChat}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        New chat
+      </button>
       <input
         type="search"
         className="gc-chats__search"
@@ -58,12 +61,6 @@ export function ChatsContainer({ onSelectChat, onNewChat, onChooseFolder, select
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
-      <button type="button" className="gc-chats__new" onClick={onNewChat}>
-        <span aria-hidden="true">+ </span>New chat
-      </button>
-      <button type="button" className="gc-chats__other-folder" onClick={onChooseFolder}>
-        Chat in another folder…
-      </button>
       <h2 className="gc-chats__heading">Projects</h2>
       {error && <p className="gc-chats__error">Chats are not available yet: {error}</p>}
       <ChatList chats={visibleChats} selectedId={selectedChatId} onSelect={onSelectChat} />

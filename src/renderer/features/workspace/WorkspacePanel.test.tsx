@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mockBridge } from "@renderer/shared/bridge/mockBridge";
 import { WorkspacePanel } from "./WorkspacePanel";
 
@@ -17,6 +17,34 @@ describe("WorkspacePanel", () => {
     }
     expect(screen.queryByText("Sample data · not connected yet")).not.toBeInTheDocument();
     expect(screen.getByText("Preview data")).toBeInTheDocument();
+  });
+  it("shows the change count only for ready Git with changes, retaining exact tab names", async () => {
+    let resolve!: (value: Awaited<ReturnType<typeof mockBridge.gitSummary>>) => void;
+    window.gentle = { ...mockBridge, gitSummary: vi.fn(() => new Promise<Awaited<ReturnType<typeof mockBridge.gitSummary>>>(done => { resolve = done; })) };
+    render(<WorkspacePanel />);
+    const git = screen.getByRole("tab", { name: "Git" });
+    expect(git).not.toHaveTextContent("1");
+    resolve({ status: "ready", branch: "main", changed: [{ path: "src/app.ts", code: " M" }], commits: [], truncatedChanges: false });
+    expect(await screen.findByText("1")).toBeInTheDocument();
+    expect(git).toHaveAccessibleName("Git");
+  });
+  it("uses the supplied folder name without changing tab names", async () => {
+    render(<WorkspacePanel cwd="C:\\work\\project" />);
+    expect(await screen.findByText("project")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Files" })).toBeInTheDocument();
+  });
+  it("omits the count for clean and unavailable Git", async () => {
+    window.gentle = { ...mockBridge, gitSummary: vi.fn().mockResolvedValue({ status: "ready", branch: "main", changed: [], commits: [], truncatedChanges: false }) };
+    const { unmount } = render(<WorkspacePanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Git" }));
+    await screen.findByText("No changes.");
+    expect(screen.getByRole("tab", { name: "Git" })).toHaveTextContent(/^Git$/);
+    unmount();
+    window.gentle = { ...mockBridge, gitSummary: vi.fn().mockResolvedValue({ status: "git-unavailable" }) };
+    render(<WorkspacePanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Git" }));
+    await screen.findByText("Git is not installed or not on PATH.");
+    expect(screen.getByRole("tab", { name: "Git" })).toHaveTextContent(/^Git$/);
   });
   it("preserves arrows, wraparound, Home and End navigation", () => {
     render(<WorkspacePanel />);

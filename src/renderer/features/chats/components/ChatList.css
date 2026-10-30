@@ -1,25 +1,41 @@
 .gc-chat-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0;
   overflow-y: auto;
 }
 
 .gc-chat-list__group {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0;
 }
 
 .gc-chat-list__project {
   font-family: var(--font-body);
-  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
   font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
   color: var(--text-2);
   margin: 0;
-  padding: 0 0.75rem;
+  padding: 10px 12px 4px;
+}
+
+.gc-chat-list__project > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gc-chat-list__project small {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 400;
 }
 
 .gc-chat-list__items {
@@ -28,5 +44,5 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0;
 }

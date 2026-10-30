@@ -62,10 +62,10 @@ describe("live workspace", () => {
       changed: [" M", "A ", " D", "R ", "??", "AM"].map((code, i) => ({ code, path: `file-${i}` })),
       commits: [{ hash: "abcdef123456", subject: "Real commit", relativeTime: "3 hours ago" }] }));
     expect(screen.getByText("live-branch")).toBeInTheDocument();
-    for (const [code, word] of [[" M", "modified"], ["A ", "added"], [" D", "deleted"], ["R ", "renamed"], ["??", "untracked"], ["AM", "added, modified"]]) expect(screen.getByTitle((_text, element) => element?.getAttribute("title") === code)).toHaveTextContent(word!);
+    for (const [letter, word] of [["M", "modified"], ["A", "added"], ["D", "deleted"], ["R", "renamed"], ["U", "untracked"], ["M", "added, modified"]]) expect(screen.getByTitle(word!)).toHaveTextContent(letter!);
     for (const text of ["abcdef1", "Real commit", "3 hours ago", "Showing the first 500 changes"]) expect(screen.getByText(text)).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Commit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /stage|commit|push|pull|sync/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Refresh" })); expect(git).toHaveBeenCalledTimes(2);
   });
 
