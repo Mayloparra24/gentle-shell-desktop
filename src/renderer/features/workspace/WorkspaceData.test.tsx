@@ -70,6 +70,35 @@ describe("live workspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "Refresh" })); expect(git).toHaveBeenCalledTimes(2);
   });
 
+  it("refreshes Git after apply and keeps the outcome across the loading state", async () => {
+    const summary: GitSummary = { status: "ready", contextId: "live", branch: "main", changed: [{ path: "live.ts", code: " M" }], commits: [], truncatedChanges: false };
+    let finishRefresh!: (value: GitSummary) => void;
+    const git = vi.spyOn(mockBridge, "gitSummary").mockResolvedValueOnce(summary).mockImplementation(() => new Promise(resolve => { finishRefresh = resolve; }));
+    const plan = vi.spyOn(mockBridge, "gitPlan").mockResolvedValue({ planId: "live-plan", kind: "stage", repository: "/repo", branch: "main", files: [], summary: "Stage", needsTrust: false, expiresAt: Date.now() + 10000 });
+    const apply = vi.spyOn(mockBridge, "gitApply").mockResolvedValue({ kind: "stage", status: "success", pulled: false, pushed: false, message: "Staged" });
+    render(panel()); tab("Git");
+    fireEvent.click(await screen.findByRole("button", { name: "Stage live.ts" }));
+    await waitFor(() => expect(git).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("status")).toHaveTextContent("stage completed.");
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    await act(async () => finishRefresh(summary));
+    expect(screen.getByRole("status")).toHaveTextContent("stage completed.");
+    expect(plan).toHaveBeenCalledWith("live", { kind: "stage", path: "live.ts" }); expect(apply).toHaveBeenCalledTimes(1);
+  });
+
+  it("unmounts pending Git actions when switching tabs", async () => {
+    vi.spyOn(mockBridge, "gitSummary").mockResolvedValue({ status: "ready", contextId: "live", branch: "main", changed: [], commits: [], truncatedChanges: false });
+    let resolve!: (value: Awaited<ReturnType<typeof mockBridge.gitPlan>>) => void;
+    vi.spyOn(mockBridge, "gitPlan").mockImplementation(() => new Promise(r => { resolve = r; }));
+    const apply = vi.spyOn(mockBridge, "gitApply");
+    render(panel()); tab("Git");
+    fireEvent.click(await screen.findByRole("button", { name: "Push" }));
+    tab("Files");
+    await act(async () => resolve({ planId: "late", kind: "push", repository: "/repo", branch: "main", files: [], summary: "Push", needsTrust: false, expiresAt: Date.now() + 10000 }));
+    tab("Git");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(); expect(apply).not.toHaveBeenCalled();
+  });
+
   it("refetches both tabs on chat change and discards late results", async () => {
     let resolve!: (value: DirectoryListing) => void;
     const list = vi.spyOn(mockBridge, "listDirectory").mockImplementationOnce(() => new Promise(r => { resolve = r; }))

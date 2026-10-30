@@ -96,6 +96,95 @@ describe("mockBridge", () => {
     expect(await mockBridge.gitSummary()).toEqual({ status: "ready", branch: "main", changed: [{ path: "src/index.ts", code: " M" }], truncatedChanges: false, commits: [{ hash: "a1b2c3d", subject: "Add desktop preview", relativeTime: "2 hours ago" }] });
   });
 
+  describe("preview Git writes", () => {
+    async function context() {
+      const summary = await mockBridge.gitSummary();
+      if (summary.status !== "ready" || !summary.contextId) throw new Error("Missing preview context");
+      return summary.contextId;
+    }
+    async function trust() {
+      const id = await context();
+      const plan = await mockBridge.gitPlan(id, { kind: "stage", path: "src/index.ts" });
+      await mockBridge.gitTrust(id, plan.planId);
+      return id;
+    }
+    beforeEach(async () => { await mockBridge.openChat("chat-readme"); });
+
+    it("requires explicit trust and a fresh plan without changing Git state", async () => {
+      const id = await context(); const before = await mockBridge.gitSummary();
+      const rejected = await mockBridge.gitPlan(id, { kind: "stage", path: "src/index.ts" });
+      expect(rejected).toMatchObject({ needsTrust: true, repository: "/MOCK/preview/chat-readme", files: [] });
+      await expect(mockBridge.gitApply(id, rejected.planId)).rejects.toThrow();
+      expect(await mockBridge.gitSummary()).toEqual(before);
+      const accepted = await mockBridge.gitPlan(id, { kind: "stage", path: "src/index.ts" });
+      await mockBridge.gitTrust(id, accepted.planId);
+      await expect(mockBridge.gitApply(id, accepted.planId)).rejects.toThrow();
+      expect(await mockBridge.gitSummary()).toEqual(before);
+      expect(await mockBridge.gitPlan(id, { kind: "stage", path: "src/index.ts" })).toMatchObject({ needsTrust: false });
+    });
+
+    it("rejects old contexts and plans on switch while retaining repository trust for the session", async () => {
+      const id = await trust(); const plan = await mockBridge.gitPlan(id, { kind: "push" });
+      await mockBridge.openChat("chat-refactor"); const next = await context();
+      expect(next).not.toBe(id); const before = await mockBridge.gitSummary();
+      await expect(mockBridge.gitApply(id, plan.planId)).rejects.toThrow();
+      await expect(mockBridge.gitPlan(id, { kind: "push" })).rejects.toThrow();
+      await expect(mockBridge.gitApply(next, plan.planId)).rejects.toThrow();
+      expect(await mockBridge.gitSummary()).toEqual(before);
+      await mockBridge.openChat("chat-readme");
+      expect((await mockBridge.gitPlan(await context(), { kind: "push" })).needsTrust).toBe(false);
+      resetMockBridge(); await mockBridge.openChat("chat-readme");
+      expect((await mockBridge.gitPlan(await context(), { kind: "push" })).needsTrust).toBe(true);
+    });
+
+    it("stages and unstages paths, then commits only staged content", async () => {
+      const id = await trust();
+      let plan = await mockBridge.gitPlan(id, { kind: "stage", path: "src/index.ts" });
+      await mockBridge.gitApply(id, plan.planId);
+      expect(await mockBridge.gitSummary()).toMatchObject({ changed: [{ path: "src/index.ts", code: "M " }, { path: "README.md", code: "MM" }] });
+      plan = await mockBridge.gitPlan(id, { kind: "unstage", path: "src/index.ts" });
+      await mockBridge.gitApply(id, plan.planId);
+      expect(await mockBridge.gitSummary()).toMatchObject({ changed: [{ path: "src/index.ts", code: " M" }, { path: "README.md", code: "MM" }] });
+      plan = await mockBridge.gitPlan(id, { kind: "commit", message: "Preview commit" });
+      expect(plan.files.map(file => file.path)).toEqual(["README.md"]);
+      await mockBridge.gitApply(id, plan.planId);
+      expect(await mockBridge.gitSummary()).toMatchObject({ changed: [{ path: "src/index.ts", code: " M" }, { path: "README.md", code: " M" }], commits: [expect.objectContaining({ subject: "Preview commit" }), expect.anything()] });
+      await expect(mockBridge.gitPlan(id, { kind: "commit", message: "no staged files" })).rejects.toThrow();
+    });
+
+    it("consumes plans once, expires them and bounds the cache", async () => {
+      const id = await trust();
+      const plan = await mockBridge.gitPlan(id, { kind: "push" });
+      await mockBridge.gitApply(id, plan.planId); const before = await mockBridge.gitSummary();
+      await expect(mockBridge.gitApply(id, plan.planId)).rejects.toThrow();
+      const expiring = await mockBridge.gitPlan(id, { kind: "push" });
+      const clock = vi.spyOn(Date, "now").mockReturnValue(expiring.expiresAt + 1);
+      try { await expect(mockBridge.gitApply(id, expiring.planId)).rejects.toThrow(); } finally { clock.mockRestore(); }
+      const oldest = await mockBridge.gitPlan(id, { kind: "push" });
+      for (let i = 0; i < 16; i++) await mockBridge.gitPlan(id, { kind: "push" });
+      await expect(mockBridge.gitApply(id, oldest.planId)).rejects.toThrow();
+      expect(await mockBridge.gitSummary()).toEqual(before);
+    });
+
+    it("requires clean pull/sync and exposes a redacted, explicitly simulated partial Sync", async () => {
+      const id = await trust(); const before = await mockBridge.gitSummary();
+      await expect(mockBridge.gitPlan(id, { kind: "sync" })).rejects.toThrow();
+      await expect(mockBridge.gitPlan(id, { kind: "pull" })).rejects.toThrow();
+      expect(await mockBridge.gitSummary()).toEqual(before);
+      for (const path of ["src/index.ts", "README.md"]) {
+        const stage = await mockBridge.gitPlan(id, { kind: "stage", path }); await mockBridge.gitApply(id, stage.planId);
+      }
+      const commit = await mockBridge.gitPlan(id, { kind: "commit", message: "Clean preview" }); await mockBridge.gitApply(id, commit.planId);
+      const sync = await mockBridge.gitPlan(id, { kind: "sync" });
+      expect(sync.remote).toEqual({ name: "origin", destination: "refs/heads/main", pullUrl: "https://example.invalid/MOCK/preview.git", pushUrl: "https://example.invalid/MOCK/preview.git" });
+      expect(sync.summary).toContain("PREVIEW SIMULATION");
+      expect(await mockBridge.gitApply(id, sync.planId)).toMatchObject({ kind: "sync", status: "partial", pulled: true, pushed: false });
+      await expect(mockBridge.gitApply(id, sync.planId)).rejects.toThrow();
+      const pull = await mockBridge.gitPlan(id, { kind: "pull" });
+      expect(await mockBridge.gitApply(id, pull.planId)).toMatchObject({ status: "success", pulled: true, pushed: false });
+    });
+  });
+
   it("lists two example chats plus one already-working chat", async () => {
     const chats = await mockBridge.listChats();
 

@@ -18,4 +18,9 @@
 .gc-git-status--U, .gc-git-status--A { color: var(--green); }
 .gc-git-status--D { color: var(--red); }
 .gc-git__change:hover { background: var(--raised); }
+.gc-git__writes { display: grid; gap: 8px; padding: 12px; }
+.gc-git__writes label { display: grid; gap: 6px; }
+.gc-git__writes textarea { width: 100%; min-height: 64px; box-sizing: border-box; resize: vertical; border: 1px solid var(--line-strong); border-radius: 4px; padding: 8px; color: var(--text-2); background: var(--raised); font: inherit; }
+.gc-git__remote { display: flex; flex-wrap: wrap; gap: 6px; }
+.gc-git__warning { padding: 10px; border: 1px solid var(--amber); color: var(--amber); }
 .gc-git :focus-visible { outline: 2px solid var(--accent-active); outline-offset: -2px; }

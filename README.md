@@ -90,6 +90,18 @@ The app sets `GENTLE_SHELL_INTERACTIVE_HOST=1` on the pi process it spawns
 so gentle-pi publishes helper activity and enables RPC dialogs (gentle-pi
 3.7.0 or newer; with an older gentle-pi the Helpers tab stays empty).
 
+### Git tab
+
+The workspace Git tab shows the branch, changed paths (up to 200) and recent commits. With a live chat context, stage or unstage individual files; partially staged paths appear in both groups. **Commit staged** commits only the index using your message. Push, Pull and Sync show a fresh confirmation with the repository, branch and effective redacted remote destination; commits show staged files and the message. Sync pulls then pushes. Pull/Sync require a clean worktree and use fast-forward-only pulls. There is no force, discard, autostash or automatic conflict resolution. Legacy summaries without a context remain read-only.
+
+Before the first write, explicitly trust the canonical repository for this app session. Trust authorizes configured hooks, filters, signing and credential programs with your privileges; repository identity or effective configuration changes require trust again. Cancelling runs no write. Trust itself executes no action: the app replans afterward.
+
+Authentication uses existing system Git/SSH credentials noninteractively. The app stores no secrets and has no integrated login. If interaction is required, check the repository and credentials in a terminal. Real remote authentication has not been verified by these UI tests.
+
+Conflicts, detached HEAD, submodules, active integrations, index locks, ambiguous/unsupported remote targets and repositories exceeding conservative verification limits are refused. See the [engine safety and limits](src/main/adapters/gitWrite.README.md) for exact limits and unsupported states. App locking does not protect against external writers or authorized hooks changing state between checks.
+
+Git refreshes after an attempted apply while retaining its outcome. No mutation is automatically retried. A partial Sync means pull succeeded but push did not complete; failures/timeouts may still have local or remote effects, including uncertain remote success. Inspect both sides before starting a new action. Commit drafts clear only after successful commit.
+
 ## Development
 
 ```sh

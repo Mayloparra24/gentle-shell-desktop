@@ -26,6 +26,7 @@ import {
   type SetupStatus,
   type SlashCommand,
 } from "@shared/bridge-types";
+import type { GitWriteFile, GitWritePlan, GitWriteRequest } from "@shared/git-write-types";
 
 /**
  * In-memory stand-in for the real preload bridge. useBridge() returns this
@@ -169,6 +170,38 @@ let currentState: ChatState = emptyState();
 let nextMessageId = 0;
 let nextDialogId = 0;
 
+// Preview only: fixed samples, no Git, filesystem or network access. Switching
+// chats reseeds changes; trust alone survives until reset/page reload.
+let gitGeneration = 0;
+let gitContext: string | undefined;
+let gitRepository = "/MOCK/preview/new-chat";
+let gitChanges: GitWriteFile[] = [{ path: "src/index.ts", code: " M" }];
+let gitCommits = [{ hash: "a1b2c3d", subject: "Add desktop preview", relativeTime: "2 hours ago" }];
+let gitSequence = 0;
+const gitTrusted = new Set<string>(); // At most the three samples plus new-chat.
+const gitPlans = new Map<string, { plan: GitWritePlan; request: GitWriteRequest }>();
+
+function selectGitPreview(id: string) {
+  gitGeneration += 1;
+  const sample = EXAMPLE_CHATS.some(chat => chat.id === id) ? id : "new-chat";
+  gitRepository = `/MOCK/preview/${sample}`;
+  gitContext = `mock-git:${sample}:${gitGeneration}`;
+  gitPlans.clear();
+  gitChanges = [{ path: "src/index.ts", code: " M" }, { path: "README.md", code: "MM" }];
+  gitCommits = [{ hash: "a1b2c3d", subject: "Add desktop preview", relativeTime: "2 hours ago" }];
+}
+function checkGitContext(context: string) {
+  if (!gitContext || context !== gitContext) throw new Error("Preview Git context changed; refresh Git.");
+}
+function consumeGitPlan(context: string, planId: string) {
+  checkGitContext(context);
+  const cached = gitPlans.get(planId);
+  gitPlans.delete(planId);
+  if (!cached || Date.now() >= cached.plan.expiresAt) throw new Error("Preview plan expired or already consumed; plan again.");
+  return cached;
+}
+function stagedPreviewFiles() { return gitChanges.filter(file => file.code[0] !== " " && file.code[0] !== "?"); }
+
 const stateListeners = new Set<(state: ChatState) => void>();
 const errorListeners = new Set<(message: string) => void>();
 
@@ -189,6 +222,14 @@ export function resetMockBridge(): void {
   currentState = emptyState();
   nextMessageId = 0;
   nextDialogId = 0;
+  gitGeneration += 1;
+  gitContext = undefined;
+  gitRepository = "/MOCK/preview/new-chat";
+  gitChanges = [{ path: "src/index.ts", code: " M" }];
+  gitCommits = [{ hash: "a1b2c3d", subject: "Add desktop preview", relativeTime: "2 hours ago" }];
+  gitSequence = 0;
+  gitTrusted.clear();
+  gitPlans.clear();
   stateListeners.clear();
   errorListeners.clear();
 }
@@ -495,8 +536,57 @@ export const mockBridge: GentleBridge = {
     return { status: "error", message: "Preview file not found" };
   },
 
+  async gitPlan(context, request) {
+    checkGitContext(context);
+    const needsTrust = !gitTrusted.has(gitRepository);
+    const { kind } = request;
+    if (!["stage", "unstage", "commit", "push", "pull", "sync"].includes(kind)) throw new Error("Unsupported preview action.");
+    let files: GitWriteFile[] = [];
+    if (!needsTrust) {
+      if (kind === "stage" || kind === "unstage") {
+        const file = gitChanges.find(file => file.path === request.path);
+        const eligible = file && (kind === "stage" ? file.code === "??" || file.code[1] !== " " : stagedPreviewFiles().includes(file));
+        if (!eligible) throw new Error("Preview path is not eligible; refresh Git.");
+        files = [file];
+      } else if (kind === "commit") {
+        files = stagedPreviewFiles();
+        if (!request.message?.trim() || request.message.length > 20000 || !files.length) throw new Error("Preview commit requires staged files and a message.");
+      } else if ((kind === "pull" || kind === "sync") && gitChanges.length) throw new Error("Preview pull/Sync requires a clean worktree; stage and commit the samples first.");
+    }
+    const url = "https://example.invalid/MOCK/preview.git"; // No credentials or real transport.
+    const plan: GitWritePlan = {
+      planId: `mock-plan-${++gitSequence}`, kind, repository: gitRepository, branch: "main",
+      files: files.map(file => ({ ...file })), needsTrust, expiresAt: Date.now() + 120000,
+      summary: kind === "sync" ? "PREVIEW SIMULATION: pull succeeds, then push fails. No real Git or network effects." : `Preview ${kind}: in-memory sample only.`,
+      ...(!needsTrust && kind === "commit" ? { message: request.message } : {}),
+      ...(!needsTrust && ["push", "pull", "sync"].includes(kind) ? { remote: { name: "origin", destination: "refs/heads/main", ...(kind !== "push" ? { pullUrl: url } : {}), ...(kind !== "pull" ? { pushUrl: url } : {}) } } : {}),
+    };
+    if (gitPlans.size >= 16) gitPlans.delete(gitPlans.keys().next().value!);
+    gitPlans.set(plan.planId, { plan, request: { ...request } });
+    return { ...plan, files: plan.files.map(file => ({ ...file })), ...(plan.remote ? { remote: { ...plan.remote } } : {}) };
+  },
+  async gitTrust(context, planId) {
+    const { plan } = consumeGitPlan(context, planId);
+    if (!plan.needsTrust) throw new Error("Preview plan does not request trust.");
+    gitTrusted.add(plan.repository);
+  },
+  async gitApply(context, planId) {
+    const { plan, request } = consumeGitPlan(context, planId);
+    if (plan.needsTrust || !gitTrusted.has(plan.repository)) throw new Error("Trust preview repository, then replan before applying.");
+    if (plan.kind === "stage") {
+      gitChanges = gitChanges.map(file => file.path === request.path ? { ...file, code: file.code === "??" ? "A " : `${file.code[1]} ` } : file);
+    } else if (plan.kind === "unstage") {
+      gitChanges = gitChanges.map(file => file.path === request.path ? { ...file, code: file.code[0] === "A" ? "??" : " M" } : file);
+    } else if (plan.kind === "commit") {
+      gitChanges = gitChanges.filter(file => file.code[1] !== " ").map(file => file.code === "??" ? file : { ...file, code: ` ${file.code[1]}` });
+      gitCommits = [{ hash: `mock${gitSequence.toString(16).padStart(4, "0")}`, subject: request.message!.split(/\r?\n/)[0]!, relativeTime: "just now (preview)" }, ...gitCommits].slice(0, 10);
+    }
+    gitPlans.clear(); // Any other preview plan predates this action.
+    return { kind: plan.kind, status: plan.kind === "sync" ? "partial" : "success", pulled: plan.kind === "pull" || plan.kind === "sync", pushed: plan.kind === "push", message: plan.kind === "sync" ? "PREVIEW SIMULATION: pull succeeded; push failed. No retry." : "Preview action completed in memory only." };
+  },
+
   async gitSummary() {
-    return { status: "ready", branch: "main", changed: [{ path: "src/index.ts", code: " M" }], truncatedChanges: false, commits: [{ hash: "a1b2c3d", subject: "Add desktop preview", relativeTime: "2 hours ago" }] };
+    return { status: "ready", ...(gitContext ? { contextId: gitContext } : {}), branch: "main", changed: gitChanges.map(file => ({ ...file })), truncatedChanges: false, commits: gitCommits.map(commit => ({ ...commit })) };
   },
 
   async listChats(): Promise<ChatSummary[]> {
@@ -504,6 +594,7 @@ export const mockBridge: GentleBridge = {
   },
 
   async openChat(id: string): Promise<ChatState> {
+    selectGitPreview(id);
     helpersScenarioToken += 1; // invalidate any growth loop from a previously open chat
     setState(emptyState());
     if (id === "chat-migration") startHelpersScenario();
@@ -511,6 +602,7 @@ export const mockBridge: GentleBridge = {
   },
 
   async newChat(): Promise<ChatState> {
+    selectGitPreview("new-chat");
     helpersScenarioToken += 1;
     setState(emptyState());
     return currentState;
