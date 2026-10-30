@@ -7,6 +7,8 @@ function renderBar(overrides: Partial<Parameters<typeof TopBar>[0]> = {}) {
   const props = {
     leftOpen: true,
     rightOpen: true,
+    runningAgents: 0,
+    onOpenAgents: vi.fn(),
     onToggleLeft: vi.fn(),
     onToggleRight: vi.fn(),
     ...overrides,
@@ -16,6 +18,15 @@ function renderBar(overrides: Partial<Parameters<typeof TopBar>[0]> = {}) {
 }
 
 describe("TopBar", () => {
+  it.each([0, 2])("opens agents with %i running and only badges nonzero counts", (runningAgents) => {
+    const props = renderBar({ runningAgents });
+    const button = screen.getByRole("button", { name: runningAgents ? `Agents and jobs, ${runningAgents} running` : "Agents and jobs" });
+    expect(button).toHaveAttribute("aria-haspopup", "dialog");
+    expect(button.textContent).toBe(runningAgents ? String(runningAgents) : "");
+    fireEvent.click(button);
+    expect(props.onOpenAgents).toHaveBeenCalledTimes(1);
+    expect(button).toHaveFocus();
+  });
   it("opens settings from the labelled gear", () => {
     const onOpenSettings = vi.fn();
     renderBar({ onOpenSettings });

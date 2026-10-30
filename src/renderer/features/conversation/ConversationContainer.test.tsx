@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { CHAT_STATE, MESSAGE_ROLE, type ChatState, type ChatSummary, type GentleBridge } from "@shared/bridge-types";
 import { ConversationContainer, type ActiveChat } from "./ConversationContainer";
 
@@ -321,7 +321,7 @@ describe("ConversationContainer", () => {
     ],
   };
 
-  it("shows the Helpers strip when the chat has tasks, and opens the Helpers tab on click", async () => {
+  it("reports helpers upward without rendering the old strip or Helpers tab", async () => {
     let pushState: (state: ChatState) => void = () => {};
     const bridge = makeBridge({
       onState: vi.fn((callback: (state: ChatState) => void) => {
@@ -331,63 +331,16 @@ describe("ConversationContainer", () => {
     });
     window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={READY_CHAT} />);
-    await screen.findByRole("textbox");
-
+    const onStateChange = vi.fn();
+    render(<ConversationContainer activeChat={READY_CHAT} onStateChange={onStateChange} />);
+    await vi.waitFor(() => expect(onStateChange).toHaveBeenCalledWith(READY_CHAT, READY_CHAT.state));
+    const state = { ...emptyState(), helpers: HELPERS_WITH_TASKS };
+    act(() => pushState(state));
+    await vi.waitFor(() => expect(onStateChange).toHaveBeenLastCalledWith(READY_CHAT, state));
     expect(screen.queryByText(/Helpers ·/)).not.toBeInTheDocument();
-
-    pushState({ messages: [], working: false, pendingDialogs: [], activity: 0, helpers: HELPERS_WITH_TASKS });
-
-    const strip = await screen.findByText("Helpers · 1 running");
-    fireEvent.click(strip);
-
-    expect(screen.getByRole("tab", { name: "Helpers (1 running)" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("heading", { name: "Look into the failing test" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("switches tabs from the header, and Back to chat returns to the chat pane", async () => {
-    let pushState: (state: ChatState) => void = () => {};
-    const bridge = makeBridge({
-      onState: vi.fn((callback: (state: ChatState) => void) => {
-        pushState = callback;
-        return () => {};
-      }),
-    });
-    window.gentle = bridge;
 
-    render(<ConversationContainer activeChat={READY_CHAT} />);
-    await screen.findByRole("textbox");
-    pushState({ messages: [], working: false, pendingDialogs: [], activity: 0, helpers: HELPERS_WITH_TASKS });
-    await screen.findByText("Helpers · 1 running");
-
-    fireEvent.click(screen.getByRole("tab", { name: "Helpers (1 running)" }));
-    expect(screen.getByRole("heading", { name: "Look into the failing test" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Back to chat" }));
-    expect(screen.getByRole("tab", { name: "Chat" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByPlaceholderText("Tell Gentle what you need…")).toBeInTheDocument();
-  });
-
-  it("resets to the chat pane when activeChat changes", async () => {
-    let pushState: (state: ChatState) => void = () => {};
-    const bridge = makeBridge({
-      onState: vi.fn((callback: (state: ChatState) => void) => {
-        pushState = callback;
-        return () => {};
-      }),
-    });
-    window.gentle = bridge;
-
-    const { rerender } = render(<ConversationContainer activeChat={READY_CHAT} />);
-    await screen.findByRole("textbox");
-    pushState({ messages: [], working: false, pendingDialogs: [], activity: 0, helpers: HELPERS_WITH_TASKS });
-    await screen.findByText("Helpers · 1 running");
-
-    fireEvent.click(screen.getByRole("tab", { name: "Helpers (1 running)" }));
-    expect(screen.getByRole("tab", { name: "Helpers (1 running)" })).toHaveAttribute("aria-selected", "true");
-
-    rerender(<ConversationContainer activeChat={{ kind: "existing", chat: EXISTING_CHAT }} />);
-
-    expect(screen.getByRole("tab", { name: "Chat" })).toHaveAttribute("aria-selected", "true");
-  });
 });

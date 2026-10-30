@@ -40,7 +40,7 @@ it("retries a rejected read", async () => {
   expect(await screen.findByRole("table")).toBeInTheDocument();
   expect(readProfiles).toHaveBeenCalledTimes(2);
 });
-it("renders the default tab, ordered read-only routes and back", async () => {
+it("renders a Models dialog with default tab, ordered read-only routes and close", async () => {
   const { onBack } = setup();
   const table = await screen.findByRole("table");
   expect(screen.getByRole("tab", { name: /balanced/ })).toHaveAttribute("aria-selected", "true");
@@ -53,7 +53,9 @@ it("renders the default tab, ordered read-only routes and back", async () => {
   expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   for (const name of ["Save", "Make default", "Use in this session"]) expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
   expect(within(table).queryByRole("button")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "← Back to chat" }));
+  expect(screen.getByRole("dialog", { name: "Models" })).toHaveAttribute("aria-modal", "true");
+  expect(screen.queryByRole("button", { name: /Back to chat/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Close models" }));
   expect(onBack).toHaveBeenCalledTimes(1);
 });
 it("switches by click and wrapping arrow keys with roving focus", async () => {
@@ -72,6 +74,28 @@ it("switches by click and wrapping arrow keys with roving focus", async () => {
   fireEvent.keyDown(balanced, { key: "ArrowRight" });
   expect(other).toHaveFocus();
   expect(other).toHaveAttribute("aria-selected", "true");
+});
+it("closes on Escape and traps focus with Tab", async () => {
+  const { onBack } = setup();
+  const dialog = screen.getByRole("dialog", { name: "Models" });
+  const close = screen.getByRole("button", { name: "Close models" });
+  expect(close).toHaveFocus();
+  await screen.findByRole("table");
+  fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+  expect(screen.getByRole("tabpanel")).toHaveFocus();
+  fireEvent.keyDown(screen.getByRole("tabpanel"), { key: "Tab" });
+  expect(close).toHaveFocus();
+  fireEvent.keyDown(dialog, { key: "Escape" });
+  expect(onBack).toHaveBeenCalledTimes(1);
+});
+it("supports Home and End in profile tabs", async () => {
+  setup();
+  const other = await screen.findByRole("tab", { name: "other" });
+  const balanced = screen.getByRole("tab", { name: /balanced/ });
+  fireEvent.keyDown(other, { key: "End" });
+  expect(balanced).toHaveFocus();
+  fireEvent.keyDown(balanced, { key: "Home" });
+  expect(other).toHaveFocus();
 });
 it("falls back to the first profile when no default is set", async () => {
   setup({ ...ready, active: undefined });

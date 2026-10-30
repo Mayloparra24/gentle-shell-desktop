@@ -1,9 +1,10 @@
-.gc-models {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow: auto;
-  padding: 18px 28px 28px;
-  color: var(--text);
-  background: var(--bg);
+.gc-settings.gc-models {
+  width: min(680px, calc(100% - 48px));
+  height: auto;
+  max-height: calc(100% - 48px);
+  display: flex;
+  flex-direction: column;
 }
+.gc-models__header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.gc-models__header button { display: grid; place-items: center; }
+.gc-models__wrap { min-height: 0; overflow: auto; padding: 14px 16px 16px; }

@@ -25,11 +25,11 @@ function setup(found = true) {
 afterEach(() => { delete window.gentle; vi.restoreAllMocks(); });
 
 describe("Settings", () => {
-  it("closes settings and opens the models screen from its dedicated row", async () => {
+  it("closes settings and opens the models dialog from its dedicated row", async () => {
     const { props, bridge } = setup();
     expect(screen.getByText("Profiles, models and effort")).toBeInTheDocument();
-    expect(screen.getByText("They have their own screen, the same one as /gentle:profiles in gentle-shell.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Open models screen →" }));
+    expect(screen.getByText("View the profiles, models and effort used by each agent, as in /gentle:profiles in gentle-shell.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open models →" }));
     expect(props.onClose).toHaveBeenCalledTimes(1);
     expect(props.onOpenModels).toHaveBeenCalledTimes(1);
     expect(bridge.setSetting).not.toHaveBeenCalled();

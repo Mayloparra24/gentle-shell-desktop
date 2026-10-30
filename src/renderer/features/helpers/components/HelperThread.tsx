@@ -18,6 +18,7 @@ export interface HelperThreadProps {
   readonly task: HelperTask;
   readonly showToolDetails: boolean;
   readonly followLive: boolean;
+  readonly showHeader?: boolean;
 }
 
 function itemKey(entry: LabeledThreadItem, index: number): string {
@@ -29,7 +30,7 @@ function itemKey(entry: LabeledThreadItem, index: number): string {
 // Task/Plan/Step N/Update/Note rows (see format.ts's labelThreadItems),
 // auto-scrolling to the bottom while `followLive` is on. Same auto-scroll
 // pattern as MessageThread's bottomRef.
-export function HelperThread({ task, showToolDetails, followLive }: HelperThreadProps) {
+export function HelperThread({ task, showToolDetails, followLive, showHeader = true }: HelperThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const labeled = labelThreadItems(task.thread.items);
 
@@ -39,11 +40,11 @@ export function HelperThread({ task, showToolDetails, followLive }: HelperThread
 
   return (
     <div className="gc-helper-thread" data-testid="gc-helper-thread">
-      <header className="gc-helper-thread__header">
+      {showHeader && <header className="gc-helper-thread__header">
         <h3 className="gc-helper-thread__title">{task.label}</h3>
         <Pill tone={STATUS_PILL_TONE[task.status]}>{statusLabel(task.status)}</Pill>
         <span className="gc-helper-thread__origin">started from this chat · {task.agent}</span>
-      </header>
+      </header>}
       <div className="gc-helper-thread__items">
         {labeled.length === 0 ? (
           <p className="gc-helper-thread__empty">No activity yet.</p>

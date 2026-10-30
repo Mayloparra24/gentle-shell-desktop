@@ -12,6 +12,7 @@ import { useTheme } from "@renderer/shared/theme/useTheme";
 import { TopBar } from "@renderer/features/shell/components/TopBar";
 import { useShellLayout } from "@renderer/features/shell/useShellLayout";
 import { ModelsContainer } from "@renderer/features/models/ModelsContainer";
+import { AgentsDialog } from "@renderer/features/helpers/AgentsDialog";
 import { SettingsContainer } from "@renderer/features/settings/SettingsContainer";
 import "./App.css";
 
@@ -47,8 +48,9 @@ export function App() {
   const handleStateChange = useCallback((chat: ActiveChat, state: ChatState) => setLiveStatus({ chat, state }), []);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
-  const [view, setView] = useState<"chat" | "models">("chat");
-  const openModels = (): void => setView("models");
+  const [modelsOpen, setModelsOpen] = useState(false);
+  const [agentsOpen, setAgentsOpen] = useState(false);
+  const openModels = (): void => setModelsOpen(true);
   const [homeVersion, setHomeVersion] = useState(0);
   const [workspaceGit, setWorkspaceGit] = useState<{ chat: ActiveChat; home: number; git: GitState } | null>(null);
   const handleGitChange = useCallback((git: GitState) => {
@@ -86,6 +88,7 @@ export function App() {
 
   const git = openedChat === activeChat && workspaceGit?.chat === activeChat && workspaceGit.home === homeVersion
     ? workspaceGit.git : undefined;
+  const helpers = liveStatus?.chat === activeChat ? liveStatus.state.helpers : undefined;
   const statusInfo = {
     cwd: activeChat.kind === "existing" ? activeChat.chat.cwd : activeChat.kind === "ready" ? activeChat.state.cwd : undefined,
     branch: git?.status === "ready" ? git.branch : undefined,
@@ -98,6 +101,7 @@ export function App() {
       <TopBar leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight}
         onOpenSettings={() => setSettingsOpen(true)}
         settingsButtonRef={settingsButtonRef}
+        runningAgents={helpers?.summary.running ?? 0} onOpenAgents={() => setAgentsOpen(true)}
       />
       <div className="gc-app__body" data-left-open={leftOpen} data-right-open={rightOpen}>
         <div className="gc-app__left" data-testid="left-panel" data-open={leftOpen} inert={!leftOpen}>
@@ -109,10 +113,9 @@ export function App() {
           />
         </div>
         <div className="gc-app__center">
-          <div className="gc-app__chat" hidden={view !== "chat"}>
+          <div className="gc-app__chat">
             <ConversationContainer key={homeVersion} activeChat={activeChat} onOpenModels={openModels} onChatReady={setOpenedChat} onStateChange={handleStateChange} onChooseFolder={handleChooseFolder} />
           </div>
-          {view === "models" && <ModelsContainer key={homeVersion} onBack={() => setView("chat")} />}
         </div>
         <div className="gc-app__right" data-testid="right-panel" data-open={rightOpen} inert={!rightOpen}>
           <WorkspacePanel onGitChange={handleGitChange}
@@ -121,6 +124,8 @@ export function App() {
         </div>
       </div>
       <StatusBar info={statusInfo} onOpenModels={openModels} />
+      {modelsOpen && <ModelsContainer key={homeVersion} onBack={() => setModelsOpen(false)} />}
+      {agentsOpen && <AgentsDialog key={`${homeVersion}-${activeChat.kind === "existing" ? activeChat.chat.id : activeChat.kind}`} activity={helpers} onClose={() => setAgentsOpen(false)} />}
       {settingsOpen && <SettingsContainer
         onOpenModels={openModels}
         homeVersion={homeVersion}
@@ -132,7 +137,8 @@ export function App() {
     </div>
     {folderDialogOpen && <FolderDialog onClose={() => setFolderDialogOpen(false)} onStarted={(state) => {
       setActiveChat({ kind: "ready", state });
-      setView("chat");
+      setModelsOpen(false);
+      setAgentsOpen(false);
       setFolderDialogOpen(false);
     }} />}
     </>

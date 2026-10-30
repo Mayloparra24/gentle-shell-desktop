@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import type { ChatState, ChatSummary, DialogAnswer } from "@shared/bridge-types";
 import { useBridge } from "@renderer/shared/bridge/useBridge";
 import { Button } from "@renderer/shared/ui/atoms/Button";
-import { HelpersContainer } from "@renderer/features/helpers/HelpersContainer";
 import { Composer } from "./components/Composer";
-import { CONVERSATION_PANE, ConversationHeader, type ConversationPane } from "./components/ConversationHeader";
-import { HelpersStrip } from "./components/HelpersStrip";
+import { ConversationHeader } from "./components/ConversationHeader";
 import { MessageThread } from "./components/MessageThread";
 import { StatusLine } from "./components/StatusLine";
 import "./ConversationContainer.css";
@@ -53,12 +51,6 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady, o
   const [chatState, setChatState] = useState<ChatState>(emptyChatState());
   const [bridgeError, setBridgeError] = useState<string | undefined>(undefined);
   const [draft, setDraft] = useState("");
-  const [pane, setPane] = useState<ConversationPane>(CONVERSATION_PANE.CHAT);
-  // The moment this chat became active — HelpersContainer's line between
-  // "current" helpers and the collapsed "Earlier" group (format.ts's
-  // partitionHelpers). Set once per activeChat change, not per pane
-  // switch, so opening the Helpers tab later doesn't move the line.
-  const [helpersOpenedAt, setHelpersOpenedAt] = useState<string>(() => new Date().toISOString());
 
   // Subscribes once: GentleBridge pushes state/error for whichever chat is
   // currently open, independent of which activeChat this render owns.
@@ -79,13 +71,6 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady, o
   // before this request settles (e.g. quickly clicking two chats), its
   // resolved/rejected result must not clobber the state that belongs to
   // the newer selection.
-  // Reset to the chat pane whenever the selected chat changes — a helper
-  // tab left open on the previous chat must never bleed into the next one.
-  useEffect(() => {
-    setPane(CONVERSATION_PANE.CHAT);
-    setHelpersOpenedAt(new Date().toISOString());
-  }, [activeChat]);
-
   useEffect(() => {
     setBridgeError(undefined);
     setChatState(emptyChatState());
@@ -149,32 +134,18 @@ export function ConversationContainer({ activeChat, onOpenModels, onChatReady, o
       <ConversationHeader
         title={activeChat.kind === "existing" ? activeChat.chat.title : "New chat"}
         working={chatState.working}
-        pane={pane}
-        runningHelpersCount={chatState.helpers.summary.running}
-        onSelectPane={setPane}
       />
       <StatusLine error={error} />
-      {pane === CONVERSATION_PANE.HELPERS ? (
-        <HelpersContainer
-          activity={chatState.helpers}
-          onBackToChat={() => setPane(CONVERSATION_PANE.CHAT)}
-          openedAt={helpersOpenedAt}
-        />
-      ) : (
-        <>
-          <HelpersStrip helpers={chatState.helpers} onOpen={() => setPane(CONVERSATION_PANE.HELPERS)} />
-          <MessageThread messages={chatState.messages} dialogs={chatState.pendingDialogs} onAnswerDialog={handleAnswerDialog} />
-          <Composer
-            value={draft}
-            working={chatState.working}
-            onChange={setDraft}
-            onSend={handleSend}
-            onAbort={handleAbort}
-            loadCommands={() => bridge.listCommands()}
-            commandsResetKey={activeChat}
-          />
-        </>
-      )}
+      <MessageThread messages={chatState.messages} dialogs={chatState.pendingDialogs} onAnswerDialog={handleAnswerDialog} />
+      <Composer
+        value={draft}
+        working={chatState.working}
+        onChange={setDraft}
+        onSend={handleSend}
+        onAbort={handleAbort}
+        loadCommands={() => bridge.listCommands()}
+        commandsResetKey={activeChat}
+      />
     </section>
   );
 }

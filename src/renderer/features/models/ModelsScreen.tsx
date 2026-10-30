@@ -1,5 +1,7 @@
 import { useId, useRef, useState } from "react";
 import type { ProfileInfo, ProfilesSnapshot } from "@shared/bridge-types";
+import { trapTab, useModalFocus } from "@renderer/features/settings/useModalFocus";
+import "@renderer/features/settings/SettingsDialog.css";
 import "./ModelsScreen.css";
 
 interface ModelsScreenProps {
@@ -9,19 +11,26 @@ interface ModelsScreenProps {
 }
 
 export function ModelsScreen({ snapshot, onBack, onRetry }: ModelsScreenProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const id = useId();
+  useModalFocus(ref);
   return (
-    <section className="gc-models" aria-label="Models">
-      <div className="gc-models__wrap">
-        <button type="button" className="gc-models__back" onClick={onBack}>← Back to chat</button>
-        <h1>Models</h1>
+    <div className="gc-settings-scrim">
+      <div className="gc-settings gc-models" role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} ref={ref} onKeyDown={(event) => {
+        if (event.key === "Escape") { event.preventDefault(); onBack(); }
+        trapTab(event);
+      }}>
+        <header className="gc-models__header"><h2 id={`${id}-title`}>Models</h2><button type="button" aria-label="Close models" onClick={onBack}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button></header>
+        <div className="gc-models__wrap">
         <p className="gc-models__lead">Profiles decide which model and effort each agent uses. Same screen as <code>/gentle:profiles</code> in gentle-shell.</p>
         {!snapshot ? <div className="gc-models__skeleton" aria-label="Loading profiles" role="status"><span /><span /><span /></div>
           : snapshot.status === "error" ? <div className="gc-models__error" role="alert"><p>{snapshot.message ?? "Could not read profiles."}</p><button type="button" onClick={onRetry}>Retry</button></div>
           : snapshot.status === "unsupported" ? <p role="status">{snapshot.message ?? "This profiles format is not supported by this version."}</p>
           : snapshot.status === "none" || snapshot.profiles.length === 0 ? <div><h2>No profiles yet</h2><p>{snapshot.message ?? "gentle-shell creates profiles when you use /gentle:profiles."}</p></div>
           : <ProfileTabs key={snapshot.active} snapshot={snapshot} />}
+        </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -48,8 +57,6 @@ function ProfileTabs({ snapshot }: { snapshot: ProfilesSnapshot }) {
       </button>)}
     </div>
     <div className="gc-models__card" role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${selected}`} tabIndex={0}>
-      <h2>{profile.name}</h2>
-      <p className="gc-models__note">{profile.name === snapshot.active ? "Default for new sessions." : "Saved profile."}</p>
       <p className="gc-models__notice" role="status">Read-only for now. To change profiles, use /gentle:profiles in gentle-shell.</p>
       <ProfileTable profile={profile} />
       <p className="gc-models__legend">★ default for new sessions</p>

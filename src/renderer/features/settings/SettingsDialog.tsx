@@ -78,8 +78,8 @@ export function SettingsDialog(props: SettingsDialogProps) {
                   <div className="gc-settings__note"><b>What switching does:</b> the chat list reloads from the chosen home and the open chat closes. Nothing is copied, moved or deleted, and you can switch back at any time.</div>
                 </>}
                 {name === "Models" && <div className="gc-setting-row">
-                  <div><div className="gc-setting-row__title">Profiles, models and effort</div><p>They have their own screen, the same one as /gentle:profiles in gentle-shell.</p></div>
-                  <button type="button" className="gc-settings__button" onClick={props.onOpenModels}>Open models screen →</button>
+                  <div><div className="gc-setting-row__title">Profiles, models and effort</div><p>View the profiles, models and effort used by each agent, as in /gentle:profiles in gentle-shell.</p></div>
+                  <button type="button" className="gc-settings__button" onClick={props.onOpenModels}>Open models →</button>
                 </div>}
                 {name === "Appearance" && <div className="gc-setting-row">
                   <div><div className="gc-setting-row__title">Theme</div><p>Colors for this window. Saved in this browser</p><div className="gc-setting-row__meta">current: {props.themeId} {themeApplied && <span role="status" className="gc-setting-row__applied">Applied</span>}</div></div>

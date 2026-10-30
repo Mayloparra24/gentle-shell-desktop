@@ -142,7 +142,7 @@ describe("App", () => {
     expect(git).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("textbox", { name: "Message" })).toBeInTheDocument();
   });
-  it("opens models without unmounting chat and restores its draft on Back", async () => {
+  it("opens models from Settings and the profiles command without losing the chat draft", async () => {
     const newChat = vi.spyOn(mockBridge, "newChat");
     render(<App />);
     fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
@@ -150,20 +150,19 @@ describe("App", () => {
     fireEvent.change(composer, { target: { value: "keep this draft" } });
     const opens = newChat.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open models screen →" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open models →" }));
     expect(await screen.findByRole("heading", { name: "Models" })).toBeInTheDocument();
     expect(composer).toBeInTheDocument();
-    expect(composer).not.toBeVisible();
+    expect(screen.getByRole("dialog", { name: "Models" })).toBeInTheDocument();
     expect(newChat).toHaveBeenCalledTimes(opens);
-    fireEvent.click(screen.getByRole("button", { name: "← Back to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close models" }));
     expect(composer).toBeVisible();
     expect(composer).toHaveValue("keep this draft");
     expect(newChat).toHaveBeenCalledTimes(opens);
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open models screen →" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Models" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "← Back to chat" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open models →" }));
+    expect(await screen.findByRole("dialog", { name: "Models" })).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Models" }), { key: "Escape" });
     fireEvent.change(composer, { target: { value: "/gentle:profiles" } });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
     expect(await screen.findByRole("heading", { name: "Models" })).toBeInTheDocument();
@@ -224,6 +223,40 @@ describe("App", () => {
   });
 });
 
+it("uses the selected chat's live agents and clears them on chat switch", async () => {
+  window.history.pushState({}, "", "?firstRun=0");
+  const initial = await mockBridge.newChat();
+  const open = vi.spyOn(mockBridge, "openChat").mockResolvedValue({ ...initial, helpers: {
+    summary: { running: 1, queued: 0, waiting: 0, finished: 0 },
+    tasks: [{ id: "agent-1", agent: "explore", label: "Real helper", prompt: "Read the sources", status: "running", createdAt: "2026-09-22T10:00:00Z", turns: 1, toolCalls: 0, thread: { version: 0, dropped: 0, items: [] } }],
+  } });
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+  const button = await screen.findByRole("button", { name: "Agents and jobs, 1 running" });
+  fireEvent.click(button);
+  expect(screen.getByText("Read the sources")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Real helper/ })).toHaveAttribute("aria-current", "true");
+  fireEvent.click(screen.getByRole("button", { name: "Close agents and jobs" }));
+  expect(button).toHaveFocus();
+  open.mockImplementation(() => new Promise(() => {}));
+  fireEvent.click(screen.getByRole("button", { name: /Write the README intro/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Agents and jobs" }));
+  expect(screen.getByText("No agents or jobs yet")).toBeInTheDocument();
+  expect(screen.queryByText("Real helper")).not.toBeInTheDocument();
+});
+
+it("opens Agents & jobs from the title bar and restores focus on Escape", async () => {
+  window.history.pushState({}, "", "?firstRun=0");
+  render(<App />);
+  const button = await screen.findByRole("button", { name: "Agents and jobs" });
+  fireEvent.click(button);
+  const dialog = screen.getByRole("dialog", { name: "Agents & jobs" });
+  expect(screen.getByText("No agents or jobs yet")).toBeInTheDocument();
+  fireEvent.keyDown(dialog, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(button).toHaveFocus();
+});
+
 describe("App shell layout", () => {
   beforeEach(() => {
     window.history.pushState({}, "", "?firstRun=0");
@@ -267,9 +300,17 @@ describe("App status bar", () => {
     const open = vi.spyOn(mockBridge, "openChat").mockResolvedValue({ ...initial, session: { model: "real-model", effort: "high" }, memory: "project · saved ✓" });
     render(<App />);
     fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
-    fireEvent.click(await screen.findByRole("button", { name: "real-model · high" }));
-    expect(await screen.findByRole("heading", { name: "Models" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "← Back to chat" }));
+    const model = await screen.findByRole("button", { name: "real-model · high" });
+    model.focus();
+    fireEvent.click(model);
+    const dialog = await screen.findByRole("dialog", { name: "Models" });
+    expect(screen.queryByRole("button", { name: /Back to chat/ })).not.toBeInTheDocument();
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(model).toHaveFocus();
+    fireEvent.click(model);
+    fireEvent.click(screen.getByRole("button", { name: "Close models" }));
+    expect(model).toHaveFocus();
     push({ ...initial, session: { model: "updated-model" } });
     expect(await screen.findByRole("button", { name: "updated-model" })).toBeInTheDocument();
     expect(screen.queryByText("project · saved ✓")).not.toBeInTheDocument();
