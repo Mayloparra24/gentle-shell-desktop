@@ -1,5 +1,7 @@
 # Design system (synced)
 
+Re-synced 2026-10-29 against `tokens.css`: the 16 color tokens and 3 font stacks are unchanged; the three themes below are the only palettes.
+
 Source: `src/renderer/shared/theme/tokens.css` (Gentleman-Cute, mirrored in `gentleman-cute.json`). Only values found there are listed.
 
 ## Colors

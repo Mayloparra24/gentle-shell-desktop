@@ -10,3 +10,12 @@ release/
 .atl/
 # Local CodeGraph index
 .codegraph/
+# Local agent skills and design drafts
+.agents/
+design/
+skills-lock.json
+# Impeccable local context
+PRODUCT.md
+DESIGN.md
+DESIGN.json
+.impeccable/
