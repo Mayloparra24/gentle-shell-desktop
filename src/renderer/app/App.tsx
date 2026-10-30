@@ -99,6 +99,7 @@ export function App() {
   const git = openedChat === activeChat && workspaceGit?.chat === activeChat && workspaceGit.home === homeVersion
     ? workspaceGit.git : undefined;
   const helpers = liveStatus?.chat === activeChat ? liveStatus.state.helpers : undefined;
+  const jobs = liveStatus?.chat === activeChat ? liveStatus.state.jobs : undefined;
   const statusInfo = {
     cwd: activeChat.kind === "existing" ? activeChat.chat.cwd : activeChat.kind === "ready" ? activeChat.state.cwd : undefined,
     branch: git?.status === "ready" ? git.branch : undefined,
@@ -111,7 +112,7 @@ export function App() {
       <TopBar leftOpen={leftOpen} rightOpen={rightOpen} onToggleLeft={toggleLeft} onToggleRight={toggleRight}
         onOpenSettings={() => setSettingsOpen(true)}
         settingsButtonRef={settingsButtonRef}
-        runningAgents={helpers?.summary.running ?? 0} onOpenAgents={() => setAgentsOpen(true)}
+        runningCount={(helpers?.summary.running ?? 0) + (jobs?.running ?? 0)} onOpenAgents={() => setAgentsOpen(true)}
       />
       <div className="gc-app__body" data-left-open={leftOpen} data-right-open={rightOpen}>
         <div className="gc-app__left" data-testid="left-panel" data-open={leftOpen} inert={!leftOpen}>
@@ -144,7 +145,7 @@ export function App() {
       </div>
       <StatusBar info={statusInfo} file={files.active ? files.statuses[files.active] : undefined} onOpenModels={openModels} />
       {modelsOpen && <ModelsContainer key={homeVersion} onBack={() => setModelsOpen(false)} />}
-      {agentsOpen && <AgentsDialog key={`${homeVersion}-${activeChat.kind === "existing" ? activeChat.chat.id : activeChat.kind}`} activity={helpers} onClose={() => setAgentsOpen(false)} />}
+      {agentsOpen && <AgentsDialog key={`${homeVersion}-${activeChat.kind === "existing" ? activeChat.chat.id : activeChat.kind}`} activity={helpers} jobs={jobs} onClose={() => setAgentsOpen(false)} />}
       {settingsOpen && <SettingsContainer
         chatOpen={activeChat.kind !== "none"}
         onNewChat={handleChooseFolder}

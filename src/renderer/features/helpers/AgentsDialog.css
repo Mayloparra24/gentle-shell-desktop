@@ -31,6 +31,15 @@
 .gc-agents__detail .gc-helper-thread__items { padding: 0; overflow: visible; }
 .gc-agents__detail .gc-helper-thread-item__tool-line { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gc-agents__detail .gc-helper-thread-item__tool-line > span { display: inline-block; margin-right: 6px; }
+.gc-agents__filters { display: flex; gap: 4px; padding: 10px; border-bottom: 1px solid var(--line); }
+.gc-agents__filters button { padding: 4px 8px; color: var(--muted); }
+.gc-agents__filters [aria-selected="true"] { color: var(--text); background: var(--raised); }
+.gc-agents__running { display: flex; gap: 10px; padding: 9px 14px; color: var(--muted); }
+.gc-agents__running small { display: block; margin-top: 4px; }
+.gc-agents__dot[data-status="stopped"] { background: var(--amber); }
+.gc-agents__values--job { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.gc-agents__command, .gc-agents__log { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 12px var(--font-mono); color: var(--text-2); }
+.gc-agents__log { padding: 12px; max-height: 240px; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
 .gc-agents__empty { margin: auto; padding: 24px; text-align: center; }
 .gc-agents__empty h3 { font: 500 16px var(--font-display); }
 .gc-agents__empty p { color: var(--muted); }

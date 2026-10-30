@@ -459,7 +459,15 @@ function startHelpersScenario(): void {
   ];
 
   const helpers: HelpersActivity = { summary: helpersSummaryFor(tasks), tasks };
-  setState({ ...currentState, helpers });
+  // Preview-only sample jobs (the real app never invents jobs): one still running and two finished.
+  const jobs = {
+    running: 1,
+    finished: [
+      { id: "job-2", kind: "command" as const, label: "electron-vite build", status: "exited" as const, exitCode: 0, command: "node node_modules/electron-vite/bin/electron-vite.js build", lastOutput: "built in 6.2s\nout/main/index.js  93.5 kB", endedAt: now },
+      { id: "job-1", kind: "command" as const, label: "pnpm test --run", status: "failed" as const, exitCode: 1, command: "pnpm test --run", lastOutput: "FAIL  src/main/adapters/gitSummary.test.ts\n  caps changes at 200 and commits at 10\nTest Files  1 failed | 69 passed", endedAt: oneDayAgo },
+    ],
+  };
+  setState({ ...currentState, helpers, jobs });
   void runHelpersScenario(token);
 }
 

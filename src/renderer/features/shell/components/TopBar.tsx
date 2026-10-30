@@ -8,7 +8,7 @@ export interface TopBarProps {
   readonly onToggleRight: () => void;
   readonly onOpenSettings?: () => void;
   readonly settingsButtonRef?: React.Ref<HTMLButtonElement>;
-  readonly runningAgents: number;
+  readonly runningCount: number;
   readonly onOpenAgents: () => void;
   readonly agentsButtonRef?: React.Ref<HTMLButtonElement>;
 }
@@ -30,7 +30,7 @@ const isMac = (): boolean => typeof navigator !== "undefined" && navigator.userA
 // two panel toggles, with Settings on the right. The middle stays empty on purpose: it is the drag area, and the
 // chat title and folder already live in the conversation tab and the status bar. The toggles expose their state
 // with aria-pressed (pressed = panel visible).
-export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight, onOpenSettings, settingsButtonRef, runningAgents, onOpenAgents, agentsButtonRef }: TopBarProps) {
+export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight, onOpenSettings, settingsButtonRef, runningCount, onOpenAgents, agentsButtonRef }: TopBarProps) {
   return (
     <header className="gc-topbar" data-window-drag data-mac={isMac() || undefined}>
       <div className="gc-topbar__start">
@@ -45,9 +45,9 @@ export function TopBar({ leftOpen, rightOpen, onToggleLeft, onToggleRight, onOpe
         </button>
       </div>
       <div className="gc-topbar__end">
-        <button type="button" className="gc-topbar__toggle gc-topbar__agents" aria-haspopup="dialog" aria-label={runningAgents > 0 ? `Agents and jobs, ${runningAgents} running` : "Agents and jobs"} title="Agents & jobs" ref={agentsButtonRef} onClick={(event) => { event.currentTarget.focus(); onOpenAgents(); }}>
+        <button type="button" className="gc-topbar__toggle gc-topbar__agents" aria-haspopup="dialog" aria-label={runningCount > 0 ? `Agents and jobs, ${runningCount} running` : "Agents and jobs"} title="Agents & jobs" ref={agentsButtonRef} onClick={(event) => { event.currentTarget.focus(); onOpenAgents(); }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11" /><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2" /></svg>
-          {runningAgents > 0 && <span className="gc-topbar__badge" aria-hidden="true">{runningAgents}</span>}
+          {runningCount > 0 && <span className="gc-topbar__badge" aria-hidden="true">{runningCount}</span>}
         </button>
         <button type="button" className="gc-topbar__toggle" aria-label="Settings" aria-haspopup="dialog" onClick={(event) => { event.currentTarget.focus(); onOpenSettings?.(); }} ref={settingsButtonRef}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

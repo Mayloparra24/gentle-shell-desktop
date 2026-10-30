@@ -10,6 +10,7 @@ import {
   type NoticeLevel,
 } from "@shared/bridge-types";
 import { emptyHelpersActivity, parseHelpersActivity } from "./helpersActivity";
+import { parseJobNotice, parseJobsStatus } from "./jobsActivity";
 import type { AssistantMessageEvent, FireAndForgetMethod, RpcEvent, RpcExtensionUIRequest, RpcMessage } from "./types";
 
 /** The fire-and-forget branch of RpcExtensionUIRequest (notify, setStatus, setWidget, setTitle, set_editor_text). */
@@ -63,7 +64,7 @@ export function reduceChat(state: ChatState, event: RpcEvent, now?: string): Cha
     case "message_update":
       return applyAssistantMessageEvent(state, event.assistantMessageEvent);
     case "message_end":
-      return closeAssistantMessage(state, event.message);
+      return closeAssistantMessage(applyJobNotice(state, event.message, now), event.message);
     case "tool_execution_start":
     case "tool_execution_update":
     case "tool_execution_end":
@@ -78,6 +79,27 @@ export function reduceChat(state: ChatState, event: RpcEvent, now?: string): Cha
     default:
       return state;
   }
+}
+
+/**
+ * Apply only message_end: start/end carry the same custom message. Job ids
+ * restart per gentle-shell process, so the later received terminal notice
+ * replaces the old id and moves to the front; payload timestamps never sort it.
+ */
+function applyJobNotice(state: ChatState, message: RpcMessage, now: string | undefined): ChatState {
+  const notice = parseJobNotice(message);
+  if (!notice) return state;
+  const jobs = state.jobs ?? { running: 0, finished: [] };
+  if (notice.status === "running") {
+    // A live monitor batch is not a finished job. Do not invent a row.
+    if (notice.lastOutput === undefined || !jobs.finished.some(job => job.id === notice.id)) return state;
+    return { ...state, jobs: { ...jobs, finished: jobs.finished.map(job => job.id === notice.id ? { ...job, lastOutput: notice.lastOutput } : job) } };
+  }
+  // PiSession supplies receipt time at the I/O boundary. Without it, do not
+  // fabricate an end time or trust the timestamp in an untrusted message.
+  if (!now) return state;
+  const finished = [{ ...notice, status: notice.status, endedAt: now }, ...jobs.finished.filter(job => job.id !== notice.id)].slice(0, 50);
+  return { ...state, jobs: { ...jobs, finished } };
 }
 
 function openAssistantMessage(state: ChatState, message: RpcMessage): ChatState {
@@ -182,6 +204,10 @@ function applyExtensionUIRequest(state: ChatState, event: RpcExtensionUIRequest,
     case "setWidget":
       return applySetWidget(state, event, now);
     case "setStatus":
+      if (event.statusKey === "gentle-jobs") {
+        const running = parseJobsStatus(event.statusText);
+        return running === undefined ? state : { ...state, jobs: { running, finished: state.jobs?.finished ?? [] } };
+      }
       if (event.statusKey !== "engram") return state;
       return { ...state, memory: typeof event.statusText === "string" ? event.statusText.replace(/^\s*(?:🧠\uFE0F?\s*)?/, "") : undefined };
     case "notify":

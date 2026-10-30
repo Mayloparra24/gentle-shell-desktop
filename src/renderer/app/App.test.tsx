@@ -341,6 +341,24 @@ it("uses the selected chat's live agents and clears them on chat switch", async 
   expect(screen.queryByText("Real helper")).not.toBeInTheDocument();
 });
 
+it("combines live job and agent counts, wires jobs to the dialog and clears them on switch", async () => {
+  window.history.pushState({}, "", "?firstRun=0");
+  const initial = await mockBridge.newChat();
+  const open = vi.spyOn(mockBridge, "openChat").mockResolvedValue({ ...initial,
+    helpers: { summary: { running: 1, waiting: 0, queued: 0, finished: 0 }, tasks: [] },
+    jobs: { running: 2, finished: [{ id: "job-1", label: "Live build", kind: "command", status: "exited", exitCode: 0, endedAt: "2026-10-30T10:00:00Z" }] },
+  });
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: /Write the README intro/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Agents and jobs, 3 running" }));
+  expect(screen.getByRole("heading", { name: "Live build Job" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Close agents and jobs" }));
+  open.mockImplementation(() => new Promise(() => {}));
+  fireEvent.click(screen.getByRole("button", { name: /Refactor the session store/ }));
+  fireEvent.click(screen.getByRole("button", { name: "Agents and jobs" }));
+  expect(screen.getByText("No agents or jobs yet")).toBeInTheDocument();
+});
+
 it("opens Agents & jobs from the title bar and restores focus on Escape", async () => {
   window.history.pushState({}, "", "?firstRun=0");
   render(<App />);

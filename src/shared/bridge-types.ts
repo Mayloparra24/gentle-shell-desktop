@@ -142,6 +142,28 @@ export interface ChatState {
   readonly helpers: HelpersActivity;
   readonly session?: SessionStatus;
   readonly memory?: string;
+  readonly jobs?: JobsActivity;
+}
+
+export const JOB_STATUS = { EXITED: "exited", STOPPED: "stopped", FAILED: "failed" } as const;
+export type FinishedJobStatus = (typeof JOB_STATUS)[keyof typeof JOB_STATUS];
+
+export interface FinishedJob {
+  readonly id: string;
+  readonly kind: "command" | "monitor";
+  readonly label: string;
+  readonly status: FinishedJobStatus;
+  readonly exitCode?: number;
+  readonly command?: string;
+  readonly lastOutput?: string;
+  readonly outputPath?: string;
+  /** Desktop receipt time, never a payload timestamp. */
+  readonly endedAt: string;
+}
+
+export interface JobsActivity {
+  readonly running: number;
+  readonly finished: readonly FinishedJob[];
 }
 
 export interface SessionStatus {
